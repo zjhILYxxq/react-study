@@ -20598,6 +20598,7 @@
    * @param renderLanes 本次渲染要处理的更新
    */
   function beginWork(current, workInProgress, renderLanes) {
+    debugger
     // workInProgress， 待处理的 fiber node， lanes 是 fiber node 对应的更新
     // 一个更新产生时，会为这个更新分配一个 lane，而这个 lane 也会合并到对应的 fiber node 上
     var updateLanes = workInProgress.lanes;
@@ -20611,6 +20612,7 @@
 
     if (current !== null) { // 原来的 fiber node 不为空，那就是一个 update 操作，需要对比原来的 fiber node 和当前要处理的 fiber node
       var oldProps = current.memoizedProps;  // 旧的 props
+      // 对于组件类型的 fiber node 来说， pendingProps 为
       var newProps = workInProgress.pendingProps; // 新的 props
 
       if (oldProps !== newProps || hasContextChanged() || ( // Force a re-render if the implementation changed due to hot reload:

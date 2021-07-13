@@ -30,7 +30,7 @@
                 <div>
                     <button onClick={() => setList(['D', 'F', 'A', 'E', 'G', 'H', 'B'])}>修改</button> 
                     <ul>
-                        {list.map(item => <Child value={item} />)}
+                        {list.map(item => <Child key={item} value={item} />)}
                     </ul>   
                 </div>
             )
