@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../react.development.js"></script>
+    <script src="../react-dom.development.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app">
+
+    </div>
+    <script type="text/babel">
+
+        function Parent() {
+            const [value, setValue] = React.useState(false);
+
+            const toggleValue = () => {
+                setValue(!value);
+            }
+            return (
+                <React.Fragment>
+                    <button onClick={toggleValue}>切换</button>
+                    { value ? <Child1 /> : <Child2 />}
+                </React.Fragment>
+            )
+        }
+
+        class Child1 extends React.Component {
+            render() {
+                return (
+                    <React.Fragment>
+                        <SameChild />
+                    </React.Fragment>
+                )
+            }
+        }
+
+        class Child2 extends React.Component {
+            render() {
+                return (
+                    <React.Fragment>
+                        <SameChild />
+                    </React.Fragment>
+                )
+            }
+        }
+
+        function SameChild() {
+            React.useEffect(() => {
+                alert('sameChild');
+                return () => {
+                    alert('123')
+                }
+            }, []);
+            return <div>sameChild</div>
+        }
+
+        
+        var d = ReactDOM.render(<React.Fragment>
+                <Parent />
+             </React.Fragment>, document.getElementById('app'));
+    </script>
+    
+</body>
+</html>

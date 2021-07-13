@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <button id="btn">点击</button>
+    <script>
+        console.time('timeout');
+        setTimeout(() => {
+            console.timeEnd('timeout');
+        }, 0);
+        var channel = new MessageChannel();
+        var port1 = channel.port1;
+        var port2 = channel.port2;
+        port2.onmessage = () => {
+            console.timeEnd('port');
+        }
+        port1.postMessage(null);
+        console.time('port');
+
+
+        console.time('promise');
+        Promise.resolve(1).then(() => {
+            console.timeEnd('promise');
+        });
+
+        function toBit2(number) {
+            let temp = number;
+            let list = [];
+            while(temp > 1) {
+                list.unshift(temp % 2);
+                temp = Math.floor(temp / 2);
+            }
+            list.unshift(1)
+            return list.join('');
+        }
+
+        
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../react.development.js"></script>
+    <script src="../react-dom.development.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <style>
+        html {
+            height: 100%;
+            width: 100%;
+            padding: 0;
+        }
+        body {
+            margin: 0;
+        }
+        .box {
+            width: 60px;
+            height: 60px;
+            position: absolute;
+            left: 0;
+            background-color: red;
+            word-wrap: break-word;
+            word-break: break-all;
+            overflow: hidden;
+        }
+        .text {
+            position:absolute;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="box" id="box1" style="left: 1px;">sto</div>
+    <div class="text" style="top: 70px;">从左变移动到右边需要的时间：<span id="box2-time"></span></div>
+    <div class="box" id="box2" style="left: 1px; top: 100px; background-color: green;">raf</div>
+    <div class="box" id="box3" style="left: 1px; top: 200px; background-color: gold;">ms</div>
+    <div id="app" style="position: absolute; top: 300px; width: 100%; height: 100px;"></div>
+    <div id="app1" style="position: absolute; top: 400px; width: 100%; height: 100px;"></div>
+
+    
+    <script type="text/babel">
+        let beginTime, endTime;
+        function move (dom) {
+            let left = parseInt(dom.style.left);
+            if (left === document.body.offsetWidth) {
+                left = 0
+                if (dom === document.getElementById('box2')) {
+                    endTime = Date.now();
+                    document.getElementById('box2-time').innerText = (endTime - beginTime) / 1000 + 's';
+                }
+                beginTime = endTime;
+            } else {
+                left++
+            }
+            dom.style.left = left + 'px';
+        }
+
+        function moveBoxBySetTimeout(dom) {
+            setTimeout(() => {
+                move(dom)
+                moveBoxBySetTimeout(dom)
+            }, 0)
+        }
+
+        // moveBoxBySetTimeout(document.getElementById('box1'));
+
+        function moveBoxByRequestAnimationFrame(dom) {
+            move(dom);
+            window.requestAnimationFrame(() => {
+                moveBoxByRequestAnimationFrame(dom);
+            })
+        }
+
+        beginTime = Date.now();
+        moveBoxByRequestAnimationFrame(document.getElementById('box2'));
+
+        
+
+        function moveBoxByMessageChannel(dom) {
+            const channel = new MessageChannel();
+            const port1 = channel.port1;
+            const port2 = channel.port2;
+            port1.onmessage = () => {
+                move(dom);
+                port2.postMessage(null);
+            }
+            port2.postMessage(null);
+        }
+
+        // moveBoxByMessageChannel(document.getElementById('box3'));
+
+        
+        
+
+
+        function ReactBox(props) {
+            const [left, setLeft] = React.useState(0);
+
+            const move = () => {
+                if (left === document.body.offsetWidth) {
+                    setLeft(0)
+                } else {
+                    setLeft(left + 1)
+                }
+            }
+
+            requestAnimationFrame(() => {
+                move();
+            })
+
+            return (
+                <div className="box" style={{left, background: props.color}}>
+                    {Array.from(new Array(50000)).map( (v,index) =>
+                        <span key={index}>a</span>
+                    )}
+                </div>
+            )
+        }
+
+
+
+        // ReactDOM.render(<ReactBox color="yellow"/>, document.getElementById('app1'));
+
+        new ReactDOM.createRoot(document.getElementById('app')).render(<ReactBox color="grey"/>);
+
+        
+    </script>
+</body>
+</html>

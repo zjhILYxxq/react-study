@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../react.development.js"></script>
+    <script src="../react-dom.development.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <style>
+        .box {
+            height: 100px;
+            word-wrap: break-word;
+            word-break: break-all;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+
+        const { useEffect, useState, useRef } = React;
+
+        function Child(props) {
+
+            const [number, setNumber] = useState(1);
+
+            useEffect(() => {
+                console.log('child');
+            })
+
+            const ref = useRef(null);
+
+            const add = () => {
+                setTimeout(() => {
+                    setNumber(number + 1);
+                }, 500);
+
+
+                // setNumber(number + 1);
+            }
+
+            const click = () => {
+                ref.current.click();
+                // props.callback && props.callback();
+                // setTimeout(() => {
+                //     ref.current.click();
+                // }, 500);
+                setTimeout(() => {
+                    props.callback && props.callback();
+                }, 100);
+            }
+
+            return (
+                <div>
+
+                    <button onClick={click}>+</button>
+                    <div  className="box" onClick={add} ref={ref}>
+                        {Array(1000).fill(number).map(item => (<span>{item}</span>))}
+                    </div>
+                </div>
+                
+            )
+        }
+
+        function Parent() {
+            const [value, setValue] = useState(1);
+            const buttonRef = useRef(null);
+
+            useEffect(() => {
+                console.log('parent')
+            })
+
+            const add = () => {
+                console.log(value);
+                setValue(value + 1);
+            }
+
+            const click = () => {
+                buttonRef.current.click()
+            }
+
+            return (
+                <React.Fragment>
+                    <div>
+                        <button ref={buttonRef} onClick={add}>+</button>
+                        <span>{value}</span>
+                        <Child callback={click} />
+                    </div>
+                </React.Fragment>
+            )
+        }
+
+        const Component = () => {
+
+            const list = [1, 2, 3, 4, 5];
+            debugger
+            return (
+                <ul>
+                    {list.map(item => (
+                        <li>{item}</li>
+                    ))}
+                </ul>
+            )
+                
+        }
+        debugger
+
+        var d = ReactDOM.render(<Component/>, document.getElementById('app'));
+
+        // new ReactDOM.createRoot(document.getElementById('app')).render(<Component/>);
+    </script>
+    
+</body>
+</html>
