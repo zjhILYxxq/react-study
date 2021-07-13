@@ -21162,7 +21162,7 @@
    * 
    * @param current  old fiber node
    * @param workInProgress new fiber node
-   * @param rendrLanes
+   * @param rendrLanes 本次渲染要处理的更新
    */
   function completeWork(current, workInProgress, renderLanes) {
     
