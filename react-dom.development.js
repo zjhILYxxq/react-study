@@ -16456,6 +16456,7 @@
    * @param nextRenderLanes
    */
   function renderWithHooks(current, workInProgress, Component, props, secondArg, nextRenderLanes) {
+    debugger
     renderLanes = nextRenderLanes;
     currentlyRenderingFiber$1 = workInProgress;
 
@@ -18616,6 +18617,9 @@
     workInProgress.child = reconcileChildFibers(workInProgress, null, nextChildren, renderLanes);
   }
 
+  /**
+   * 
+   */
   function updateForwardRef(current, workInProgress, Component, nextProps, renderLanes) {
     // TODO: current can be non-null here even if the component
     // hasn't yet mounted. This happens after the first render suspends.
@@ -18658,7 +18662,9 @@
     }
 
     if (current !== null && !didReceiveUpdate) {
+      // 
       bailoutHooks(current, workInProgress, renderLanes);
+      // 
       return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
     } // React DevTools reads this flag.
 
@@ -18669,13 +18675,13 @@
   }
 
   /**
-   * 
-   * @param current
-   * @param workInProgress
-   * @param Component
-   * @param nextProps
-   * @param updateLanes
-   * @param renderLanes
+   * 更新 react.memo 组件
+   * @param current   old fiber node
+   * @param workInProgress new fiber node
+   * @param Component 函数组件
+   * @param nextProps new props
+   * @param updateLanes 
+   * @param renderLanes 本次渲染的更新优先级
    */
   function updateMemoComponent(current, workInProgress, Component, nextProps, updateLanes, renderLanes) {
     if (current === null) {
@@ -18691,7 +18697,8 @@
         // and with only the default shallow comparison, we upgrade it
         // to a SimpleMemoComponent to allow fast path updates.
 
-
+        // 如果组件不是类组件，且没有指定 compare， 那么就是一个简单的 memo 组件
+        // simple memo 组件，只会对 props 做浅比较，如果 props 没有变化，那么对应的组件就不会渲染
         workInProgress.tag = SimpleMemoComponent;
         workInProgress.type = resolvedType;
 
@@ -18757,9 +18764,16 @@
   }
 
   /**
-   * 
+   * 更新没有指定 compare 的 react.memo 组件
+   * @param current  old fiber node
+   * @param workInProgress new fiber node
+   * @param Component 函数组件
+   * @param nextProps new props
+   * @param updateLanes 
+   * @param renderLanes 本次渲染要处理的更新优先级
    */
   function updateSimpleMemoComponent(current, workInProgress, Component, nextProps, updateLanes, renderLanes) {
+    debugger
     // TODO: current can be non-null here even if the component
     // hasn't yet mounted. This happens when the inner render suspends.
     // We'll need to figure out if this is fine or can cause issues.
@@ -18959,6 +18973,7 @@
    * @param renderLanes
    */
   function updateFunctionComponent(current, workInProgress, Component, nextProps, renderLanes) {
+    debugger
     {
       if (workInProgress.type !== workInProgress.elementType) {
         // Lazy component props can't be validated in createElement
@@ -19000,8 +19015,11 @@
       setIsRendering(false);
     }
 
+    // 
     if (current !== null && !didReceiveUpdate) {
+      // 
       bailoutHooks(current, workInProgress, renderLanes);
+      // 
       return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
     } // React DevTools reads this flag.
 
@@ -20481,6 +20499,9 @@
     return workInProgress.child;
   }
 
+  /**
+   * 
+   */
   function markWorkInProgressReceivedUpdate() {
     didReceiveUpdate = true;
   }
@@ -20488,9 +20509,9 @@
   /**
    * 把 old fiber node 的 child fiber nodes 直接拷贝给 new fiber node
    * 如果 fiber node 没有重新渲染，那么 child fiber node 也就没有什么变化
-   * @param current
-   * @param workInProgress
-   * @param renderLanes
+   * @param current old fiber node
+   * @param workInProgress new fiber node
+   * @param renderLanes 本次渲染要处理的更新的优先级
    */
   function bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes) {
     if (current !== null) {
@@ -20503,6 +20524,8 @@
       stopProfilerTimerIfRunning();
     }
 
+    // new fiber node 跳过处理，可能是没有更新，也可能是更新优先级不够
+    // 如果是 new fiber node 的更新优先级不够，那么要讲对应的更新，合并到 workInProgressRootSkippedLanes 中
     markSkippedUpdateLanes(workInProgress.lanes); // Check if the children have any pending work.
 
     // 检查一下 child fiber 是否发生了更新

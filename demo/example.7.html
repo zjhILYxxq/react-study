@@ -30,12 +30,15 @@
                 <div>
                     <button onClick={() => setList(['D', 'F', 'A', 'E', 'G', 'H', 'B'])}>修改</button> 
                     <ul>
-                        {list.map(item => <Child key={item} value={item} />)}
+                        <Child1 value="1"/>
                     </ul>   
                 </div>
             )
 
         }
+
+        const Child1 = React.memo(props => <li>{props.value}</li>)
+
 
         class Child extends Component {
             componentDidMount() {
