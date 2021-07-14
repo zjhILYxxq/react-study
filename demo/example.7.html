@@ -41,10 +41,14 @@
 
         const Child1 = React.memo(props => {
             const [value, setValue] = useState(1)
+
+            useEffect(() => {
+                alert('123')
+            })
             
             return (<li onClick={() => {
-                setValue(value - 1);
-                setValue(value + 1);
+                setValue(value => value - 1);
+                setValue(value => value + 1);
             }}>{value}</li>)
 
         })

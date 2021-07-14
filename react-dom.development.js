@@ -14632,7 +14632,8 @@
 
     /**
      * fiber node 不需要新增、删除，只需要更新
-     * @param fiber fiber node
+     * 此时可以复用原来的 fiber node
+     * @param fiber old fiber node
      * @param pendingProps 当前 fiber node 的 新的 props
      */
     function useFiber(fiber, pendingProps) {
@@ -14724,6 +14725,7 @@
         return created;
       } else {
         // Update
+        // 复用原来的 fiber node
         var existing = useFiber(current, textContent);
         existing.return = returnFiber;
         return existing;
@@ -14731,10 +14733,11 @@
     }
 
     /**
-     * 
-     * @param returnFiber
-     * @param current
-     * @param element
+     * 对比 old fiber node 和 new react element， 判断 new fiber node 是复用 old fiber node，还是新建一个 fiber node
+     * fiber node 的类型一样， 就可以复用
+     * @param returnFiber  parent fiber node
+     * @param current old fiber node
+     * @param element new react element
      * @param lanes
      */
     function updateElement(returnFiber, current, element, lanes) {
@@ -14742,6 +14745,7 @@
         if (current.elementType === element.type || ( // Keep this check inline so it only runs on the false path:
          isCompatibleFamilyForHotReloading(current, element) )) {
           // Move based on index
+          // 复用原来的 fiber node
           var existing = useFiber(current, element.props);
           existing.ref = coerceRef(returnFiber, current, element);
           existing.return = returnFiber;
@@ -14755,7 +14759,7 @@
         }
       } // Insert
 
-
+      // 新建一个新的 fiber node
       var created = createFiberFromElement(element, returnFiber.mode, lanes);
       created.ref = coerceRef(returnFiber, current, element);
       created.return = returnFiber;
@@ -14869,20 +14873,22 @@
     }
 
     /**
-     * 
-     * @param returnFiber
-     * @param oldFiber
-     * @param newChild
+     * 更新槽？？
+     * @param returnFiber  parent fiber node 
+     * @param oldFiber  old fiber node
+     * @param newChild new react element
      * @param lanes
      */
     function updateSlot(returnFiber, oldFiber, newChild, lanes) {
       // Update the fiber if the keys match, otherwise return null.
+      // old fiber node 的 key 值
       var key = oldFiber !== null ? oldFiber.key : null;
 
       if (typeof newChild === 'string' || typeof newChild === 'number') {
         // Text nodes don't have keys. If the previous node is implicitly keyed
         // we can continue to replace it without aborting even if it is not a text
         // node.
+        // 
         if (key !== null) {
           return null;
         }
@@ -14898,7 +14904,9 @@
                 if (newChild.type === REACT_FRAGMENT_TYPE) {
                   return updateFragment(returnFiber, oldFiber, newChild.props.children, lanes, key);
                 }
-
+                // 将 old fiber node 和 new react element 做比较，判断 new react element 是复用原来的 fiber node
+                // 还是新建一个 new fiber node
+                // 只要类型一样，就可以复用 old fiber node
                 return updateElement(returnFiber, oldFiber, newChild, lanes);
               } else {
                 return null;
@@ -14931,19 +14939,20 @@
           warnOnFunctionType(returnFiber);
         }
       }
-
+      // 返回 null
       return null;
     }
 
     /**
-     * 将每一个 new react element 和剩余的 old fiber node 做匹配
-     * @param existingChildren 剩余的全部 old fiber node
+     * 将每一个 new react element 和剩余的 old fiber node 做匹配，湖区 new react element 对应的 fiber node
+     * @param existingChildren 剩余的全部 old fiber node，是一个 map， key 为 fiber node 的 key 值， value 为 fiber node
      * @param returnFiber parent fiber node
-     * @param newIdx
+     * @param newIdx new react element 的 index
      * @param newChild  new react element
      * @param lanes
      */
     function updateFromMap(existingChildren, returnFiber, newIdx, newChild, lanes) {
+      // 
       if (typeof newChild === 'string' || typeof newChild === 'number') {
         // Text nodes don't have keys, so we neither have to check the old nor
         // new node for the key. If both are text nodes, they match.
@@ -14955,12 +14964,15 @@
         switch (newChild.$$typeof) {
           case REACT_ELEMENT_TYPE:
             {
+              // 根据 new react element 的 key(或者 index)，找到匹配的 old fiber node
               var _matchedFiber = existingChildren.get(newChild.key === null ? newIdx : newChild.key) || null;
 
               if (newChild.type === REACT_FRAGMENT_TYPE) {
                 return updateFragment(returnFiber, _matchedFiber, newChild.props.children, lanes, newChild.key);
               }
 
+              // 比较 old fiber node 和 new react element，只要对应的一样，就可以复用 old fiber node
+              // 否则要新建一个 fiber node
               return updateElement(returnFiber, _matchedFiber, newChild, lanes);
             }
 
@@ -14987,7 +14999,7 @@
           warnOnFunctionType(returnFiber);
         }
       }
-
+      // 
       return null;
     }
     /**
@@ -16576,10 +16588,14 @@
   }
 
   /**
-   * 
+   * 函数组件实际不需要更新，不需要对 child fiber node 做 diff 比较
+   * @param current  old fiber node
+   * @param workInProgress new fiber node
+   * @param lanes 
    */
   function bailoutHooks(current, workInProgress, lanes) {
     workInProgress.updateQueue = current.updateQueue;
+    // 函数组件实际不需要更新，清理掉 useEffect 副作用
     workInProgress.flags &= ~(Passive | Update);
     current.lanes = removeLanes(current.lanes, lanes);
   }
@@ -18671,9 +18687,9 @@
     }
 
     if (current !== null && !didReceiveUpdate) {
-      // 
+      // 函数组件不需要更新。由于函数方法已经执行过，如果使用了 useEffect 等，此时要先清理掉 useEffect 等副作用
       bailoutHooks(current, workInProgress, renderLanes);
-      // 
+      // 看 child fiber node 是否需要更新，如果需要，返回 child fiber node； 不需要，直接返回 null
       return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
     } // React DevTools reads this flag.
 
