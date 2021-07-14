@@ -11621,12 +11621,21 @@
 
   var index = -1;
 
+  /**
+   * 创建一个光标？？
+   * @param  defaultValue
+   */
   function createCursor(defaultValue) {
     return {
       current: defaultValue
     };
   }
 
+  /**
+   * 
+   * @param cursor
+   * @param fiber 
+   */
   function pop(cursor, fiber) {
     if (index < 0) {
       {
@@ -11652,6 +11661,11 @@
     index--;
   }
 
+  /**
+   * @param cursor
+   * @param value
+   * @param fiber
+   */
   function push(cursor, value, fiber) {
     index++;
     valueStack[index] = cursor.current;
@@ -11662,6 +11676,7 @@
 
     cursor.current = value;
   }
+
 
   var warnedAboutMissingGetChildContext;
 
@@ -11676,7 +11691,7 @@
     Object.freeze(emptyContextObject);
   } // A cursor to the current merged context object on the stack.
 
-
+  // 
   var contextStackCursor = createCursor(emptyContextObject); // A cursor to a boolean indicating whether the context has changed.
 
   var didPerformWorkStackCursor = createCursor(false); // Keep track of the previous context object that was on the stack.
@@ -11699,7 +11714,13 @@
     }
   }
 
-  function cacheContext(workInProgress, unmaskedContext, maskedContext) {
+  /**
+   * 
+   * @param createCursor
+   * @param unmaskedContext
+   * @param maskedContext
+   */
+  function cacheContext(createCursor, unmaskedContext, maskedContext) {
     {
       var instance = workInProgress.stateNode;
       instance.__reactInternalMemoizedUnmaskedChildContext = unmaskedContext;
@@ -11767,6 +11788,9 @@
     }
   }
 
+  /**
+   * @param fiber
+   */
   function popContext(fiber) {
     {
       pop(didPerformWorkStackCursor, fiber);
@@ -11774,6 +11798,9 @@
     }
   }
 
+  /**
+   * @param fiber
+   */
   function popTopLevelContextObject(fiber) {
     {
       pop(didPerformWorkStackCursor, fiber);
@@ -11781,6 +11808,11 @@
     }
   }
 
+  /**
+   * @param fiber
+   * @param context
+   * @param didChange
+   */
   function pushTopLevelContextObject(fiber, context, didChange) {
     {
       if (!(contextStackCursor.current === emptyContextObject)) {
@@ -11794,6 +11826,12 @@
     }
   }
 
+  /**
+   * 
+   * @param fiber
+   * @param type
+   * @param parentContext
+   */
   function processChildContext(fiber, type, parentContext) {
     {
       var instance = fiber.stateNode;
@@ -12568,6 +12606,7 @@
     rendererSigil = {};
   }
 
+  // 当前正在渲染的 fiber node
   var currentlyRenderingFiber = null;
   var lastContextDependency = null;
   var lastContextWithAllBitsObserved = null;
@@ -12607,13 +12646,17 @@
   }
 
   /**
-   * 
+   * @param providerFiber  Context.Provider 对应的 fiber node
+   * @param nextValue context 新的 value 值
    */
   function pushProvider(providerFiber, nextValue) {
+    // Provider 对应的全局 context 对象
     var context = providerFiber.type._context;
 
     {
+      // 
       push(valueCursor, context._currentValue, providerFiber);
+      // 把 new value 存储到 context 中
       context._currentValue = nextValue;
 
       {
@@ -12625,6 +12668,11 @@
       }
     }
   }
+
+  /**
+   * 
+   * @param providerFiber Context.Provider 对应的 fiber node
+   */
   function popProvider(providerFiber) {
     var currentValue = valueCursor.current;
     pop(valueCursor, providerFiber);
@@ -12634,6 +12682,12 @@
       context._currentValue = currentValue;
     }
   }
+
+  /**
+   * @param context
+   * @param newValue
+   * @param oldValue
+   */
   function calculateChangedBits(context, newValue, oldValue) {
     if (objectIs(oldValue, newValue)) {
       // No change
@@ -12681,12 +12735,14 @@
   }
 
   /**
-   * @param workInProgress
-   * @param context
-   * @param changeBits
-   * @param renderLanes
+   * 向 child fiber node 传播 context 的变化
+   * @param workInProgress  Context.Provider 对应的 fiber node
+   * @param context 全局的 context 变化
+   * @param changeBits context 的值发生了变化 ？？
+   * @param renderLanes 本次渲染对应的更新优先级
    */
   function propagateContextChange(workInProgress, context, changedBits, renderLanes) {
+    // child fiber node
     var fiber = workInProgress.child;
 
     if (fiber !== null) {
@@ -12697,6 +12753,7 @@
     while (fiber !== null) {
       var nextFiber = void 0; // Visit this fiber.
 
+      // fiber node 依赖的 context 
       var list = fiber.dependencies;
 
       if (list !== null) {
@@ -12805,6 +12862,12 @@
       }
     }
   }
+
+  /**
+   * useContext 触发的读取 context 的操作
+   * @param context 全局的 context 对象
+   * @param observedBits
+   */
   function readContext(context, observedBits) {
     {
       // This warning would fire if you read context inside a Hook like useMemo.
@@ -12838,8 +12901,9 @@
           }
         } // This is the first dependency for this component. Create a new list.
 
-
+        // 上一个依赖的 context 对象
         lastContextDependency = contextItem;
+        // fiber node 收集依赖的 context 对象
         currentlyRenderingFiber.dependencies = {
           lanes: NoLanes,
           firstContext: contextItem,
@@ -12850,7 +12914,7 @@
         lastContextDependency = lastContextDependency.next = contextItem;
       }
     }
-
+    // fiberNode.dependencies.firstContext 指向 fiber node 依赖的 context 列表
     return  context._currentValue ;
   }
 
@@ -15706,9 +15770,13 @@
     }
   }
 
+  // 
   var NO_CONTEXT = {};
+  // 
   var contextStackCursor$1 = createCursor(NO_CONTEXT);
+  // 
   var contextFiberStackCursor = createCursor(NO_CONTEXT);
+  // 
   var rootInstanceStackCursor = createCursor(NO_CONTEXT);
 
   function requiredContext(c) {
@@ -15721,11 +15789,19 @@
     return c;
   }
 
+  /**
+   * 
+   */
   function getRootHostContainer() {
     var rootInstance = requiredContext(rootInstanceStackCursor.current);
     return rootInstance;
   }
 
+  /**
+   * 
+   * @param fiber
+   * @param nextRootInstance
+   */
   function pushHostContainer(fiber, nextRootInstance) {
     // Push current root instance onto the stack;
     // This allows us to reset root when portals are popped.
@@ -15804,26 +15880,54 @@
   // items into their fallback state during one of the render passes.
 
   var ForceSuspenseFallback = 2;
+  //
   var suspenseStackCursor = createCursor(DefaultSuspenseContext);
+
+  /**
+   * 
+   */
   function hasSuspenseContext(parentContext, flag) {
     return (parentContext & flag) !== 0;
   }
+
+  /**
+   * 
+   */
   function setDefaultShallowSuspenseContext(parentContext) {
     return parentContext & SubtreeSuspenseContextMask;
   }
+
+  /**
+   * 
+   */
   function setShallowSuspenseContext(parentContext, shallowContext) {
     return parentContext & SubtreeSuspenseContextMask | shallowContext;
   }
+
+  /**
+   * 
+   */
   function addSubtreeSuspenseContext(parentContext, subtreeContext) {
     return parentContext | subtreeContext;
   }
+
+  /**
+   * 
+   */
   function pushSuspenseContext(fiber, newContext) {
     push(suspenseStackCursor, newContext, fiber);
   }
+
+  /**
+   * 
+   */
   function popSuspenseContext(fiber) {
     pop(suspenseStackCursor, fiber);
   }
 
+  /**
+   * 
+   */
   function shouldCaptureSuspense(workInProgress, hasInvisibleParent) {
     // If it was the primary children that just suspended, capture and render the
     // fallback. Otherwise, don't capture and bubble to the next boundary.
@@ -15858,6 +15962,10 @@
 
     return true;
   }
+
+  /**
+   * 
+   */
   function findFirstSuspended(row) {
     var node = row;
 
@@ -16468,12 +16576,12 @@
 
   /**
    * 渲染函数式组件
-   * @param current
-   * @param workInProgress
-   * @param Component
-   * @param props
+   * @param current  old fiber node
+   * @param workInProgress new fiber node
+   * @param Component 函数组件方法
+   * @param props new props
    * @param secondArg
-   * @param nextRenderLanes
+   * @param nextRenderLanes ？？
    */
   function renderWithHooks(current, workInProgress, Component, props, secondArg, nextRenderLanes) {
     debugger
@@ -19025,6 +19133,7 @@
     }
 
     var nextChildren;
+    // 
     prepareToReadContext(workInProgress, renderLanes);
 
     {
@@ -20294,6 +20403,7 @@
 
 
   /**
+
    * @param current
    * @param workInProgress
    * @param renderLanes
@@ -20429,11 +20539,22 @@
 
   var hasWarnedAboutUsingNoValuePropOnContextProvider = false;
 
+  /**
+   * 更新(挂载) Context.Provider 类型的 fiber node
+   * @param current  old fiber node
+   * @param workInProgress new fiber node
+   * @param renderLanes 本次渲染要处理的更新的优先级
+   */
   function updateContextProvider(current, workInProgress, renderLanes) {
+    // fiber node 的类型: React.Provider
     var providerType = workInProgress.type;
+    // 创建的全局 context 对象
     var context = providerType._context;
+    // new props
     var newProps = workInProgress.pendingProps;
+    // old props
     var oldProps = workInProgress.memoizedProps;
+    // 新的 context 的 value 值
     var newValue = newProps.value;
 
     {
@@ -20451,7 +20572,7 @@
         checkPropTypes(providerPropTypes, newProps, 'prop', 'Context.Provider');
       }
     }
-
+    // 
     pushProvider(workInProgress, newValue);
 
     if (oldProps !== null) {
@@ -28849,14 +28970,15 @@
   }
   
   /**
-   * 
-   * @params parentComponent
-   * @params children
-   * @params container
-   * @params forceHydrate
+   * 将 react 元素渲染到指定的容器节点中
+   * @params parentComponent ？？
+   * @params children react element
+   * @params container  容器节点
+   * @params forceHydrate 是否强制使用 hydrate 模式
    * @params callback
    */
   function legacyRenderSubtreeIntoContainer(parentComponent, children, container, forceHydrate, callback) {
+    debugger
     {
       topLevelUpdateWarnings(container);
       warnOnInvalidCallback$1(callback === undefined ? null : callback, 'render');

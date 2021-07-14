@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../react.development.js"></script>
+    <script src="../react-dom.development.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+    
+        debugger
+        const { useState, useEffect, useContext, createContext, memo } = React;
+
+        const Context = createContext({count: 0});
+
+        function Parent() {
+            const [count, setCount] = useState(0);
+
+            return (
+                <Context.Provider value={count}>
+                    <button onClick={() => {setCount(count + 1)}}>+</button>
+                    <Child />
+                </Context.Provider>
+            )
+        }
+
+        function Child() {
+            const [count, setCount] = useState(2)
+            return <div>{count}</div>
+        }
+
+        const Child1 = memo(() => {
+            const context = useContext(Context);
+            return <div>{context}</div>
+        });
+
+        ReactDOM.render(<Parent/>, document.getElementById('app'));
+    
+    </script>
+</body>

@@ -1176,6 +1176,11 @@
     return children;
   }
 
+  /**
+   * 创建一个全局的 context 对象
+   * @param {*} defaultValue context 对象默认的值
+   * @param {*} calculateChangedBits 
+   */
   function createContext(defaultValue, calculateChangedBits) {
     if (calculateChangedBits === undefined) {
       calculateChangedBits = null;
@@ -1204,6 +1209,7 @@
       Provider: null,
       Consumer: null
     };
+
     context.Provider = {
       $$typeof: REACT_PROVIDER_TYPE,
       _context: context
@@ -1293,7 +1299,7 @@
       context._currentRenderer = null;
       context._currentRenderer2 = null;
     }
-
+    // 返回创建的 context 对象
     return context;
   }
 
@@ -1517,6 +1523,11 @@
   }
 
 
+  /**
+   * useContext hook
+   * @param Context 全局的 context 对象
+   * @param unstable_observedBits
+   */
   function useContext(Context, unstable_observedBits) {
     var dispatcher = resolveDispatcher();
 
