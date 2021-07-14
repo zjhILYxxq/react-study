@@ -7992,7 +7992,13 @@
    * Returns true when the values of all keys are strictly equal.
    */
 
+   /**
+    * 对 objA、objB 进行浅比较，判断 objA、objB 是否相等
+    * @param objA
+    * @param objB
+    */
   function shallowEqual(objA, objB) {
+    // 通过原生(或者自己实现的) is 方法，判断 objA、objB 是否是同一个引用
     if (objectIs(objA, objB)) {
       return true;
     }
@@ -8004,11 +8010,13 @@
     var keysA = Object.keys(objA);
     var keysB = Object.keys(objB);
 
+    // 属性的个数不相等，直接返回 false
     if (keysA.length !== keysB.length) {
       return false;
     } // Test for A's keys different from B.
 
 
+    // 属性值相等，对象就相等
     for (var i = 0; i < keysA.length; i++) {
       if (!hasOwnProperty$2.call(objB, keysA[i]) || !objectIs(objA[keysA[i]], objB[keysA[i]])) {
         return false;
@@ -16851,6 +16859,7 @@
       // different from the current state.
 
 
+      // 使用 useState hook 时，如果 new state 和 old state 不是同一个引用，那么就任务函数式组件需要更新
       if (!objectIs(newState, hook.memoizedState)) {
         markWorkInProgressReceivedUpdate();
       }
@@ -18809,10 +18818,12 @@
     }
 
     if (current !== null) {
+      // old props
       var prevProps = current.memoizedProps;
 
       if (shallowEqual(prevProps, nextProps) && current.ref === workInProgress.ref && ( // Prevent bailout if the implementation changed due to hot reload.
        workInProgress.type === current.type )) {
+        // simple memo 组件，需要对 props 进行浅比较，如果 props 相等，那么就不需要更新了
         didReceiveUpdate = false;
 
         if (!includesSomeLane(renderLanes, updateLanes)) {
@@ -18829,6 +18840,9 @@
           // contains hooks.
           // TODO: Move the reset at in beginWork out of the common path so that
           // this is no longer necessary.
+          // simple memo 组件内部没有更新，那么 simple memo 组件不需要渲染
+          // 此时如果有 child fiber node 发生更新的，开始处理 child fiber node
+          // 如果没有 child fiber node 发生更新，那么直接返回 null
           workInProgress.lanes = current.lanes;
           return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
         } else if ((current.flags & ForceUpdateForLegacySuspense) !== NoFlags) {
@@ -18838,7 +18852,7 @@
         }
       }
     }
-
+    // simple memo 组件需要重新渲染
     return updateFunctionComponent(current, workInProgress, Component, nextProps, renderLanes);
   }
 
@@ -18965,12 +18979,12 @@
     }
   }
   /**
-   * 对函数式组件做更新(挂载)操作
-   * @param current
-   * @param workInProgress
-   * @param Component
-   * @param nextProps
-   * @param renderLanes
+   * 对函数类型的组件做更新(挂载)操作
+   * @param current   old fiber node
+   * @param workInProgress new fiber node
+   * @param Component 函数方法
+   * @param nextProps new props
+   * @param renderLanes 本次渲染要处理的更新的优先级
    */
   function updateFunctionComponent(current, workInProgress, Component, nextProps, renderLanes) {
     debugger
@@ -20500,7 +20514,7 @@
   }
 
   /**
-   * 
+   * fiber node 需要更新
    */
   function markWorkInProgressReceivedUpdate() {
     didReceiveUpdate = true;

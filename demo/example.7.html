@@ -21,7 +21,7 @@
     <div id="app"></div>
     <script type="text/babel">
 
-        const { useState, useEffect, Component } = React;
+        const { useState, useReducer, useEffect, Component } = React;
 
         function Parent () {
             const [list, setList] = useState(['A', 'B', 'C', 'D', 'E', 'F']);
@@ -37,7 +37,17 @@
 
         }
 
-        const Child1 = React.memo(props => <li>{props.value}</li>)
+        const obj = {name: 'zjh'}
+
+        const Child1 = React.memo(props => {
+            const [value, setValue] = useState(1)
+            
+            return (<li onClick={() => {
+                setValue(value - 1);
+                setValue(value + 1);
+            }}>{value}</li>)
+
+        })
 
 
         class Child extends Component {
