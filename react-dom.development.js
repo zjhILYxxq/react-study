@@ -23889,7 +23889,9 @@
   var hasUncaughtError = false;
   var firstUncaughtError = null;
   var legacyErrorBoundariesThatAlreadyFailed = null;
+
   var rootDoesHavePassiveEffects = false;
+  // 等待处理的 useEffect 副作用
   var rootWithPendingPassiveEffects = null;
   // 这个优先级是什么东东？？
   var pendingPassiveEffectsRenderPriority = NoPriority$1;

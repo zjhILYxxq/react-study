@@ -30,7 +30,7 @@
                 <div>
                     <button onClick={() => setList(['D', 'F', 'A', 'E', 'G', 'H', 'B'])}>修改</button> 
                     <ul>
-                        <Child1 value="1"/>
+                        <Child value="1"/>
                     </ul>   
                 </div>
             )
@@ -39,11 +39,11 @@
 
         const obj = {name: 'zjh'}
 
-        const Child1 = React.memo(props => {
+        const Child1 = props => {
             const [value, setValue] = useState(1)
 
             useEffect(() => {
-                alert('123')
+                alert('Child1')
             })
             
             return (<li onClick={() => {
@@ -51,15 +51,17 @@
                 setValue(value => value + 1);
             }}>{value}</li>)
 
-        })
+        }
 
 
         class Child extends Component {
             componentDidMount() {
+                alert('Child')
                 console.log('mount ' + this.props.value)
             }
 
             componentDidUpdate() {
+                alert('Child')
                 console.log('update' + this.props.value)
             }
 
@@ -68,7 +70,12 @@
             }
 
             render() {
-                return <li>{this.props.value}</li>
+                return (
+                    <div>
+                        <div>Child</div>
+                        <Child1 />
+                    </div>
+                )
             }
         }
 
