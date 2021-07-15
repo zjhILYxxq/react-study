@@ -23889,15 +23889,15 @@
   var hasUncaughtError = false;
   var firstUncaughtError = null;
   var legacyErrorBoundariesThatAlreadyFailed = null;
-
+  // 是否有仍未处理的 useEffect 副作用
   var rootDoesHavePassiveEffects = false;
   // 等待处理的 useEffect 副作用
   var rootWithPendingPassiveEffects = null;
-  // 这个优先级是什么东东？？
+  // 等待处理的 useEffect 副作用的优先级， 默认为无优先级， 90
   var pendingPassiveEffectsRenderPriority = NoPriority$1;
-  // ??
+  // 
   var pendingPassiveEffectsLanes = NoLanes;
-  // ？？
+  // 
   var pendingPassiveHookEffectsMount = [];
   // ??
   var pendingPassiveHookEffectsUnmount = [];
@@ -25588,7 +25588,7 @@
       // no more pending effects.
       // TODO: Might be better if `flushPassiveEffects` did not automatically
       // flush synchronous work at the end, to avoid factoring hazards like this.
-      // 刷新被动的副作用 ？？
+      // 在 commit 开始之前，先检查一下
       flushPassiveEffects();
     } while (rootWithPendingPassiveEffects !== null);
 
@@ -25931,14 +25931,17 @@
         resetCurrentFiber();
       }
 
-      // TODO： 处理 useEffect 类型的副作用？？
+      // 异步调度处理 useEffect 的副作用
+      // useEffect 的 callback, 是在浏览器渲染完成之后才触发的
+      // react 通过一个异步调度任务，来执行 useEffect 的 callback
       if ((flags & Passive) !== NoFlags) { 
         // If there are passive effects, schedule a callback to flush at
         // the earliest opportunity.
         if (!rootDoesHavePassiveEffects) {  // 
           rootDoesHavePassiveEffects = true;
+          // 异步调度 useEffect 的副作用， 优先级为普通优先级
           scheduleCallback(NormalPriority$1, function () {
-            // 刷新被动的副作用 ？？
+            // 处理 useEffect 的 callback
             flushPassiveEffects();
             return null;
           });
