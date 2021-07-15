@@ -8342,6 +8342,10 @@
     var nodeName = elem && elem.nodeName && elem.nodeName.toLowerCase();
     return nodeName && (nodeName === 'input' && (elem.type === 'text' || elem.type === 'search' || elem.type === 'tel' || elem.type === 'url' || elem.type === 'password') || nodeName === 'textarea' || elem.contentEditable === 'true');
   }
+
+  /**
+   * 
+   */
   function getSelectionInformation() {
     var focusedElem = getActiveElementDeep();
     return {
@@ -24688,7 +24692,9 @@
 
     // render 完成，render 阶段结束， finishedWork 为 new fiber tree
     var finishedWork = root.current.alternate;
+    // finishedWork 指针指向容器节点对应的 fibernode
     root.finishedWork = finishedWork;
+    // 本次渲染已经全部处理的更新
     root.finishedLanes = lanes;
     // render 完成以后，直接进入 commit 阶段
     commitRoot(root); // Before exiting, make sure there's a callback scheduled for the next
@@ -25553,21 +25559,21 @@
 
   /**
    * 进入 commit 阶段
-   * @param root
+   * @param root  fiber root node
    */
   function commitRoot(root) {
     
     // 获取当前的优先级
     var renderPriorityLevel = getCurrentPriorityLevel();
-    // 直接开始 commit 阶段？？
+    // 为 commit 操作建立一个调度任务，优先级为直接优先级，即 commit 对应的调度优先执行
     runWithPriority$1(ImmediatePriority$1, commitRootImpl.bind(null, root, renderPriorityLevel));
     return null;
   }
 
   /**
-   * 实现 commit 阶段
+   * commit 操作的实现
    * @param root fiber root node
-   * @param renderPriorityLevel 任务优先级 ？？
+   * @param renderPriorityLevel 优先级，直接优先级
    */
   function commitRootImpl(root, renderPriorityLevel) {
     debugger
@@ -25594,15 +25600,16 @@
 
     // 容器节点对应的 fiber node
     var finishedWork = root.finishedWork;
-    // finishedLanes ？？
+    // 本次渲染处理的更新
     var lanes = root.finishedLanes;
 
     if (finishedWork === null) {
 
       return null;
     }
-
+    // 重置 root.finishedWork
     root.finishedWork = null;
+    // 重置 root.finishedLanes
     root.finishedLanes = NoLanes;
 
     if (!(finishedWork !== root.current)) {
@@ -25615,7 +25622,7 @@
     // commit 阶段是不会中断的吗，所以不需要保存原来的调度任务了
     root.callbackNode = null; // Update the first and last pending times on this root. The new first
     // pending time is whatever is left on the root fiber.
-    // 遗留的更新
+    // 本次渲染阶段未处理的更新,全部合并到容器节点对应的 fiber node 中
     var remainingLanes = mergeLanes(finishedWork.lanes, finishedWork.childLanes);
     // 
     markRootFinished(root, remainingLanes); // Clear already finished discrete updates in case that a later call of
@@ -25628,6 +25635,7 @@
       }
     }
 
+    // 重置 workInProgressRoot、workInProgress、workInProgressRootRenderLanes
     if (root === workInProgressRoot) {
       // We can reset these now that they are finished.
       // 进入 commit 阶段，意味着渲染阶段结束了
@@ -25639,6 +25647,7 @@
 
     var firstEffect;
 
+    // 容器节点是否也发生的更新，如果也发生了更新，将容器节点更新产生的副作用添加到 effList 中
     if (finishedWork.flags > PerformedWork) {
       // A fiber's effect list consists only of its children, not itself. So if
       // the root has an effect, we need to add it to the end of the list. The
@@ -25656,6 +25665,7 @@
       firstEffect = finishedWork.firstEffect;
     }
 
+    // firstEffect 是 effectList 列表的 head 指针
     if (firstEffect !== null) {
       // 原来的上下文
       var prevExecutionContext = executionContext;
@@ -25671,11 +25681,12 @@
       // state of the host tree right before we mutate it. This is where
       // getSnapshotBeforeUpdate is called.
 
+      // ??
       focusedInstanceHandle = prepareForCommit(root.containerInfo);
       shouldFireAfterActiveInstanceBlur = false;
       nextEffect = firstEffect;
 
-      // 处理 mutation 之前的副作用
+      // 处理 dom 操作之前的副作用
       // 主要是类组件的 
       do {
         {
@@ -25707,7 +25718,7 @@
 
       nextEffect = firstEffect;
 
-      // 处理 mutation 操作引发的副作用
+      // 处理 dom 操作引发的副作用
       do {
         {
           invokeGuardedCallback(null, commitMutationEffects, null, root, renderPriorityLevel);
@@ -25894,6 +25905,7 @@
       // nextEffect 为 new fiber node， current 为 old fiber node
       var current = nextEffect.alternate;
 
+      // 处理 dom 节点删除以后的 autoFocus? blur? 逻辑
       if (!shouldFireAfterActiveInstanceBlur && focusedInstanceHandle !== null) {
         if ((nextEffect.flags & Deletion) !== NoFlags) {
           if (doesFiberContain(nextEffect, focusedInstanceHandle)) {
@@ -25909,13 +25921,15 @@
 
       var flags = nextEffect.flags;
 
+      // 处理类组件的 getSnapshotBeforeUpdate 生命周期方法
       if ((flags & Snapshot) !== NoFlags) {  // 快照？？
         setCurrentFiber(nextEffect);
         // 处理类组件的 getSnapshotBeforeUpdate 生命周期方法
         commitBeforeMutationLifeCycles(current, nextEffect);
         resetCurrentFiber();
       }
-      // 使用 useEffect 引发的副作用
+
+      // TODO： 处理 useEffect 类型的副作用？？
       if ((flags & Passive) !== NoFlags) { 
         // If there are passive effects, schedule a callback to flush at
         // the earliest opportunity.
@@ -28099,7 +28113,7 @@
     this.eventTimes = createLaneMap(NoLanes); // 事件时间 ？？ NoLanes 为 0
     // 存储每个赛道的过期时间
     this.expirationTimes = createLaneMap(NoTimestamp); // 过期时间 ？？ NoTimestamo(无时间戳？？) 为 -1
-    this.pendingLanes = NoLanes; // 等待赛道 
+    this.pendingLanes = NoLanes; // 本次渲染等待处理的更新 
     this.suspendedLanes = NoLanes; // 挂起赛道 
     this.pingedLanes = NoLanes; // 畅通的赛道
     this.expiredLanes = NoLanes; // 过期的赛道
