@@ -21,17 +21,19 @@
     <div id="app"></div>
     <script type="text/babel">
 
-        const { useState, useReducer, useEffect, Component } = React;
+        const { useState, useReducer, useEffect, Component, useLayoutEffect } = React;
 
         function Parent () {
             const [list, setList] = useState(['A', 'B', 'C', 'D', 'E', 'F']);
+
+            useLayoutEffect(() => {
+                debugger
+                setList([...list.push('a')]);
+            })
             
             return (
                 <div>
-                    <button onClick={() => setList(['D', 'F', 'A', 'E', 'G', 'H', 'B'])}>修改</button> 
-                    <ul>
-                        <Child value="1"/>
-                    </ul>   
+                    <button onClick={() => setList(['D', 'F', 'A', 'E', 'G', 'H', 'B'])}>修改</button>
                 </div>
             )
 
@@ -43,7 +45,10 @@
             const [value, setValue] = useState(1)
 
             useEffect(() => {
-                alert('Child1')
+                alert('Child1');
+                return () => {
+                    alert('unmount Child1');
+                }
             })
             
             return (<li onClick={() => {

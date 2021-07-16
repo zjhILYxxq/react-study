@@ -6293,11 +6293,12 @@
   }
 
   /**
-   * 
+   * 标记本次更新已经结束
    * @param root fiber root node
-   * @param remainingLanes
+   * @param remainingLanes 遗留的未处理的更新
    */
   function markRootFinished(root, remainingLanes) {
+    // noLongerPendingLanes 表示已经处理掉的更新
     var noLongerPendingLanes = root.pendingLanes & ~remainingLanes;
     // 遗留的更新会在下一次调度任务进行处理
     root.pendingLanes = remainingLanes; // Let's try everything again
@@ -12264,7 +12265,7 @@
   }
 
   /**
-   * 
+   * 处理同步任务队列中的任务
    */
   function flushSyncCallbackQueue() {
     if (immediateQueueCallbackNode !== null) {
@@ -12273,6 +12274,7 @@
       Scheduler_cancelCallback(node);
     }
 
+    // 处理同步任务队列中的任务的实现
     flushSyncCallbackQueueImpl();
   }
 
@@ -12282,6 +12284,7 @@
   function flushSyncCallbackQueueImpl() {
     if (!isFlushingSyncQueue && syncQueue !== null) {
       // Prevent re-entrancy. ？？
+      // 开始处理同步任务队列
       isFlushingSyncQueue = true;
       var i = 0;
 
@@ -22451,6 +22454,10 @@
     }
   }
 
+  /**
+   * @param current
+   * @param destory
+   */
   function safelyCallDestroy(current, destroy) {
     {
       invokeGuardedCallback(null, destroy, null);
@@ -22578,7 +22585,7 @@
    * 根据 tag 处理函数组件注册的 effect
    * 如果 tag 是 Layout | hasEffect， 即 3， 那么就是处理 useLayoutEffect 注册的 effect
    * 如果 tag 是 Passive | hasEffect， 即 5， 那么就是处理 useEffect 注册的 effect
-   * @param tag
+   * @param tag 用于判断是 useEffect 还是 useLayoutEffect
    * @param finishedWork new fiber node
    */
   function commitHookEffectListMount(tag, finishedWork) {
@@ -22621,7 +22628,7 @@
   }
 
   /**
-   * 调度 useEffect 对应的 effect
+   * 异步调度处理 useEffect 对应的 effect
    * @param finishedWork new fiber node
    */
   function schedulePassiveEffects(finishedWork) {
@@ -22639,7 +22646,9 @@
             tag = _effect.tag;
 
         if ((tag & Passive$1) !== NoFlags$1 && (tag & HasEffect) !== NoFlags$1) {
+          // 异步处理上一次 useEffect 副作用的 destory
           enqueuePendingPassiveHookEffectUnmount(finishedWork, effect);
+          // 异步处理本次的 useEffect
           enqueuePendingPassiveHookEffectMount(finishedWork, effect);
         }
 
@@ -22668,7 +22677,7 @@
           // e.g. a destroy function in one component should never override a ref set
           // by a create function in another component during the same commit.
           {
-            // 处理 useLayoutEffect 创建的 effect 
+            // 处理 useLayoutEffect 创建的 effect，直接执行对应的 callback
             commitHookEffectListMount(Layout | HasEffect, finishedWork);
           }
           // 调度 useEffect 对应的 effect
@@ -23891,11 +23900,11 @@
   var legacyErrorBoundariesThatAlreadyFailed = null;
   // 是否有仍未处理的 useEffect 副作用
   var rootDoesHavePassiveEffects = false;
-  // 等待处理的 useEffect 副作用
+  // 有 useEffect 副作用的 fiber root node
   var rootWithPendingPassiveEffects = null;
   // 等待处理的 useEffect 副作用的优先级， 默认为无优先级， 90
   var pendingPassiveEffectsRenderPriority = NoPriority$1;
-  // 
+  // 产生 useEffect 副作用时的渲染更新优先级
   var pendingPassiveEffectsLanes = NoLanes;
   // 
   var pendingPassiveHookEffectsMount = [];
@@ -24627,7 +24636,7 @@
         throw Error( "Should not already be working." );
       }
     }
-    // 刷新被动的副作用？？ 这一步是干啥呢？？
+    // 如果之前有 useEffect 未处理，优先处理 useEffect
     flushPassiveEffects();
     var lanes;
     var exitStatus;
@@ -24729,7 +24738,7 @@
 
     flushPendingDiscreteUpdates(); // If the discrete updates scheduled passive effects, flush them now so that
     // they fire before the next serial event.
-    // 刷新被动的副作用 ？？
+    // 处理 useEffect 的副作用
     flushPassiveEffects();
   }
 
@@ -25588,7 +25597,7 @@
       // no more pending effects.
       // TODO: Might be better if `flushPassiveEffects` did not automatically
       // flush synchronous work at the end, to avoid factoring hazards like this.
-      // 在 commit 开始之前，先检查一下
+      // 在 commit 开始之前，先检查一下是否有之前未处理的 useEffect 副作用要处理
       flushPassiveEffects();
     } while (rootWithPendingPassiveEffects !== null);
 
@@ -25626,7 +25635,7 @@
     // pending time is whatever is left on the root fiber.
     // 本次渲染阶段未处理的更新,全部合并到容器节点对应的 fiber node 中
     var remainingLanes = mergeLanes(finishedWork.lanes, finishedWork.childLanes);
-    // 
+    // 表示本次更新已经完成
     markRootFinished(root, remainingLanes); // Clear already finished discrete updates in case that a later call of
     // `flushDiscreteUpdates` starts a useless render pass which may cancels
     // a scheduled timeout.
@@ -25799,7 +25808,9 @@
       // This commit has passive effects. Stash a reference to them. But don't
       // schedule a callback until after flushing layout work.
       rootDoesHavePassiveEffects = false;
+      // 等待处理的 useEffect 的 root
       rootWithPendingPassiveEffects = root;
+      // 渲染更新优先级
       pendingPassiveEffectsLanes = lanes;
       pendingPassiveEffectsRenderPriority = renderPriorityLevel;
     } else {
@@ -25852,10 +25863,14 @@
       }
     }
 
+    // 同步重新渲染
+    // commit 阶段的优先级为立即优先级 - 99
+    // 如果在 commit 阶段产生新的更新，对应的调度任务都是同步优先级，都需要以最高优先级执行
     if (remainingLanes === SyncLane) {
       // Count the number of times the root synchronously re-renders without
       // finishing. If there are too many, it indicates an infinite update loop.
       if (root === rootWithNestedUpdates) {
+        // 嵌套的更新，超过 50 就抛出一行
         nestedUpdateCount++;
       } else {
         nestedUpdateCount = 0;
@@ -25902,7 +25917,7 @@
    * 处理 mutation 之前的副作用： 类组件的 getSnapshotBeforeUpdate 生命周期方法、
    */
   function commitBeforeMutationEffects() {
-    
+    debugger
     while (nextEffect !== null) {
       // nextEffect 为 new fiber node， current 为 old fiber node
       var current = nextEffect.alternate;
@@ -25958,6 +25973,7 @@
    * @param renderPriorityLevel
    */
   function commitMutationEffects(root, renderPriorityLevel) {
+    debugger
     // TODO: Should probably move the bulk of this function to commitWork.
     while (nextEffect !== null) {
       setCurrentFiber(nextEffect);
@@ -26054,7 +26070,7 @@
    */
   function commitLayoutEffects(root, committedLanes) {
 
-
+    debugger
     while (nextEffect !== null) {
       setCurrentFiber(nextEffect);
       var flags = nextEffect.flags;
@@ -26077,15 +26093,18 @@
     }
   }
   /**
-   * 刷新被动的副作用
+   * 处理 useEffect 副作用
    */
   function flushPassiveEffects() {
     // Returns whether passive effects were flushed.
     if (pendingPassiveEffectsRenderPriority !== NoPriority$1) {
+      // pendingPassiveEffectsRenderPriority 表示等待处理的 useEffect 副作用的优先级，默认为无优先级 - 90
+      // 如果优先级大于普通优先级，即立即优先级、用户优先级，则按照普通优先级来处理，否则按照当前优先级(普通优先级、低优先级、空闲优先级) 来处理
       var priorityLevel = pendingPassiveEffectsRenderPriority > NormalPriority$1 ? NormalPriority$1 : pendingPassiveEffectsRenderPriority;
       pendingPassiveEffectsRenderPriority = NoPriority$1;
 
       {
+        // 处理 useEffect 的 callback,
         return runWithPriority$1(priorityLevel, flushPassiveEffectsImpl);
       }
     }
@@ -26094,7 +26113,9 @@
   }
 
   /**
-   * 
+   * 将要处理的 useEffect 及对应的 fiber node 添加到 pendingPassiveHookEffectsMount 列表中，然后异步调度
+   * @param fiber fiber node
+   * @param effect effect 对象
    */
   function enqueuePendingPassiveHookEffectMount(fiber, effect) {
     pendingPassiveHookEffectsMount.push(effect, fiber);
@@ -26109,7 +26130,8 @@
   }
 
   /**
-   * 
+   * 将 useEffect 副作用添加到 pendingPassiveHookEffectsUnmount 中
+   * 如果 副作用有 destory 方法，将会在浏览器布局、渲染完成以后，先触发
    * @param fiber
    * @parm effect
    */
@@ -26126,6 +26148,7 @@
       }
     }
 
+    // useEffect 副作用的 destory 也是异步处理的
     if (!rootDoesHavePassiveEffects) {
       rootDoesHavePassiveEffects = true;
       scheduleCallback(NormalPriority$1, function () {
@@ -26145,18 +26168,23 @@
   }
 
   /**
-   * 
+   * 处理 useEffect 的副作用的实现
    */
   function flushPassiveEffectsImpl() {
+    debugger
+    // 如果没有要处理的 useEffect 副作用，直接返回
     if (rootWithPendingPassiveEffects === null) {
       return false;
     }
-
+    // 有 useEffect 副作用的 fiber root node
     var root = rootWithPendingPassiveEffects;
+    // 有 useEffect 副作用的渲染更新优先级
     var lanes = pendingPassiveEffectsLanes;
+    // 重置 rootWithPendingPassiveEffects、pendingPassiveEffectsLanes
     rootWithPendingPassiveEffects = null;
     pendingPassiveEffectsLanes = NoLanes;
 
+    // 不能在渲染阶段、commit 阶段处理 useEffect 的副作用
     if (!((executionContext & (RenderContext | CommitContext)) === NoContext)) {
       {
         throw Error( "Cannot flush passive effects while already rendering." );
@@ -26168,6 +26196,7 @@
     }
 
     var prevExecutionContext = executionContext;
+    // 处理 useEffect 副作用时，上下文为 commit 上下文
     executionContext |= CommitContext;
     var prevInteractions = pushInteractions(root); // It's important that ALL pending passive effect destroy functions are called
     // before ANY passive effect create functions are called.
@@ -26180,6 +26209,7 @@
     var unmountEffects = pendingPassiveHookEffectsUnmount;
     pendingPassiveHookEffectsUnmount = [];
 
+    // 处理上一次 useEffect 返回的 destory
     for (var i = 0; i < unmountEffects.length; i += 2) {
       var _effect = unmountEffects[i];
       var fiber = unmountEffects[i + 1];
@@ -26223,6 +26253,7 @@
     var mountEffects = pendingPassiveHookEffectsMount;
     pendingPassiveHookEffectsMount = [];
 
+    // 处理 useEffect 的 callback
     for (var _i = 0; _i < mountEffects.length; _i += 2) {
       var _effect2 = mountEffects[_i];
       var _fiber = mountEffects[_i + 1];
@@ -26255,6 +26286,8 @@
 
     var effect = root.current.firstEffect;
 
+    // 如果 fiber node 要删除，那么 fiber node 对应的 dom 节点要清理掉，
+    // fiber node 的兄弟节点也要清理掉 ？？
     while (effect !== null) {
       var nextNextEffect = effect.nextEffect; // Remove nextEffect pointer to assist GC
 
@@ -26973,6 +27006,10 @@
 
   var actingUpdatesScopeDepth = 0;
 
+  /**
+   * useEffect 副作用处理完毕以后，分离 fiber node
+   * @param fiber
+   */
   function detachFiberAfterEffects(fiber) {
     fiber.sibling = null;
     fiber.stateNode = null;
