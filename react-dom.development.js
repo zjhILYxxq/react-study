@@ -24420,7 +24420,7 @@
       // lanes is a superset of the lanes we started rendering with.
       //
       // So we'll throw out the current work and restart.
-      // ？？
+      // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
       prepareFreshStack(root, NoLanes);
     } else if (exitStatus !== RootIncomplete) {  // 退出渲染阶段(退出的原因：渲染完成、渲染出现异常)
       // 渲染过程中发生可重新渲染的错误？？
@@ -24447,6 +24447,7 @@
       // 渲染过程中发生致命的错误
       if (exitStatus === RootFatalErrored) {
         var fatalError = workInProgressRootFatalError;
+        // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
         prepareFreshStack(root, NoLanes);
         markRootSuspended$1(root, lanes);
         ensureRootIsScheduled(root, now());
@@ -24457,7 +24458,9 @@
 
       debugger
       var finishedWork = root.current.alternate;
+      // 容器节点对应的 fiber node
       root.finishedWork = finishedWork;
+      // 结束的本次渲染要处理的更新的赛道
       root.finishedLanes = lanes;
       // 非阻塞渲染完成
       finishConcurrentRender(root, exitStatus, lanes);
@@ -24636,16 +24639,20 @@
         throw Error( "Should not already be working." );
       }
     }
-    // 如果之前有 useEffect 未处理，优先处理 useEffect
+    // 上一次渲染的 useEffect 未处理，新的渲染开始时，要优先处理
     flushPassiveEffects();
+    // 
     var lanes;
+    // 渲染结束时的状态(用于判断是否完成)
     var exitStatus;
 
     // 
     if (root === workInProgressRoot && includesSomeLane(root.expiredLanes, workInProgressRootRenderLanes)) { // 本次渲染的更新中已经过期的
       // There's a partial tree, and at least one of its lanes has expired. Finish
       // rendering it before rendering the rest of the expired work.
+      // 要处理的更新部分已经过期 ？？
       lanes = workInProgressRootRenderLanes;
+      // 同步渲染
       exitStatus = renderRootSync(root, lanes);
 
       if (includesSomeLane(workInProgressRootIncludedLanes, workInProgressRootUpdatedLanes)) {
@@ -24657,12 +24664,12 @@
         // Note that this only happens when part of the tree is rendered
         // concurrently. If the whole tree is rendered synchronously, then there
         // are no interleaved events.
+        // ？？
         lanes = getNextLanes(root, lanes);
         exitStatus = renderRootSync(root, lanes);
       }
     } else {
-      // 初次挂载？？
-      // getNextLanes 是干啥呢
+      // 获取本次渲染要处理的更新对应的赛道(赛道有对应的优先级)
       lanes = getNextLanes(root, NoLanes);
       // 同步渲染 fiber root node
       exitStatus = renderRootSync(root, lanes);
@@ -24694,6 +24701,7 @@
     // render 阶段有异常
     if (exitStatus === RootFatalErrored) {
       var fatalError = workInProgressRootFatalError;
+      // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
       prepareFreshStack(root, NoLanes);
       markRootSuspended$1(root, lanes);
       ensureRootIsScheduled(root, now());
@@ -24924,9 +24932,9 @@
    * @param lanes
    */
   function prepareFreshStack(root, lanes) {
-    // finishedWork ？？
+    // 容器节点对应的 fiber node
     root.finishedWork = null;
-    // finishedLanes
+    // 本次渲染要处理的更新对应的 lane
     root.finishedLanes = NoLanes;
     // 超时处理
     var timeoutHandle = root.timeoutHandle;
@@ -25155,7 +25163,7 @@
   /**
    * 同步渲染 fiber root node
    * @param root 一个 fiber root node
-   * @param lanes 本次渲染处理的 lanes(更新)
+   * @param lanes 本次渲染处理的更新对应的 lanes
    */
   function renderRootSync(root, lanes) {
     // 先存储当前执行上下文
@@ -25255,7 +25263,7 @@
       // 重置渲染终止时间，即当前时间 + 500 ms()
       resetRenderTimer();
       // 预处理工作，设置当前要处理的 fiber root node 以及对应的 fiber node (阻塞渲染和非阻塞渲染都有这一步)
-      // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress
+      // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
       prepareFreshStack(root, lanes);
       // ？？ 阻塞渲染和非阻塞渲染，都有这一步
       startWorkOnPendingInteractions(root, lanes);
@@ -25611,7 +25619,7 @@
 
     // 容器节点对应的 fiber node
     var finishedWork = root.finishedWork;
-    // 本次渲染处理的更新
+    // 本次渲染处理的更新对应的 lanes
     var lanes = root.finishedLanes;
 
     if (finishedWork === null) {
@@ -26453,6 +26461,7 @@
       // so we can always restart.
       if (workInProgressRootExitStatus === RootSuspendedWithDelay || workInProgressRootExitStatus === RootSuspended && includesOnlyRetries(workInProgressRootRenderLanes) && now() - globalMostRecentFallbackTime < FALLBACK_THROTTLE_MS) {
         // Restart from the root.
+        // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
         prepareFreshStack(root, NoLanes);
       } else {
         // Even though we can't restart right now, we might get an
@@ -28160,7 +28169,7 @@
     this.pingedLanes = NoLanes; // 畅通的赛道
     this.expiredLanes = NoLanes; // 过期的赛道
     this.mutableReadLanes = NoLanes; // 可变读取赛道 
-    this.finishedLanes = NoLanes; // 结束的赛道 
+    this.finishedLanes = NoLanes; // 已经结束的本次渲染要处理的更新对应的 lanes
     this.entangledLanes = NoLanes; // 纠缠的赛道 
     this.entanglements = createLaneMap(NoLanes); // 纠缠？？
 
