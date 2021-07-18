@@ -1859,6 +1859,12 @@
       element.setAttribute('value', toString(getToStringValue(props.value)));
     }
   }
+
+  /**
+   * 
+   * @param element dom element
+   * @param props 
+   */
   function getHostProps$1(element, props) {
     var hostProps = _assign({
       children: undefined
@@ -1890,6 +1896,7 @@
   }
 
   var valuePropNames = ['value', 'defaultValue'];
+
   /**
    * Validation function for `value` and `defaultValue`.
    */
@@ -1916,6 +1923,12 @@
     }
   }
 
+  /**
+   * @param node
+   * @param multiple
+   * @param propValue
+   * @parem setDefaultSelected
+   */
   function updateOptions(node, multiple, propValue, setDefaultSelected) {
     var options = node.options;
 
@@ -1984,11 +1997,19 @@
    */
 
 
+  /**
+   * @param element
+   * @param props
+   */
   function getHostProps$2(element, props) {
     return _assign({}, props, {
       value: undefined
     });
   }
+
+  /**
+   * 
+   */
   function initWrapperState$1(element, props) {
     var node = element;
 
@@ -2008,6 +2029,11 @@
       }
     }
   }
+
+  /**
+   * @param element
+   * @param props
+   */
   function postMountWrapper$2(element, props) {
     var node = element;
     node.multiple = !!props.multiple;
@@ -2019,6 +2045,11 @@
       updateOptions(node, !!props.multiple, props.defaultValue, true);
     }
   }
+
+  /**
+   * @param element
+   * @param props
+   */
   function postUpdateWrapper(element, props) {
     var node = element;
     var wasMultiple = node._wrapperState.wasMultiple;
@@ -2037,6 +2068,11 @@
       }
     }
   }
+
+  /**
+   * @param element
+   * @param props
+   */
   function restoreControlledState$1(element, props) {
     var node = element;
     var value = props.value;
@@ -2063,6 +2099,11 @@
    * The rendered element will be initialized with an empty value, the prop
    * `defaultValue` if specified, or the children content (deprecated).
    */
+
+   /**
+    * @param element
+    * @param props
+    */
   function getHostProps$3(element, props) {
     var node = element;
 
@@ -2147,6 +2188,11 @@
       initialValue: getToStringValue(initialValue)
     };
   }
+
+  /**
+   * @param element
+   * @param props
+   */
   function updateWrapper$1(element, props) {
     var node = element;
     var value = getToStringValue(props.value);
@@ -9672,7 +9718,7 @@
   }
 
   /**
-   * 
+   * dom 节点是首次挂载，要给 dom 节点添加初始属性
    * @param domElement dom 节点
    * @param tag dom 节点的标签类型
    * @param rawProps dom 节点上的属性
@@ -9819,6 +9865,14 @@
     }
   } // Calculate the diff between the two objects.
 
+  /**
+   * 比较 dom element 的 old props 和 new props，找出变化的 props
+   * @param domeElement dom element
+   * @param tag dom element 的标签类型
+   * @param lastRawProps old props
+   * @param nexeRawProps new props
+   * @param rootContainerElement
+   */
   function diffProperties(domElement, tag, lastRawProps, nextRawProps, rootContainerElement) {
     {
       validatePropertiesInDevelopment(tag, nextRawProps);
@@ -9828,6 +9882,7 @@
     var lastProps;
     var nextProps;
 
+    // 获取 dom element 的 old props 和 new props
     switch (tag) {
       case 'input':
         lastProps = getHostProps(domElement, lastRawProps);
@@ -9870,12 +9925,13 @@
     var styleName;
     var styleUpdates = null;
 
-    for (propKey in lastProps) {
+    for (propKey in lastProps) { // 遍历 old props
+      // 
       if (nextProps.hasOwnProperty(propKey) || !lastProps.hasOwnProperty(propKey) || lastProps[propKey] == null) {
         continue;
       }
 
-      if (propKey === STYLE) {
+      if (propKey === STYLE) {  // style 属性
         var lastStyle = lastProps[propKey];
 
         for (styleName in lastStyle) {
@@ -9901,7 +9957,7 @@
       }
     }
 
-    for (propKey in nextProps) {
+    for (propKey in nextProps) {  // 遍历 new props
       var nextProp = nextProps[propKey];
       var lastProp = lastProps != null ? lastProps[propKey] : undefined;
 
@@ -10899,7 +10955,7 @@
   }
 
   /**
-   * 给 parent dom node 添加子节点
+   * 基于 appendChild 方法给 parent dom node 添加子节点
    * @param parentInstance parent dom node
    * @param child child dom node
    */
@@ -10918,9 +10974,19 @@
   function finalizeInitialChildren(domElement, type, props, rootContainerInstance, hostContext) {
     // 
     setInitialProperties(domElement, type, props, rootContainerInstance);
+    // input、textarea、select 类型的 dom 节点是否需要自动 force
     return shouldAutoFocusHostComponent(type, props);
   }
 
+  /**
+   * dom 节点更新之前的准备工作，即对比 old props 和 new props，找到变化的 props
+   * @param domElement  dom element
+   * @param type dom element 的标签类型
+   * @param oldProps old props
+   * @param newProps new props
+   * @param rootContainerInstance
+   * @param hostContext
+   */
   function prepareUpdate(domElement, type, oldProps, newProps, rootContainerInstance, hostContext) {
     {
       var hostContextDev = hostContext;
@@ -10931,7 +10997,7 @@
         validateDOMNesting(null, string, ownAncestorInfo);
       }
     }
-
+    // 比较 dom element 的 old props 和 new props，找到变化的 props
     return diffProperties(domElement, type, oldProps, newProps);
   }
   /**
@@ -21160,6 +21226,7 @@
   function markUpdate(workInProgress) {
     // Tag the fiber with an update effect. This turns a Placement into
     // a PlacementAndUpdate.
+    // flags，fiber node 的副作用标记
     workInProgress.flags |= Update;
   }
 
@@ -21171,9 +21238,13 @@
     workInProgress.flags |= Ref;
   }
 
+  // 给 dom 节点添加 child dom 节点
   var appendAllChildren;
+  // 更新容器节点
   var updateHostContainer;
+  // 更新 dom 节点对应的 fiber node
   var updateHostComponent$1;
+  // 更新文本节点敌营的 fiber node
   var updateHostText$1;
 
   {
@@ -21194,9 +21265,11 @@
       while (node !== null) {
         if (node.tag === HostComponent || node.tag === HostText) {
           // 如果 child fiber node 对应的是原生的 dom 节点或者文本节点
-          // 将 child fiber node 对应的 dom 节点添加到 parent fiber node 对应的 dom 节点中
+          // 基于 appendChild 方法将 child fiber node 对应的 dom 节点添加到 parent fiber node 对应的 dom 节点中
           appendInitialChild(parent, node.stateNode);
         } else if (node.tag === HostPortal) ; else if (node.child !== null) {
+          // node 不是 dom element 或者文本节点类型的 fiber node
+          // 一般情况下， node 为组件对应的 fiber node
           node.child.return = node;
           node = node.child;
           continue;
@@ -21205,7 +21278,7 @@
         if (node === workInProgress) {
           return;
         }
-        // ?? 这一块儿的逻辑？？
+        // 找到未处理的 fiber node，直到 workInProgress 为止
         while (node.sibling === null) {
           if (node.return === null || node.return === workInProgress) {
             return;
@@ -21219,18 +21292,28 @@
         node = node.sibling;
       }
     };
-
+    // 更新容器节点方法是一个空函数，表明容器节点更新没啥要做的
     updateHostContainer = function (workInProgress) {// Noop
     };
 
+    /**
+     * 更新 dom 节点 (dom 节点的更新，主要是比较 dom 节点的 old props 和 new props，找到变化的 props，然后在 commit 节点更新 dom 节点的属性)
+     * @param current
+     * @param workInProgress
+     * @param type
+     * @param newProps
+     * @param rootContainerInstance
+     */
     updateHostComponent$1 = function (current, workInProgress, type, newProps, rootContainerInstance) {
       // If we have an alternate, that means this is an update and we need to
       // schedule a side-effect to do the updates.
+      // old props
       var oldProps = current.memoizedProps;
 
       if (oldProps === newProps) {
         // In mutation mode, this is sufficient for a bailout because
         // we won't touch this node even if children changed.
+        // 属性没有变化， dom 节点也没有啥要更新的
         return;
       } // If we get updated because one of our children updated, we don't
       // have newProps so we'll have to reuse them.
@@ -21242,19 +21325,28 @@
       var currentHostContext = getHostContext(); // TODO: Experiencing an error where oldProps is null. Suggests a host
       // component is hitting the resume path. Figure out why. Possibly
       // related to `hidden`.
-
+      // 对比 dom 节点的 old props 和 new props，找到变化的 props
       var updatePayload = prepareUpdate(instance, type, oldProps, newProps, rootContainerInstance, currentHostContext); // TODO: Type this specific to this type of component.
 
       workInProgress.updateQueue = updatePayload; // If the update payload indicates that there is a change or if there
       // is a new ref we mark this as an update. All the work is done in commitWork.
-
+      // 如果有变化的 props，要在 commit 节点更新 dom 节点的属性
       if (updatePayload) {
+        // 标记 dom 节点需要更新
         markUpdate(workInProgress);
       }
     };
 
+    /**
+     * 更新文本节点
+     * @param current 
+     * @param workInProgress fiebr node
+     * @param oldText 旧的文本内容
+     * @param newText 新的文本内容
+     */
     updateHostText$1 = function (current, workInProgress, oldText, newText) {
       // If the text differs, mark it as an update. All the work in done in commitWork.
+      // 文本内容发生变化，要更新文本内容
       if (oldText !== newText) {
         markUpdate(workInProgress);
       }
@@ -21342,7 +21434,8 @@
   }
 
   /**
-   * 
+   * completeWork 主要是针对 dom element 类型的 fiber node
+   * 如果是挂载阶段，创建新的 dom 节点；如果是更新阶段，通过查看 dom 节点的属性是否发生变化，来决定 dom 节点是否需要更新
    * @param current  old fiber node
    * @param workInProgress new fiber node
    * @param rendrLanes 本次渲染要处理的更新
@@ -21352,10 +21445,10 @@
     // new props
     var newProps = workInProgress.pendingProps;
 
-    switch (workInProgress.tag) {
-      case IndeterminateComponent:  // 未确定的组件
+    switch (workInProgress.tag) { // fiber node 的类型
+      case IndeterminateComponent:  // 未确定的组件(函数类型组件，但是无法确定到底是什么类型的函数组件)
       case LazyComponent:  // lazy component
-      case SimpleMemoComponent: // ？？
+      case SimpleMemoComponent: // 简单的 memo 组件
       case FunctionComponent: // 函数组件
       case ForwardRef:  // forward ref
       case Fragment: // fragment
@@ -21381,6 +21474,7 @@
           popHostContainer(workInProgress);
           popTopLevelContextObject(workInProgress);
           resetWorkInProgressVersions();
+          // fiber root node
           var fiberRoot = workInProgress.stateNode;
 
           if (fiberRoot.pendingContext) {
@@ -21405,12 +21499,12 @@
               workInProgress.flags |= Snapshot;
             }
           }
-
+          // 更新容器节点，其实啥都不用做，容器节点没有啥要更新的
           updateHostContainer(workInProgress);
           return null;
         }
 
-      case HostComponent:  // 原生的 dom 节点
+      case HostComponent:  // dom element 类型的 fiber node
         {
           // 
           popHostContext(workInProgress);
@@ -21420,14 +21514,15 @@
           var type = workInProgress.type;
           // current 为 old fiber node， workInProgress.stateNode 为新的 dom 节点,
           if (current !== null && workInProgress.stateNode != null) {
-            // update 阶段？？
+            // 比较 dom 节点的 old props 和 new props，找到变化的 props，然后打上 update 标记，然后在 commit 节点更新 dom 节点的属性
             updateHostComponent$1(current, workInProgress, type, newProps, rootContainerInstance);
 
             if (current.ref !== workInProgress.ref) {
+              // dom 节点对应的 ref 发生变化，也要标记
               markRef$1(workInProgress);
             }
           } else {
-            // ？？
+            // 挂载阶段
             if (!newProps) {
               if (!(workInProgress.stateNode !== null)) {
                 {
@@ -21463,7 +21558,7 @@
               workInProgress.stateNode = instance; // Certain renderers require commit-time effects for initial mount.
               // (eg DOM renderer supports auto-focus for certain elements).
               // Make sure such renderers get scheduled for later work.
-              // 给创建好的 dom 节点添加属性等
+              // 首次挂载好的 dom 节点，要添加一些默认属性
               if (finalizeInitialChildren(instance, type, newProps, rootContainerInstance)) {
                 // 如果需要 auto force，要给 fiber node 打 update 标签
                 markUpdate(workInProgress);
@@ -21487,7 +21582,7 @@
           if (current && workInProgress.stateNode != null) {
             var oldText = current.memoizedProps; // If we have an alternate, that means this is an update and we need
             // to schedule a side-effect to do the updates.
-
+            // 更新文本内容
             updateHostText$1(current, workInProgress, oldText, newText);
           } else {
             if (typeof newText !== 'string') {
@@ -21869,6 +21964,11 @@
     }
   }
 
+  /**
+   * 
+   * @param workInProgress  fiber node
+   * @param renderLanes 本次渲染要处理的更新对应的 lane
+   */
   function unwindWork(workInProgress, renderLanes) {
     switch (workInProgress.tag) {
       case ClassComponent:
@@ -25214,9 +25314,8 @@
       }
     }
 
-    // 渲染结束了 ？？
+    // 渲染阶段结束，重置 workInProgressRoot、workInProgressRootRenderLanes
     workInProgressRoot = null;
-    // 
     workInProgressRootRenderLanes = NoLanes;
     return workInProgressRootExitStatus;
   } // The work loop is an extremely hot path. Tell Closure not to inline it.
@@ -25243,6 +25342,7 @@
 
   /**
    * 非阻塞渲染 fiber root node
+   * 以容器节点对应的 fiber node 为起点，开始渲染工作
    * @param root fiber root node
    * @param lanes 本次非阻塞渲染对应的 lanes(更新)
    */
@@ -25350,11 +25450,15 @@
 
     // fiber node 渲染完成，将全局变量 current 中缓存的 fiber node 清理掉
     resetCurrentFiber();
+    // new fiber node 已经处理完毕， new props 会存储到 memoizedProps 中
+    // 此次的 new fiber node 会作为下一次渲染的 old fiber node，相应的 new props 会作为下一次的 old props
     unitOfWork.memoizedProps = unitOfWork.pendingProps;
 
     if (next === null) {
       // 如果没有 child fiber node 要处理，则 fiber node 进入 render 阶段的第二阶段，即生成 fiber node 对应的 dom 节点
       // If this doesn't spawn new work, complete the current work.
+      // completeUnitOfWork 阶段主要是给当前 fiber node构建对应的 dom 节点，收集对应的副作用，然后确定下一个要渲染的 fiber node
+      // 如果下一个要渲染的 fiber node 为 null，那么整个渲染过程就要结束了
       completeUnitOfWork(unitOfWork);
     } else {
       workInProgress = next;
@@ -25372,7 +25476,7 @@
     
     // Attempt to complete the current unit of work, then move to the next
     // sibling. If there are no more siblings, return to the parent fiber.
-    // 要处理的 fiber node
+    // 要处理的 fiber node， 即 new fiber node
     var completedWork = unitOfWork;
 
     do {
@@ -25385,9 +25489,10 @@
       var returnFiber = completedWork.return; // Check if the work completed or if something threw.
 
       if ((completedWork.flags & Incomplete) === NoFlags) {
-        // Incomplete 表示为完成，即 render 的第一阶段未完成，出现了异常
+        // Incomplete 表示未完成，即 render 的第一阶段未完成，出现了异常
         // 如果 compltedWork.flags & Incomplete 不是 0， 说明 compltedWork 打了 Incomplte 标记，有异常
         // 反之，说明 compltedWork 的第一阶段已经完成
+
         setCurrentFiber(completedWork);
         var next = void 0;
 
@@ -25397,6 +25502,7 @@
           next = completeWork(current, completedWork, subtreeRenderLanes);
         } else {
           startProfilerTimer(completedWork);
+          // 
           next = completeWork(current, completedWork, subtreeRenderLanes); // Update render duration assuming we didn't error.
 
           stopProfilerTimerIfRunningAndRecordDelta(completedWork, false);
@@ -25409,7 +25515,9 @@
           workInProgress = next;
           return;
         }
-
+        // 重置当前 fiber node 的 childLanes
+        // 主要是合并 child 的 lanes 和 childLanes，如果为空，表明 child fiber node 的所有更新都已经处理完毕；
+        // 如果不为空，表明还有遗留的 child fiber node 的更新还没有处理完
         resetChildLanes(completedWork);
 
         if (returnFiber !== null && // Do not append effects to parents if a sibling failed to complete
@@ -25451,6 +25559,7 @@
           }
         }
       } else {
+        // 渲染未完成
         // This fiber did not complete because something threw. Pop values off
         // the stack without entering the complete phase. If this is a boundary,
         // capture values if possible.
@@ -25488,6 +25597,8 @@
           returnFiber.flags |= Incomplete;
         }
       }
+
+
       // 兄弟 fiber node
       var siblingFiber = completedWork.sibling;
 
@@ -25511,8 +25622,9 @@
   }
 
   /**
-   * 
-   * @param completedWork
+   * 重置当前 fiber node 的 childLanes
+   * 重置以后， childLanes 为 child fiber node 未处理的更新
+   * @param completedWork fiber node
    */
   function resetChildLanes(completedWork) {
     if ( // TODO: Move this check out of the hot path by moving `resetChildLanes`
@@ -25566,7 +25678,7 @@
       completedWork.treeBaseDuration = treeBaseDuration;
     } else {
       var _child = completedWork.child;
-
+      /
       while (_child !== null) {
         newChildLanes = mergeLanes(newChildLanes, mergeLanes(_child.lanes, _child.childLanes));
         _child = _child.sibling;
