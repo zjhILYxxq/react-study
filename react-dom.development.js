@@ -15192,6 +15192,7 @@
      * @param lanes lanes ？？
      */
     function reconcileChildrenArray(returnFiber, currentFirstChild, newChildren, lanes) {
+      // NEXT-STUDY
       // This algorithm can't optimize by searching from both ends since we
       // don't have backpointers on fibers. I'm trying to see how far we can get
       // with that model. If it ends up not being worth the tradeoffs, we can
@@ -18956,6 +18957,7 @@
       compare = compare !== null ? compare : shallowEqual;
 
       if (compare(prevProps, nextProps) && current.ref === workInProgress.ref) {
+        // 看 child fiber node 是否需要更新，如果需要，返回 child fiber node； 不需要，直接返回 null
         return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
       }
     } // React DevTools reads this flag.
@@ -19041,6 +19043,7 @@
           // 此时如果有 child fiber node 发生更新的，开始处理 child fiber node
           // 如果没有 child fiber node 发生更新，那么直接返回 null
           workInProgress.lanes = current.lanes;
+          // 看 child fiber node 是否需要更新，如果需要，返回 child fiber node； 不需要，直接返回 null
           return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
         } else if ((current.flags & ForceUpdateForLegacySuspense) !== NoFlags) {
           // This is a special case that only exists for legacy mode.
@@ -19231,7 +19234,7 @@
     if (current !== null && !didReceiveUpdate) {
       // 
       bailoutHooks(current, workInProgress, renderLanes);
-      // 
+      // 看 child fiber node 是否需要更新，如果需要，返回 child fiber node； 不需要，直接返回 null
       return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
     } // React DevTools reads this flag.
 
@@ -19360,6 +19363,7 @@
         invalidateContextProvider(workInProgress, Component, false);
       }
       // 类组件不需要渲染，那么直接把 old fiber node 的所有 child fiber node 拷贝给 new fiber node
+      // 看 child fiber node 是否需要更新，如果需要，返回 child fiber node； 不需要，直接返回 null
       return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
     }
     // 类组价对应的 instance 实例
@@ -19481,6 +19485,7 @@
     // 
     if (nextChildren === prevChildren) {
       resetHydrationState();
+      // 看 child fiber node 是否需要更新，如果需要，返回 child fiber node； 不需要，直接返回 null
       return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
     }
     // workInProgress 为 fiber node， stateNode 为对应的 fiber root node 
@@ -20655,6 +20660,7 @@
       if (changedBits === 0) {
         // No change. Bailout early if children are the same.
         if (oldProps.children === newProps.children && !hasContextChanged()) {
+          // 看 child fiber node 是否需要更新，如果需要，返回 child fiber node； 不需要，直接返回 null
           return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
         }
       } else {
@@ -20757,6 +20763,7 @@
       // The children don't have any work either. We can skip them.
       // TODO: Once we add back resuming, we should check if the children are
       // a work-in-progress set. If so, we need to transfer their effects.
+      // fiber node 的所有 child fiber node 都没有更新，那就不需要 diff 处理，fiber node 的 diff 过程也结束了
       return null;
     } else {
       // This fiber doesn't have work, but its subtree does. Clone the child
@@ -20829,7 +20836,7 @@
     }
   }
   /**
-   * 判断 fiber node 是否需要更新
+   * 对当前 fiber node 进行 diff 比较，判断 fiber node 是否可以复用，并返回下一个待 diff 的 child fiber node
    * 判断策略：
    * - 如果 old fiber node 为空，那就不是 更新操作了，而是挂载操作；
    * - old fiber node 存在，如果 props 发生变化、依赖的 context 发生变化、fiber node 的类型整个都变了，那么 fiber node 肯定是要更新的；
@@ -21036,6 +21043,7 @@
         // 判断 new fiber node - workInProgress 的 子节点是否需要更新
         // 如果需要更新(renderLanes 和 childLanes 有交集)， 返回 workInProgress 的子节点
         // 如果不需要更新，直接返回 null
+        // 看 child fiber node 是否需要更新，如果需要，返回 child fiber node； 不需要，直接返回 null
         return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
       } else {
         // 强制更新 ？？
@@ -25425,7 +25433,7 @@
    * @param unitOfwork 待处理的 fiber node
    */
   function performUnitOfWork(unitOfWork) {
-    
+    debugger
     // The current, flushed, state of this fiber is the alternate. Ideally
     // nothing should rely on this, but relying on it here means that we don't
     // need an additional field on the work in progress.
@@ -25440,6 +25448,7 @@
       // 
       startProfilerTimer(unitOfWork);
       // 以 current 为参照物，对比 unitOfWork， 更新 fiber node， 并返回要处理的 child fiber node
+      // 如果返回 null， 那么就需要对 unitOfWork 进行 completeUnitOfWork 操作(创建 dom 节点、收集副作用)
       next = beginWork$1(current, unitOfWork, subtreeRenderLanes);
       stopProfilerTimerIfRunningAndRecordDelta(unitOfWork, true);
     } else {
@@ -26804,6 +26813,7 @@
       var originalWorkInProgressCopy = assignFiberPropertiesInDEV(dummyFiber, unitOfWork);
 
       try {
+        // 对当前 fiber node 进行 diff 比较，确定 old fiber node 是否可以复用，然后返回下一个待 diff 的 fiber node
         return beginWork(current, unitOfWork, lanes);
       } catch (originalError) {
         // react render 阶段发生的异常
@@ -27701,7 +27711,7 @@
   } // This is used to create an alternate fiber to do work on.
 
   /**
-   * 基于 old fiber node， 返回一个新的 fiber node
+   * 基于 old fiber node， 返回一个新的 fiber node()
    * @param current 一个 fiber node
    * @param pendingProps
    */
@@ -29070,6 +29080,7 @@
       }
     };
   }
+
   /**
    *
    */
