@@ -29290,6 +29290,14 @@
 
     return legacyRenderSubtreeIntoContainer(null, element, container, false, callback);
   }
+
+  /**
+   * 
+   * @param parentComponent
+   * @param element
+   * @param containerNode
+   * @param callback
+   */
   function unstable_renderSubtreeIntoContainer(parentComponent, element, containerNode, callback) {
     if (!isValidContainer(containerNode)) {
       {
@@ -29379,6 +29387,11 @@
   setRestoreImplementation(restoreControlledState$3);
   setBatchingImplementation(batchedUpdates$1, discreteUpdates$1, flushDiscreteUpdates, batchedEventUpdates$1);
 
+  /**
+   * 
+   * @param  children
+   * @param container
+   */
   function createPortal$1(children, container) {
     var key = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
 
@@ -29393,11 +29406,22 @@
     return createPortal(children, container, null, key);
   }
 
+  /**
+   * 
+   * @param parentComponent
+   * @param element
+   * @param containerNode
+   * @param callback
+   */
   function renderSubtreeIntoContainer(parentComponent, element, containerNode, callback) {
 
     return unstable_renderSubtreeIntoContainer(parentComponent, element, containerNode, callback);
   }
 
+  /**
+   * @param children
+   * @param container
+   */
   function unstable_createPortal(children, container) {
     var key = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
 
