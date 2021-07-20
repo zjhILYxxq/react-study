@@ -25,15 +25,11 @@
 
         function Parent () {
             const [list, setList] = useState(['A', 'B', 'C', 'D', 'E', 'F']);
-
-            // useLayoutEffect(() => {
-            //     debugger
-            //     setList([...list.push('a')]);
-            // })
             
             return (
                 <div>
                     <button onClick={() => setList(['D', 'F', 'A', 'E', 'G', 'H', 'B'])}>修改</button>
+                    {list.map(item => <Child1 key={item} value={item} />  )}
                 </div>
             )
 
@@ -42,19 +38,16 @@
         const obj = {name: 'zjh'}
 
         const Child1 = props => {
-            const [value, setValue] = useState(1)
+            // const [value, setValue] = useState(1)
 
-            useEffect(() => {
-                alert('Child1');
-                return () => {
-                    alert('unmount Child1');
-                }
-            })
+            // useEffect(() => {
+            //     alert('Child1');
+            //     return () => {
+            //         alert('unmount Child1');
+            //     }
+            // })
             
-            return (<li onClick={() => {
-                setValue(value => value - 1);
-                setValue(value => value + 1);
-            }}>{value}</li>)
+            return (<li>{props.value}</li>)
 
         }
 

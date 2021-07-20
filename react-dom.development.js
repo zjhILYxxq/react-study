@@ -15273,7 +15273,7 @@
           }
         }
 
-        // 确定 new fiber node 的 in
+        
         lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
 
         if (previousNewFiber === null) {
@@ -15372,7 +15372,11 @@
     }
 
     /**
-     * 
+     *
+     * @param returnFiber
+     * @param currentFirstChildChild
+     * @param newChildrenIterable
+     * @param lanes
      */
     function reconcileChildrenIterator(returnFiber, currentFirstChild, newChildrenIterable, lanes) {
       // This is the same implementation as reconcileChildrenArray(),
@@ -23470,31 +23474,39 @@
   }
 
   /**
+   * 使用原生的 insertBefore 方法将指定 dom 节点添加到 before 对应的 dom 节点之前
    * 
-   * @param node
-   * @param before
-   * @param parent
+   * @param node 要做插入操作的节点
+   * @param before insertBefore操作执行时的锚点
+   * @param parent parent dom 节点
    */
   function insertOrAppendPlacementNode(node, before, parent) {
     var tag = node.tag;
+    // 判断要中 insert 操作的是否是原生的 dom 节点
     var isHost = tag === HostComponent || tag === HostText;
 
     if (isHost || enableFundamentalAPI ) {
+      // 如果是原生的 dom 节点，直接使用 insertBefore 做插入操作
       var stateNode = isHost ? node.stateNode : node.stateNode.instance;
 
       if (before) {
+        // 有锚点，使用 insertBefore 做 insert、move 操作
         insertBefore(parent, stateNode, before);
       } else {
+        // 没有锚点，直接使用 appendChild 做 insert、move 操作
         appendChild(parent, stateNode);
       }
     } else if (tag === HostPortal) ; else {
+      // 要做 insert、move 操作的是组件类型的节点
       var child = node.child;
 
       if (child !== null) {
+        // 将子节点做 move、insert 操作
         insertOrAppendPlacementNode(child, before, parent);
         var sibling = child.sibling;
 
         while (sibling !== null) {
+          // 有兄弟节点，也做 move、insert 操作
           insertOrAppendPlacementNode(sibling, before, parent);
           sibling = sibling.sibling;
         }
@@ -25709,7 +25721,7 @@
       completedWork.treeBaseDuration = treeBaseDuration;
     } else {
       var _child = completedWork.child;
-      /
+      // 
       while (_child !== null) {
         newChildLanes = mergeLanes(newChildLanes, mergeLanes(_child.lanes, _child.childLanes));
         _child = _child.sibling;
