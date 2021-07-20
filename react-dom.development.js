@@ -14743,9 +14743,11 @@
 
       return null;
     }
+
     /**
-     * @param returnFiber
-     * @param currentFirstChild
+     * 将 old fiber node 及其兄弟 fiber node 收集到一个 map 中，key 值为 fiber node 的 key 或者 index
+     * @param returnFiber parent fiber node
+     * @param currentFirstChild old fiber node
      */
     function mapRemainingChildren(returnFiber, currentFirstChild) {
       // Add the remaining children to a temporary map so that we can find them by
@@ -14878,6 +14880,7 @@
      * @param lanes
      */
     function updateElement(returnFiber, current, element, lanes) {
+      // 如果 old fiber node 存在，要比较类型是否相同
       if (current !== null) {
         if (current.elementType === element.type || ( // Keep this check inline so it only runs on the false path:
          isCompatibleFamilyForHotReloading(current, element) )) {
@@ -14896,7 +14899,7 @@
         }
       } // Insert
 
-      // 新建一个新的 fiber node
+      // old fiber node 不存在，直接新建一个新的 fiber node
       var created = createFiberFromElement(element, returnFiber.mode, lanes);
       created.ref = coerceRef(returnFiber, current, element);
       created.return = returnFiber;
@@ -15010,7 +15013,10 @@
     }
 
     /**
-     * 更新槽？？
+     * 对比 old fiber node 和 new react element，判断 old fiber node 是否可以复用
+     * 如果可以复用，返回原来的 fiber node；如果不可以复用，返回 new fiber node
+     * old fiber node 要可复用，需要保证 key 值、fiber node 的类型相同
+     * 注意，如果 key 值不相等，那么就会返回 null
      * @param returnFiber  parent fiber node 
      * @param oldFiber  old fiber node
      * @param newChild new react element
@@ -15025,7 +15031,8 @@
         // Text nodes don't have keys. If the previous node is implicitly keyed
         // we can continue to replace it without aborting even if it is not a text
         // node.
-        // 
+        // 如果有 key 值，说明 old fiber node 可能是 dom 节点或者组件节点，此时 new child是字符串或者数字
+        //
         if (key !== null) {
           return null;
         }
@@ -15046,6 +15053,7 @@
                 // 只要类型一样，就可以复用 old fiber node
                 return updateElement(returnFiber, oldFiber, newChild, lanes);
               } else {
+                // 如果 key 值不相等，直接返回 null
                 return null;
               }
             }
@@ -15081,7 +15089,8 @@
     }
 
     /**
-     * 将每一个 new react element 和剩余的 old fiber node 做匹配，湖区 new react element 对应的 fiber node
+     * 将每一个 new react element 和剩余的 old fiber node 做匹配，获取 new react element 对应的 fiber node
+     * 如果没有找到， 返回 null
      * @param existingChildren 剩余的全部 old fiber node，是一个 map， key 为 fiber node 的 key 值， value 为 fiber node
      * @param returnFiber parent fiber node
      * @param newIdx new react element 的 index
@@ -15089,7 +15098,7 @@
      * @param lanes
      */
     function updateFromMap(existingChildren, returnFiber, newIdx, newChild, lanes) {
-      // 
+      // new react 是一个字符串或者数字
       if (typeof newChild === 'string' || typeof newChild === 'number') {
         // Text nodes don't have keys, so we neither have to check the old nor
         // new node for the key. If both are text nodes, they match.
@@ -15110,6 +15119,8 @@
 
               // 比较 old fiber node 和 new react element，只要对应的一样，就可以复用 old fiber node
               // 否则要新建一个 fiber node
+              // 如果能找到 key(index) 匹配的 fiber node 且 fiber node 的类型相同，就可以复用；
+              // 否则，就要新建一个 fiber node
               return updateElement(returnFiber, _matchedFiber, newChild, lanes);
             }
 
@@ -15192,7 +15203,7 @@
      * @param lanes lanes ？？
      */
     function reconcileChildrenArray(returnFiber, currentFirstChild, newChildren, lanes) {
-      // NEXT-STUDY
+      // next-study
       // This algorithm can't optimize by searching from both ends since we
       // don't have backpointers on fibers. I'm trying to see how far we can get
       // with that model. If it ends up not being worth the tradeoffs, we can
@@ -15225,7 +15236,7 @@
       var newIdx = 0;   // new fiber node 的位置
       var nextOldFiber = null; // 下一个 old child fiber node
 
-      // 如果 oldFiber 为 null，那么意味着此时是 mount 操作
+      
       for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
 
         // 
@@ -15236,6 +15247,9 @@
           nextOldFiber = oldFiber.sibling;   // 获取old brother fiber node
         }
 
+        // 对比 old fiber node 和 new react element， 判断 old fiber node 是否可以复用
+        // 如果 key 值相等和 fiber node 的类型相同，那就可以复用；
+        // 如果 key 值不相等，那么返回的 newFiber 为 null；
         var newFiber = updateSlot(returnFiber, oldFiber, newChildren[newIdx], lanes);
 
         if (newFiber === null) {
@@ -15247,6 +15261,7 @@
             oldFiber = nextOldFiber;
           }
 
+          // 有 new react element，但却没有返回一个 fiber node，直接中断循环
           break;
         }
 
@@ -15258,6 +15273,7 @@
           }
         }
 
+        // 确定 new fiber node 的 in
         lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
 
         if (previousNewFiber === null) {
@@ -15292,7 +15308,7 @@
           if (_newFiber === null) {
             continue;
           }
-          // 对比新旧 fiber node，确定 new fiber node 是否需要移动
+          // 此时 old fiber node 都已经没有了， 新的 fiber node 做的是插入操作
           lastPlacedIndex = placeChild(_newFiber, lastPlacedIndex, newIdx);
 
           if (previousNewFiber === null) {
@@ -15310,23 +15326,27 @@
         return resultingFirstChild;
       } // Add all children to a key map for quick lookups.
 
-
+      // 将 old fiber node 及其兄弟 fiber node 收集到一个 map 中，key 值为 fiber node 的 key 或者 index
+      // existingChildren 是一个 map
       var existingChildren = mapRemainingChildren(returnFiber, oldFiber); // Keep scanning and use the map to restore deleted items as moves.
 
       for (; newIdx < newChildren.length; newIdx++) {
+        // 从 existingChildren 中找到与 new react element 的 key(index) 匹配的 old fiber node，如果没有，新建一个 fiber node
         var _newFiber2 = updateFromMap(existingChildren, returnFiber, newIdx, newChildren[newIdx], lanes);
 
         if (_newFiber2 !== null) {
+          // 找到匹配的 fiber node
           if (shouldTrackSideEffects) {
             if (_newFiber2.alternate !== null) {
               // The new fiber is a work in progress, but if there exists a
               // current, that means that we reused the fiber. We need to delete
               // it from the child list so that we don't add it to the deletion
               // list.
+              // 从 existingChildren 中移除已经对比过的 fiber node
               existingChildren.delete(_newFiber2.key === null ? newIdx : _newFiber2.key);
             }
           }
-
+          // 比较 new fiber node 和 old fiber node 的未知，确定 new fiber node 是否需要做(移动、插入操作)；
           lastPlacedIndex = placeChild(_newFiber2, lastPlacedIndex, newIdx);
 
           if (previousNewFiber === null) {
@@ -15342,6 +15362,7 @@
       if (shouldTrackSideEffects) {
         // Any existing children that weren't consumed above were deleted. We need
         // to add them to the deletion list.
+        // 到这一步，那
         existingChildren.forEach(function (child) {
           return deleteChild(returnFiber, child);
         });
@@ -15495,7 +15516,8 @@
         return resultingFirstChild;
       } // Add all children to a key map for quick lookups.
 
-
+      // 将 old fiber node 及其兄弟 fiber node 收集到一个 map 中，key 值为 fiber node 的 key 或者 index
+      // existingChildren 是一个 map
       var existingChildren = mapRemainingChildren(returnFiber, oldFiber); // Keep scanning and use the map to restore deleted items as moves.
 
       for (; !step.done; newIdx++, step = newChildren.next()) {
@@ -26103,6 +26125,7 @@
    */
   function commitMutationEffects(root, renderPriorityLevel) {
     debugger
+    // next-study
     // TODO: Should probably move the bulk of this function to commitWork.
     while (nextEffect !== null) {
       setCurrentFiber(nextEffect);
