@@ -2279,6 +2279,12 @@
     }
   }
 
+  /**
+   * 创建一个 react element
+   * @param type
+   * @param props
+   * @param children
+   */
   function createElementWithValidation(type, props, children) {
     var validType = isValidElementType(type); // We warn in this case but don't throw. We expect the element creation to
     // succeed and there will likely be errors in render.
