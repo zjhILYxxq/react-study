@@ -23,12 +23,16 @@
         const Parent = () => {
             const [list, setList] = useState(['A', 'B', 'C', 'D']);
             const [visible, setVisible] = useState(true);
+            const ref = useRef(null);
+            useEffect(() => {
+                console.log('ref', ref)
+            });
             return (
                 <React.Fragment>
-                    {visible && <button onClick={() => {
+                    <button ref={ref} onClick={() => {
                         setVisible(false);
                         setList(['C', 'B', 'D', 'E']);
-                    }}>修改</button>}
+                    }}>修改</button>
                     <ul>
                         {list.map(item => <ClassChild value={item} />)}
                         {list.map(item => <ClassChild key={item} value={item.toLocaleLowerCase()} />)}
@@ -41,7 +45,6 @@
 
         class ClassChild extends React.Component {
             componentDidMount() { console.log(`mount ${this.props.value}`)}
-            getSnapshotBeforeUpdate() { console.log(`snapshot ${this.props.value}`)}
             componentDidUpdate() { console.log(`update ${this.props.value}`)}
             componentWillUnmount() { console.log(`unmount ${this.props.value}`)}
             render() {
@@ -56,7 +59,7 @@
                     console.log('destory effect')
                 }
             });
-            return <ol>{props.list.map(item => <li>{item}</li>)}</ol>
+            return <ol>{props.list.map(item => <li key={item}>{item}</li>)}</ol>
         }
 
         ReactDOM.render(<Parent/>, document.getElementById('app'));
