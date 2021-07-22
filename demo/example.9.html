@@ -18,6 +18,47 @@
             return <ul>{list.map(item => <li>{item}</li>)}</ul>
         }
 
-        ReactDOM.render(<Component/>, document.getElementById('app'));
+        const { useState, useEffect, useRef } = React
+
+        const Parent = () => {
+            const [list, setList] = useState(['A', 'B', 'C', 'D']);
+            const [visible, setVisible] = useState(true);
+            return (
+                <React.Fragment>
+                    {visible && <button onClick={() => {
+                        setVisible(false);
+                        setList(['C', 'B', 'D', 'E']);
+                    }}>修改</button>}
+                    <ul>
+                        {list.map(item => <ClassChild value={item} />)}
+                        {list.map(item => <ClassChild key={item} value={item.toLocaleLowerCase()} />)}
+                    </ul>
+                    <FunctionChild list={list} />
+                </React.Fragment>
+            )
+            
+        }
+
+        class ClassChild extends React.Component {
+            componentDidMount() { console.log(`mount ${this.props.value}`)}
+            getSnapshotBeforeUpdate() { console.log(`snapshot ${this.props.value}`)}
+            componentDidUpdate() { console.log(`update ${this.props.value}`)}
+            componentWillUnmount() { console.log(`unmount ${this.props.value}`)}
+            render() {
+                return <li>{this.props.value}</li>
+            }
+        }
+
+        const FunctionChild = (props) => {
+            useEffect(() => {
+                console.log('create effect');
+                return () => {
+                    console.log('destory effect')
+                }
+            });
+            return <ol>{props.list.map(item => <li>{item}</li>)}</ol>
+        }
+
+        ReactDOM.render(<Parent/>, document.getElementById('app'));
     </script>
 </body>

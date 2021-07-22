@@ -14433,12 +14433,13 @@
       // effect even though we're bailing out, so that cWU/cDU are called.
       // 尽管 props、state、context 没有变化，也不需要强制更新，如果类组件定义了 componentDidUpdate、getSnapshotBeforeUpdate
       // 对应的生命周期方法依旧会触发，但是不会重新渲染
+      // 如果类组件定义了 componentDidUpdaate 生命周期方法，在 commit 阶段触发
       if (typeof instance.componentDidUpdate === 'function') {
         if (unresolvedOldProps !== current.memoizedProps || oldState !== current.memoizedState) {
           workInProgress.flags |= Update;
         }
       }
-
+      // 如果类组件定义了 getSnapshotBeforeUpdate 生命周期方法，在 commit 阶段触发
       if (typeof instance.getSnapshotBeforeUpdate === 'function') {
         if (unresolvedOldProps !== current.memoizedProps || oldState !== current.memoizedState) {
           workInProgress.flags |= Snapshot;
