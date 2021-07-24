@@ -13310,7 +13310,6 @@
    * @param renderLanes render lanes ？？
    */
   function processUpdateQueue(workInProgress, props, instance, renderLanes) {
-    
     // This is always non-null on a ClassComponent or HostRoot
     // new fiber node 的 updateQueue
     var queue = workInProgress.updateQueue;  // 对于类组件、原生的容器节点，updateQueue 永远不为空
@@ -16970,10 +16969,18 @@
     return [hook.memoizedState, dispatch];
   }
 
+  /**
+   * @param reducer
+   * @param initialArg
+   * @param init
+   */
   function updateReducer(reducer, initialArg, init) {
+
     var hook = updateWorkInProgressHook();
     var queue = hook.queue;
-
+    if (workInProgress.type === Parent) {
+      console.log('queue', queue);
+    }
     if (!(queue !== null)) {
       {
         throw Error( "Should have a queue. This is likely a bug in React. Please file an issue." );
