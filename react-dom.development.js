@@ -5860,7 +5860,7 @@
    * @param currentTime 当前时间
    */
   function markStarvedLanesAsExpired(root, currentTime) {
-    debugger
+    
     // TODO: This gets called every time we yield. We can optimize by storing
     // the earliest expiration time on the root. Then use that to quickly bail out
     // of this function.
@@ -16684,7 +16684,7 @@
    * @param nextRenderLanes ？？
    */
   function renderWithHooks(current, workInProgress, Component, props, secondArg, nextRenderLanes) {
-    debugger
+    
     renderLanes = nextRenderLanes;
     currentlyRenderingFiber$1 = workInProgress;
 
@@ -19015,7 +19015,7 @@
    * @param renderLanes 本次渲染要处理的更新优先级
    */
   function updateSimpleMemoComponent(current, workInProgress, Component, nextProps, updateLanes, renderLanes) {
-    debugger
+    
     // TODO: current can be non-null here even if the component
     // hasn't yet mounted. This happens when the inner render suspends.
     // We'll need to figure out if this is fine or can cause issues.
@@ -19221,7 +19221,7 @@
    * @param renderLanes 本次渲染要处理的更新的优先级
    */
   function updateFunctionComponent(current, workInProgress, Component, nextProps, renderLanes) {
-    debugger
+    
     {
       if (workInProgress.type !== workInProgress.elementType) {
         // Lazy component props can't be validated in createElement
@@ -20886,7 +20886,7 @@
    * @param renderLanes 本次渲染要处理的更新
    */
   function beginWork(current, workInProgress, renderLanes) {
-    debugger
+    
     // workInProgress， 待处理的 fiber node， lanes 是 fiber node 对应的更新
     // 一个更新产生时，会为这个更新分配一个 lane，而这个 lane 也会合并到对应的 fiber node 上
     var updateLanes = workInProgress.lanes;
@@ -20911,7 +20911,7 @@
         // props 发生变化 或者 context 发生变化 或者 fiber node 的类型发生变化，那么需要重新 render 
         didReceiveUpdate = true;
       } else if (!includesSomeLane(renderLanes, updateLanes)) {
-        debugger
+        
         // 如何理解 renderLanes 不包括 updateLanes
         // updateLanes 是为 fiber node 的更新而分配的赛道，renderLanes 是渲染工作开始以后要处理的赛道
         // 如果 renderLanes 中不包括 updateLanes， 说明该 fiber node 不需要更新
@@ -24606,7 +24606,7 @@
       // or, if something suspended, wait to commit it after a timeout.
 
 
-      debugger
+      
       var finishedWork = root.current.alternate;
       // 容器节点对应的 fiber node
       root.finishedWork = finishedWork;
@@ -25475,7 +25475,7 @@
    * @param unitOfwork 待处理的 fiber node
    */
   function performUnitOfWork(unitOfWork) {
-    debugger
+    
     // The current, flushed, state of this fiber is the alternate. Ideally
     // nothing should rely on this, but relying on it here means that we don't
     // need an additional field on the work in progress.
@@ -25758,8 +25758,6 @@
    * @param renderPriorityLevel 优先级，直接优先级
    */
   function commitRootImpl(root, renderPriorityLevel) {
-    debugger
-    console.log('commitRootImpl');
 
     do {
       // `flushPassiveEffects` will call `flushSyncUpdateQueue` at the end, which
@@ -26088,7 +26086,7 @@
    * 处理 mutation 之前的副作用： 类组件的 getSnapshotBeforeUpdate 生命周期方法、
    */
   function commitBeforeMutationEffects() {
-    debugger
+    
     while (nextEffect !== null) {
       // nextEffect 为 new fiber node， current 为 old fiber node
       var current = nextEffect.alternate;
@@ -26144,7 +26142,7 @@
    * @param renderPriorityLevel
    */
   function commitMutationEffects(root, renderPriorityLevel) {
-    debugger
+    
     // next-study
     // TODO: Should probably move the bulk of this function to commitWork.
     while (nextEffect !== null) {
@@ -26242,7 +26240,7 @@
    */
   function commitLayoutEffects(root, committedLanes) {
 
-    debugger
+    
     while (nextEffect !== null) {
       setCurrentFiber(nextEffect);
       var flags = nextEffect.flags;
@@ -26343,7 +26341,7 @@
    * 处理 useEffect 的副作用的实现
    */
   function flushPassiveEffectsImpl() {
-    debugger
+    
     // 如果没有要处理的 useEffect 副作用，直接返回
     if (rootWithPendingPassiveEffects === null) {
       return false;
@@ -28537,7 +28535,7 @@
    * @params callback 回调方法
    */
   function updateContainer(element, container, parentComponent, callback) {
-    debugger
+    
     // 这一步是干啥的？？ injectedHook 是什么东东？？
     {
       onScheduleRoot(container, element);
@@ -28997,7 +28995,7 @@
 
   // render 方法，将 react element 渲染为真实的 dom 节点
   ReactDOMRoot.prototype.render = ReactDOMBlockingRoot.prototype.render = function (children) {
-    debugger
+    
     // fiber root node
     var root = this._internalRoot;
 
@@ -29209,7 +29207,7 @@
    * @params callback
    */
   function legacyRenderSubtreeIntoContainer(parentComponent, children, container, forceHydrate, callback) {
-    debugger
+    
     {
       topLevelUpdateWarnings(container);
       warnOnInvalidCallback$1(callback === undefined ? null : callback, 'render');
