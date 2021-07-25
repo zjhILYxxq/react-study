@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../react.development.js"></script>
+    <script src="../react-dom.development.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+        class Parent extends React.Component {
+            state = {
+                number: 0
+            }
+
+            myRef = React.createRef();
+
+            addOne = () => {
+                const { number } = this.state;
+                setTimeout(() => {
+                    // this.setState({
+                    //     number: number + 1
+                    // });
+                    this.setState(preState => ({ number : preState.number + 1}))
+                }, 0);
+                setTimeout(() => {
+                    this.myRef.current.click();
+                }, 100)
+                
+            }
+
+            addTwo = () => {
+                const { number } = this.state;
+                // this.setState({
+                //     number: number + 2
+                // })
+                this.setState(preState => ({ number: preState.number + 2}))
+            }
+
+            render() {
+                const { number } = this.state;
+                return (
+                    <div>
+                        <button onClick={() => this.addOne()}>+1</button><button ref={this.myRef} onClick={() => this.addTwo()}>+2</button> 
+                        <div>{number}</div> 
+                        <Child value={number} />
+                    </div>
+                )
+            }
+        }
+
+        class Child extends React.Component {
+
+            render() {
+                return <div>{Array(20000).fill(this.props.value).map(item => (<span>{item}</span>))}</div>
+            }
+        }
+
+        new ReactDOM.createRoot(document.getElementById('app')).render(<Parent/>);
+    
+    </script>
+</body>

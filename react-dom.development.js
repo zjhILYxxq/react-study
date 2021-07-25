@@ -13699,6 +13699,7 @@
      * @param callback setState 方法传入的 callback
      */
     enqueueSetState: function (inst, payload, callback) {
+      console.log('workInProgress', workInProgress);
       // 类组件实例对应的 old fiber node
       var fiber = get(inst);
       // 执行 setState 方法触发更新时，需要基于当前时间创建一个新的时间戳
@@ -25409,7 +25410,8 @@
     // 
     // 那么 workInProgressRoot 、workInProgress 都要重置
     if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
-      console.log('渲染树重置');
+
+      console.log('渲染树重置', workInProgressRootRenderLanes, lanes);
       // 重置渲染终止时间，即当前时间 + 500 ms()
       resetRenderTimer();
       // 预处理工作，设置当前要处理的 fiber root node 以及对应的 fiber node (阻塞渲染和非阻塞渲染都有这一步)
