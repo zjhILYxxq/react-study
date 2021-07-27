@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../react.development.js"></script>
+    <script src="../react-dom.development.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+
+        const fetchUser = () => {
+            console.log('fetch user...');
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    console.log("fetched user");
+                    resolve({
+                        name: "zjh"
+                    });
+                }, 2000)
+            });
+        }
+
+        function wrapPromise(promise) {
+            let status = "pending";
+            let result;
+            let suspender = promise.then((r) => {
+                status = "success";
+                result = r;
+            }, (e) => {
+                status = "error";
+                result = e;
+            });
+
+            return {
+                read() {
+                    if (status === "pending") {
+                        throw suspender;
+                    } else if (status === "error") {
+                        throw result;
+                    } else if (status === "success") {
+                        return result;
+                    }
+                }
+            };
+        }
+
+        function fetchProfileData() {
+            let userPromise = fetchUser();
+            // let postsPromise = fetchPosts();
+            return {
+                user: wrapPromise(userPromise),
+                // posts: wrapPromise(postsPromise)
+            };
+        }
+
+        const resource = fetchProfileData();
+
+        function ProfilePage() {
+            return (
+                <React.Suspense fallback={<h1>Loading profile...</h1>}>
+                    <ProfileDetails />
+                </React.Suspense>
+            );
+        }
+
+        function ProfileDetails() {
+            // Try to read user info, although it might not have loaded yet
+            const user = resource.user.read();
+            return <h1>{user.name}</h1>;
+        }
+
+        new ReactDOM.createRoot(document.getElementById('app')).render(<ProfilePage />);
+
+
+    </script>
+</body>
