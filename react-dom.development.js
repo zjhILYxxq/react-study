@@ -25309,6 +25309,7 @@
    * @param lanes 本次渲染处理的更新对应的 lanes
    */
   function renderRootSync(root, lanes) {
+    debugger
     // 先存储当前执行上下文
     var prevExecutionContext = executionContext;
     // 将执行上下文设置为 renderContext
