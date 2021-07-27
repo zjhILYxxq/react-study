@@ -14691,6 +14691,7 @@
   function ChildReconciler(shouldTrackSideEffects) {
     /**
      * 删除 fiber node， 如果是 update 阶段删除，那么需要处理删除 fiber node 引发的副作用
+     * 要删除的 fiber node 收集到 effect 列表中
      * @param returnFiber parent fiber node
      * @param childToDelete 要删除的 child fiber node
      */
@@ -14720,7 +14721,7 @@
       childToDelete.flags = Deletion;
     }
     /**
-     * 删除遗留的 old child fiber node
+     * 删除遗留的 old child fiber node 及兄弟 fiber node
      * @param returnFiber parent fiber node
      * @param currentFirstChild old child fiber node
      */
@@ -15590,10 +15591,11 @@
     }
     /**
      * 将单个 react element 转化为 fiber node
+     * 先将 react element 和 old fiber nodes 做对比，判断 old fiber nodes 中是否有可复用的 fiber node
      * @param returnFiber new fiber node(是作为 parent fiber node 的存在)
      * @param currentFirstChild old fiber node 的第一个子节点
      * @param element react element
-     * @param lanes lanes 赛道？？
+     * @param lanes 本次更新对应的优先级
      */
     function reconcileSingleElement(returnFiber, currentFirstChild, element, lanes) {
       // react element 的 key 值
@@ -15606,7 +15608,9 @@
         // TODO: If key === null and child.key === null, then this only applies to
         // the first item in the list.
         if (child.key === key) {
+          // key 值匹配，要么都是 undefined，要么值相等
           switch (child.tag) {
+            // 
             case Fragment:
               {
                 if (element.type === REACT_FRAGMENT_TYPE) {
@@ -15634,8 +15638,10 @@
               {
                 if (child.elementType === element.type || ( // Keep this check inline so it only runs on the false path:
                  isCompatibleFamilyForHotReloading(child, element) )) {
+                  // key 值匹配，元素类型也匹配，那么 old fiber node 可以复用，剩下的 old fiber node 就可以全部删除了
                   deleteRemainingChildren(returnFiber, child.sibling);
 
+                  // 复用原来的 fiber node
                   var _existing3 = useFiber(child, element.props);
 
                   _existing3.ref = coerceRef(returnFiber, child, element);
@@ -15653,16 +15659,17 @@
               }
           } // Didn't match.
 
-
           deleteRemainingChildren(returnFiber, child);
           break;
         } else {
+          // 不匹配的 fiber node 要打删除标记，在 commit 阶段做删除处理
           deleteChild(returnFiber, child);
         }
 
         child = child.sibling;
       }
 
+      // 遍历完 old fiber node，依旧没有找到匹配的 fiber node，此时要创建新的 fiber node
       if (element.type === REACT_FRAGMENT_TYPE) {  // 如果 react element 对应的的 react.Fragment
         // 基于 fragment 的 child react element 创建 fiber node
         var created = createFiberFromFragment(element.props.children, returnFiber.mode, lanes, element.key);
@@ -15986,13 +15993,16 @@
 
   /**
    * 
+   * @param parentContext
+   * @param flag
    */
   function hasSuspenseContext(parentContext, flag) {
     return (parentContext & flag) !== 0;
   }
 
   /**
-   * 
+   * 设置默认的浅表 Suspense 上下文 ？？
+   * @param parentContext
    */
   function setDefaultShallowSuspenseContext(parentContext) {
     return parentContext & SubtreeSuspenseContextMask;
@@ -16006,7 +16016,8 @@
   }
 
   /**
-   * 
+   * @param parentContext
+   * @param subtreeContext
    */
   function addSubtreeSuspenseContext(parentContext, subtreeContext) {
     return parentContext | subtreeContext;
@@ -16014,15 +16025,19 @@
 
   /**
    * 
+   * @param fiber React.Suspense 对应的 fiber node
+   * @param newContext 对应的 suspense 上下文？？
    */
   function pushSuspenseContext(fiber, newContext) {
+    // 入栈 ？？
     push(suspenseStackCursor, newContext, fiber);
   }
 
   /**
-   * 
+   * @param fiber React.Suspense 对应的 fiber node
    */
   function popSuspenseContext(fiber) {
+    // 出栈 ？？
     pop(suspenseStackCursor, fiber);
   }
 
@@ -16685,7 +16700,7 @@
    * @param nextRenderLanes ？？
    */
   function renderWithHooks(current, workInProgress, Component, props, secondArg, nextRenderLanes) {
-    
+    debugger
     renderLanes = nextRenderLanes;
     currentlyRenderingFiber$1 = workInProgress;
 
@@ -18861,6 +18876,11 @@
 
   /**
    * 
+   * @param current
+   * @param workInProgress
+   * @param Component
+   * @param nextProps
+   * @param renderLanes
    */
   function updateForwardRef(current, workInProgress, Component, nextProps, renderLanes) {
     // TODO: current can be non-null here even if the component
@@ -18997,7 +19017,7 @@
       }
     } // React DevTools reads this flag.
 
-
+    // 函数组件的方式执行完毕
     workInProgress.flags |= PerformedWork;
     var newChild = createWorkInProgress(currentChild, nextProps);
     newChild.ref = workInProgress.ref;
@@ -19092,16 +19112,21 @@
   }
 
   /**
-   * @param current
-   * @param workInProgress
+   * 挂载/更新 React_OFFSCREEN_TYPE  类型的 fiber node
+   * @param current old fiber node
+   * @param workInProgress 当前正在处理的 fiber node， 即 new fiber node
    * @param rendrLanes
    */
   function updateOffscreenComponent(current, workInProgress, renderLanes) {
+    // { visible: true, children: xxxx}
     var nextProps = workInProgress.pendingProps;
+    // react element
     var nextChildren = nextProps.children;
+    // old state
     var prevState = current !== null ? current.memoizedState : null;
 
     if (nextProps.mode === 'hidden' || nextProps.mode === 'unstable-defer-without-hiding') {
+      // 隐藏 ？？
       if ((workInProgress.mode & ConcurrentMode) === NoMode) {
         // In legacy sync mode, don't defer the subtree. Render it now.
         // TODO: Figure out what we should do in Blocking mode.
@@ -19111,6 +19136,7 @@
         workInProgress.memoizedState = nextState;
         pushRenderLanes(workInProgress, renderLanes);
       } else if (!includesSomeLane(renderLanes, OffscreenLane)) {
+        // 
         var nextBaseLanes;
 
         if (prevState !== null) {
@@ -19145,6 +19171,7 @@
         pushRenderLanes(workInProgress, subtreeRenderLanes);
       }
     } else {
+      // 显示 ？？
       var _subtreeRenderLanes;
 
       if (prevState !== null) {
@@ -19157,7 +19184,7 @@
         // a push/pop misalignment.
         _subtreeRenderLanes = renderLanes;
       }
-
+      // ？？
       pushRenderLanes(workInProgress, _subtreeRenderLanes);
     }
 
@@ -19168,20 +19195,30 @@
   // fork the function.
 
 
+  // 
   var updateLegacyHiddenComponent = updateOffscreenComponent;
 
+  /**
+   * 
+   */
   function updateFragment(current, workInProgress, renderLanes) {
     var nextChildren = workInProgress.pendingProps;
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     return workInProgress.child;
   }
 
+  /**
+   * 
+   */
   function updateMode(current, workInProgress, renderLanes) {
     var nextChildren = workInProgress.pendingProps.children;
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     return workInProgress.child;
   }
 
+  /**
+   * 
+   */
   function updateProfiler(current, workInProgress, renderLanes) {
     {
       workInProgress.flags |= Update; // Reset effect durations for the next eventual effect phase.
@@ -19760,6 +19797,13 @@
     return finishClassComponent(null, workInProgress, Component, true, hasContext, renderLanes);
   }
 
+  /**
+   * 挂载不确定的组件
+   * @param _current
+   * @param workInProgress
+   * @param Component
+   * @param renderLanes
+   */
   function mountIndeterminateComponent(_current, workInProgress, Component, renderLanes) {
     if (_current !== null) {
       // An indeterminate component only mounts if it suspended inside a non-
@@ -19800,11 +19844,12 @@
 
       setIsRendering(true);
       ReactCurrentOwner$1.current = workInProgress;
+      // 执行函数方法，返回 react element
       value = renderWithHooks(null, workInProgress, Component, props, context, renderLanes);
       setIsRendering(false);
     } // React DevTools reads this flag.
 
-
+    // 函数组件方法执行完毕
     workInProgress.flags |= PerformedWork;
 
     {
@@ -19825,6 +19870,7 @@
     // Eventually we'll delete this branch altogether.
      typeof value === 'object' && value !== null && typeof value.render === 'function' && value.$$typeof === undefined) {
       {
+        // 函数返回一个对象，对象有 render 方法，那么将不确定类型的组件当做类组件？？
         var _componentName2 = getComponentName(Component) || 'Unknown';
 
         if (!didWarnAboutModulePatternComponent[_componentName2]) {
@@ -19864,6 +19910,7 @@
       return finishClassComponent(null, workInProgress, Component, true, hasContext, renderLanes);
     } else {
       // Proceed under the assumption that this is a function component
+      // 不确定类型的组件为函数组件
       workInProgress.tag = FunctionComponent;
 
       {
@@ -19872,6 +19919,7 @@
           disableLogs();
 
           try {
+            // 函数组件，再执行一遍， value 为函数组件对应的 react element
             value = renderWithHooks(null, workInProgress, Component, props, context, renderLanes);
           } finally {
             reenableLogs();
@@ -19879,12 +19927,14 @@
         }
       }
 
+      // 协调组件的子节点
       reconcileChildren(null, workInProgress, value, renderLanes);
 
       {
         validateFunctionComponentInDev(workInProgress, Component);
       }
 
+      // 返回下一个待处理的 fiber node
       return workInProgress.child;
     }
   }
@@ -19959,6 +20009,12 @@
   } // TODO: Probably should inline this back
 
 
+  /**
+   * @param suspenseContext
+   * @param current
+   * @param workInProgress
+   * @param renderLanes
+   */
   function shouldRemainOnFallback(suspenseContext, current, workInProgress, renderLanes) {
     // If we're already showing a fallback, there are cases where we need to
     // remain on that fallback regardless of whether the content has resolved.
@@ -19984,23 +20040,34 @@
     return removeLanes(current.childLanes, renderLanes);
   }
 
+  /**
+   * 挂载/更新 Suspense fiber node
+   * @param current  old fiber node
+   * @param workInProgress 当前正在处理的 fiber node，即 new fiber node
+   * @param renderLanes 本次渲染的优先级
+   */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
 
     {
       if (shouldSuspend(workInProgress)) {
+        // ？？
         workInProgress.flags |= DidCapture;
       }
     }
 
     var suspenseContext = suspenseStackCursor.current;
     var showFallback = false;
+    // fiber node 是否是已经挂起的
     var didSuspend = (workInProgress.flags & DidCapture) !== NoFlags;
 
     if (didSuspend || shouldRemainOnFallback(suspenseContext, current)) {
       // Something in this boundary's subtree already suspended. Switch to
       // rendering the fallback children.
+      // fiber node 已经挂起，此时要渲染 fallback 对应的 children
+      // 显示挂起 fiber node 的 fallback
       showFallback = true;
+      // 
       workInProgress.flags &= ~DidCapture;
     } else {
       // Attempting the main content
@@ -20010,13 +20077,17 @@
         // handle the fallback state.
         // Boundaries without fallbacks or should be avoided are not considered since
         // they cannot handle preferred fallback states.
+        // current 为 null 表示是一个新的挂载
+        // current.memoizedState 不为 null 表示 fallback 状态已经展示
         if (nextProps.fallback !== undefined && nextProps.unstable_avoidThisFallback !== true) {
+          // 添加 suspense 上下文 ？？
           suspenseContext = addSubtreeSuspenseContext(suspenseContext, InvisibleParentSuspenseContext);
         }
       }
     }
-
+    // 
     suspenseContext = setDefaultShallowSuspenseContext(suspenseContext);
+    // 
     pushSuspenseContext(workInProgress, suspenseContext); // OK, the next part is confusing. We're about to reconcile the Suspense
     // boundary's children. This involves some custom reconcilation logic. Two
     // main reasons this is so complicated.
@@ -20048,10 +20119,13 @@
         tryToClaimNextHydratableInstance(workInProgress); // This could've been a dehydrated suspense component.
       }
 
+      // React.Suspense 的子元素
       var nextPrimaryChildren = nextProps.children;
+      // React.Suspense 的 fallback 属性
       var nextFallbackChildren = nextProps.fallback;
 
       if (showFallback) {
+        // // fallback 已经显示
         var fallbackFragment = mountSuspenseFallbackChildren(workInProgress, nextPrimaryChildren, nextFallbackChildren, renderLanes);
         var primaryChildFragment = workInProgress.child;
         primaryChildFragment.memoizedState = mountSuspenseOffscreenState(renderLanes);
@@ -20061,6 +20135,7 @@
         // This is a CPU-bound tree. Skip this tree and show a placeholder to
         // unblock the surrounding content. Then immediately retry after the
         // initial commit.
+        // ？？
         var _fallbackFragment = mountSuspenseFallbackChildren(workInProgress, nextPrimaryChildren, nextFallbackChildren, renderLanes);
 
         var _primaryChildFragment = workInProgress.child;
@@ -20082,6 +20157,7 @@
 
         return _fallbackFragment;
       } else {
+        // 挂载 React.Suspense 的子元素，返回一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
         return mountSuspensePrimaryChildren(workInProgress, nextPrimaryChildren, renderLanes);
       }
     } else {
@@ -20143,18 +20219,34 @@
     }
   }
 
+  /**
+   * 挂载 React.Suspense 的子元素
+   * @param workInProgress  当前正在处理的 fiber node， 即 new fiber node
+   * @param primaryChild React.Suspense 子元素对应的 react element
+   * @param renderLanes
+   */
   function mountSuspensePrimaryChildren(workInProgress, primaryChildren, renderLanes) {
+    // 当前的模式,如果是 Concurrent 模式，那么就是 7
     var mode = workInProgress.mode;
+    // 
     var primaryChildProps = {
       mode: 'visible',
-      children: primaryChildren
+      children: primaryChildren // react element
     };
+    // 创建一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
     var primaryChildFragment = createFiberFromOffscreen(primaryChildProps, mode, renderLanes, null);
     primaryChildFragment.return = workInProgress;
     workInProgress.child = primaryChildFragment;
     return primaryChildFragment;
   }
 
+  /**
+   * 
+   * @param workInProgress
+   * @param primaryChildren
+   * @param fallbackChild
+   * @param renderLanes
+   */
   function mountSuspenseFallbackChildren(workInProgress, primaryChildren, fallbackChildren, renderLanes) {
     var mode = workInProgress.mode;
     var progressedPrimaryFragment = workInProgress.child;
@@ -20712,6 +20804,11 @@
 
   var hasWarnedAboutUsingContextAsConsumer = false;
 
+  /**
+   * @param current
+   * @param workInProgress
+   * @param renderLanes
+   */
   function updateContextConsumer(current, workInProgress, renderLanes) {
     var context = workInProgress.type; // The logic below for Context differs depending on PROD or DEV mode. In
     // DEV mode, we create a separate object for Context.Consumer that acts
@@ -20758,7 +20855,7 @@
       setIsRendering(false);
     } // React DevTools reads this flag.
 
-
+    // 
     workInProgress.flags |= PerformedWork;
     reconcileChildren(current, workInProgress, newChildren, renderLanes);
     return workInProgress.child;
@@ -20887,7 +20984,7 @@
    * @param renderLanes 本次渲染要处理的更新
    */
   function beginWork(current, workInProgress, renderLanes) {
-    
+    debugger
     // workInProgress， 待处理的 fiber node， lanes 是 fiber node 对应的更新
     // 一个更新产生时，会为这个更新分配一个 lane，而这个 lane 也会合并到对应的 fiber node 上
     var updateLanes = workInProgress.lanes;
@@ -21153,10 +21250,12 @@
         // 更新原生的 文本节点
         return updateHostText(current, workInProgress);
 
-      case SuspenseComponent:  // react.suspense
+      case SuspenseComponent:  // React.Suspense
+        // 挂载/更新 React.Suspense 类型的 fiber node
         return updateSuspenseComponent(current, workInProgress, renderLanes);
 
-      case HostPortal: // react.portal
+      case HostPortal: // React.portal
+        // 
         return updatePortalComponent(current, workInProgress, renderLanes);
 
       case ForwardRef: // react.forwardRef
@@ -21206,7 +21305,7 @@
           return updateMemoComponent(current, workInProgress, _type2, _resolvedProps3, updateLanes, renderLanes);
         }
 
-      case SimpleMemoComponent: //  ??
+      case SimpleMemoComponent: //  没有 compare 的 React.memo
         {
           return updateSimpleMemoComponent(current, workInProgress, workInProgress.type, workInProgress.pendingProps, updateLanes, renderLanes);
         }
@@ -21244,7 +21343,7 @@
           break;
         }
 
-      case OffscreenComponent:  // react.offScreent
+      case OffscreenComponent:  // React_OFFSCREENT_TYPE
         {
           return updateOffscreenComponent(current, workInProgress, renderLanes);
         }
@@ -25063,8 +25162,11 @@
    * @param lanes
    */
   function pushRenderLanes(fiber, lanes) {
+    // 
     push(subtreeRenderLanesCursor, subtreeRenderLanes, fiber);
+    // 
     subtreeRenderLanes = mergeLanes(subtreeRenderLanes, lanes);
+    // 
     workInProgressRootIncludedLanes = mergeLanes(workInProgressRootIncludedLanes, lanes);
   }
 
@@ -28193,7 +28295,16 @@
     fiber.lanes = lanes;
     return fiber;
   }
+
+  /**
+   * 创建一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
+   * @param pedingProps
+   * @param mode
+   * @param lanes
+   * @param key
+   */
   function createFiberFromOffscreen(pendingProps, mode, lanes, key) {
+    // 创建一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
     var fiber = createFiber(OffscreenComponent, pendingProps, key, mode); // TODO: The OffscreenComponent fiber shouldn't have a type. It has a tag.
     // This needs to be fixed in getComponentName so that it relies on the tag
     // instead.
@@ -28206,6 +28317,13 @@
     fiber.lanes = lanes;
     return fiber;
   }
+
+  /**
+   * @param pendingProps
+   * @param mode
+   * @param lanes
+   * @param key
+   */
   function createFiberFromLegacyHidden(pendingProps, mode, lanes, key) {
     var fiber = createFiber(LegacyHiddenComponent, pendingProps, key, mode); // TODO: The LegacyHidden fiber shouldn't have a type. It has a tag.
     // This needs to be fixed in getComponentName so that it relies on the tag
@@ -28723,10 +28841,18 @@
     return hostFiber.stateNode;
   }
 
+  /**
+   * fiber node 默认是不挂起的
+   * @param fiber
+   */
   var shouldSuspendImpl = function (fiber) {
     return false;
   };
 
+  /**
+   * 判断 fiber node 是否应该挂起，默认是 false
+   * @param fiber
+   */
   function shouldSuspend(fiber) {
     return shouldSuspendImpl(fiber);
   }
@@ -28924,6 +29050,7 @@
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
+    // 设置 fiber node 挂起的判断逻辑方法
     setSuspenseHandler = function (newShouldSuspendImpl) {
       shouldSuspendImpl = newShouldSuspendImpl;
     };

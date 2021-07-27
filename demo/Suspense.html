@@ -29,6 +29,7 @@
             let status = "pending";
             let result;
             let suspender = promise.then((r) => {
+                debugger
                 status = "success";
                 result = r;
             }, (e) => {
@@ -61,6 +62,7 @@
         const resource = fetchProfileData();
 
         function ProfilePage() {
+            debugger
             return (
                 <React.Suspense fallback={<h1>Loading profile...</h1>}>
                     <ProfileDetails />
