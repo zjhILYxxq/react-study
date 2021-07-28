@@ -23,13 +23,9 @@
 
         const { useEffect, useState, useRef } = React;
 
-        function Child(props) {
+        const Child = (props) => {
 
             const [number, setNumber] = useState(1);
-
-            useEffect(() => {
-                console.log('child');
-            })
 
             const ref = useRef(null);
 
@@ -43,14 +39,18 @@
             }
 
             const click = () => {
-                ref.current.click();
+
+                // ref.current.click();
                 // props.callback && props.callback();
                 // setTimeout(() => {
                 //     ref.current.click();
                 // }, 500);
                 setTimeout(() => {
+                    setNumber(number + 1);
+                }, 100)
+                setTimeout(() => {
                     props.callback && props.callback();
-                }, 100);
+                }, 200);
             }
 
             return (
@@ -58,7 +58,7 @@
 
                     <button onClick={click}>+</button>
                     <div  className="box" onClick={add} ref={ref}>
-                        {Array(1000).fill(number).map(item => (<span>{item}</span>))}
+                        {Array(100000).fill(number).map(item => (<span>{item}</span>))}
                     </div>
                 </div>
                 
@@ -68,10 +68,6 @@
         function Parent() {
             const [value, setValue] = useState(1);
             const buttonRef = useRef(null);
-
-            useEffect(() => {
-                console.log('parent')
-            })
 
             const add = () => {
                 console.log(value);
@@ -108,9 +104,9 @@
         }
         debugger
 
-        var d = ReactDOM.render(<Component/>, document.getElementById('app'));
+        // var d = ReactDOM.render(<Parent/>, document.getElementById('app'));
 
-        // new ReactDOM.createRoot(document.getElementById('app')).render(<Component/>);
+        new ReactDOM.createRoot(document.getElementById('app')).render(<Parent/>);
     </script>
     
 </body>
