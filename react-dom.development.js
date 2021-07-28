@@ -15983,6 +15983,7 @@
   // the parent. If not, then we might need to trigger undesirable boundaries
   // and/or suspend the commit to avoid hiding the parent content.
 
+  // 不可见的 parent suspense 上下文 ？？
   var InvisibleParentSuspenseContext = 1; // Shallow Flags:
   // ForceSuspenseFallback can be used by SuspenseList to force newly added
   // items into their fallback state during one of the render passes.
@@ -16042,11 +16043,14 @@
   }
 
   /**
-   * 
+   * 判断 Suspense 组件的 fallback 是否要渲染
+   * @param workInProgress  Suspense 对应的 fiber node
+   * @param hasInvisibleParent 有不可见的 parent suspense 上下文
    */
   function shouldCaptureSuspense(workInProgress, hasInvisibleParent) {
     // If it was the primary children that just suspended, capture and render the
     // fallback. Otherwise, don't capture and bubble to the next boundary.
+    // memoizedState 对应 fallback
     var nextState = workInProgress.memoizedState;
 
     if (nextState !== null) {
@@ -16054,33 +16058,32 @@
         // A dehydrated boundary always captures.
         return true;
       }
-
+      // 如果 fallback 存在，说明 primary children 已经挂起了
       return false;
     }
-
+    // props 中包含 primary children 和 fallback
     var props = workInProgress.memoizedProps; // In order to capture, the Suspense component must have a fallback prop.
 
+    // 没有 fallback，直接返回 false
     if (props.fallback === undefined) {
       return false;
     } // Regular boundaries always capture.
-
-
+    // 没有明确表示要阻止 fallback， 返回 true
     if (props.unstable_avoidThisFallback !== true) {
       return true;
     } // If it's a boundary we should avoid, then we prefer to bubble up to the
     // parent boundary if it is currently invisible.
 
-
+    // 有不可见的 parent fiber node， 即 offScreen， 那就更不要展示了
     if (hasInvisibleParent) {
       return false;
     } // If the parent is not able to handle it, we must handle it.
-
-
+    // 返回 true， fallback 要展示
     return true;
   }
 
   /**
-   * 
+   * @param row
    */
   function findFirstSuspended(row) {
     var node = row;
@@ -22422,6 +22425,7 @@
   }
 
   function attachPingListener(root, wakeable, lanes) {
+    debugger
     // Attach a listener to the promise to "ping" the root and retry. But only if
     // one does not already exist for the lanes we're currently rendering (which
     // acts like a "thread ID" here).
@@ -22449,17 +22453,30 @@
     }
   }
 
+  /**
+   * child fiber node 产生的异常，交给 parent fiber node 处理
+   * @param root   fiber root node
+   * @param returnFiber parent fiber node
+   * @param sourceFiber 产生异常的 fiber node
+   * @param value 异常
+   * @param rootRenderLanes 产生异常时的渲染优先级
+   */
   function throwException(root, returnFiber, sourceFiber, value, rootRenderLanes) {
     // The source fiber did not complete.
+    // 产生异常的 fiber node，标记未完成
     sourceFiber.flags |= Incomplete; // Its effect list is no longer valid.
 
+    // 清空异常 fiber node 的副作用
     sourceFiber.firstEffect = sourceFiber.lastEffect = null;
 
+    // 
     if (value !== null && typeof value === 'object' && typeof value.then === 'function') {
       // This is a wakeable.
+      // 异常值是一个有 then 函数的对象，一般是 promise 对象
       var wakeable = value;
 
       if ((sourceFiber.mode & BlockingMode) === NoMode) {
+        // 阻塞渲染？？
         // Reset the memoizedState to what it was before we attempted
         // to render it.
         var currentSource = sourceFiber.alternate;
@@ -22474,8 +22491,9 @@
         }
       }
 
+      // 判断是否有不可见的 parent suspense 上下文
       var hasInvisibleParentBoundary = hasSuspenseContext(suspenseStackCursor.current, InvisibleParentSuspenseContext); // Schedule the nearest Suspense to re-render the timed out view.
-
+      // parent fiber node
       var _workInProgress = returnFiber;
 
       do {
@@ -25239,12 +25257,14 @@
 
   /**
    * 处理异常
-   * @param root 一个 fiber root node
-   * @param thrownValue
+   * @param root fiber root node
+   * @param thrownValue 抛出的异常信息， thrownValue 是一个 promise 对象
    */
   function handleError(root, thrownValue) {
+    debugger
     do {
-      var erroredWork = workInProgress;
+      // 产生异常的 fiber node，一般是 懒加载组件或者是要请求的数据还没有拿到
+      var erroredWork = workInProgress;  
 
       try {
         // Reset module-level state that was set during the render phase.
@@ -25278,7 +25298,7 @@
           // suspended render.
           stopProfilerTimerIfRunningAndRecordDelta(erroredWork, true);
         }
-
+        // 父组件异常处理？？
         throwException(root, erroredWork.return, erroredWork, thrownValue, workInProgressRootRenderLanes);
         completeUnitOfWork(erroredWork);
       } catch (yetAnotherThrownValue) {
@@ -26962,11 +26982,13 @@
         // 对当前 fiber node 进行 diff 比较，确定 old fiber node 是否可以复用，然后返回下一个待 diff 的 fiber node
         return beginWork(current, unitOfWork, lanes);
       } catch (originalError) {
+        debugger
         // react render 阶段发生的异常
         // 如果当前处理的 fiber node 是一个懒加载组件 originalError 为懒加载组件对应的 promise 对象
         // 如果是 js 异常， originalError 为相应的异常信息
         if (originalError !== null && typeof originalError === 'object' && typeof originalError.then === 'function') {
           // Don't replay promises. Treat everything else like an error.
+          // originalError 是一个 promise 对象
           throw originalError;
         } // Keep this code in sync with handleError; any changes here must have
         // corresponding changes there.

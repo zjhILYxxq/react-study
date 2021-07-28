@@ -17,6 +17,7 @@
             console.log('fetch user...');
             return new Promise((resolve) => {
                 setTimeout(() => {
+                    debugger
                     console.log("fetched user");
                     resolve({
                         name: "zjh"
@@ -40,11 +41,11 @@
             return {
                 read() {
                     if (status === "pending") {
-                        throw suspender;
+                        throw suspender;  // promise 一定要作为异常抛出
                     } else if (status === "error") {
-                        throw result;
+                        throw result; // 抛出返回的异常值
                     } else if (status === "success") {
-                        return result;
+                        return result; // 返回结果
                     }
                 }
             };
