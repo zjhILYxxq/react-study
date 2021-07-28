@@ -5609,7 +5609,7 @@
   /**
    * 获取下一个要处理的赛道集合
    * 选择策略：
-   * - 第一步, 拿到 pendingLanes(所有待处理的更新)、expiredLanes(已经过期的更新)、suspendedLanes(挂起的更新)、pingedLanes(懒加载的组件已经拿到，对应的更新已经畅通了)；
+   * - 第一步, 拿到 pendingLanes(所有待处理的更新)、expiredLanes(已经过期的更新)、suspendedLanes(挂起的更新)、pingedLanes(懒加载的组件/异步数据已经拿到，对应的更新已经畅通了)；
    *          pendingLanes 中会包含 expiredLanes、suspendedLanes、pingedLanes；
    * - 第二步, 如果有 expiredLanes (已经处理过期的更新), 先选择过期的更新作为 nextLanes；
    * - 第三步, 如果没有过期的更新，那么先从 pendingLanes 中选出优先级比空闲优先级高的更新 nonIdlePendingLanes, 
@@ -6307,13 +6307,13 @@
     }
   }
   /**
-   * 重新标记 fiber root node 赛道中畅通的赛道 ？？
+   * 将挂起的赛道，状态置为畅通
    * @param root fiber root node 
    * @param pingedLanes 畅通的赛道
    * @param eventTime
    */
   function markRootPinged(root, pingedLanes, eventTime) {
-
+    // 将状态变为畅通的挂起赛道，合并到 pingedLanes 中
     root.pingedLanes |= root.suspendedLanes & pingedLanes;
   }
 
@@ -16703,7 +16703,7 @@
    * @param nextRenderLanes ？？
    */
   function renderWithHooks(current, workInProgress, Component, props, secondArg, nextRenderLanes) {
-    debugger
+    
     renderLanes = nextRenderLanes;
     currentlyRenderingFiber$1 = workInProgress;
 
@@ -20987,7 +20987,7 @@
    * @param renderLanes 本次渲染要处理的更新
    */
   function beginWork(current, workInProgress, renderLanes) {
-    debugger
+    
     // workInProgress， 待处理的 fiber node， lanes 是 fiber node 对应的更新
     // 一个更新产生时，会为这个更新分配一个 lane，而这个 lane 也会合并到对应的 fiber node 上
     var updateLanes = workInProgress.lanes;
@@ -22344,6 +22344,7 @@
     }
   }
 
+  // weakMap
   var PossiblyWeakMap$1 = typeof WeakMap === 'function' ? WeakMap : Map;
 
   function createRootErrorUpdate(fiber, errorInfo, lane) {
@@ -22424,8 +22425,14 @@
     return update;
   }
 
+  /**
+   * 
+   * @param root  fiber root node
+   * @param wakeable 类 promise 对象
+   * @param lanes 本次渲染的更新优先级
+   */
   function attachPingListener(root, wakeable, lanes) {
-    debugger
+    
     // Attach a listener to the promise to "ping" the root and retry. But only if
     // one does not already exist for the lanes we're currently rendering (which
     // acts like a "thread ID" here).
@@ -22433,8 +22440,11 @@
     var threadIDs;
 
     if (pingCache === null) {
+      // pingCache 是一个 weakMap(如果浏览器不支持 weakMap，那么是一个 map)
       pingCache = root.pingCache = new PossiblyWeakMap$1();
+      // 一个 set 集合，用于收集读取异步数据/异步组件是的更新优先级
       threadIDs = new Set();
+      // 缓存类 promise 对象及线程 set
       pingCache.set(wakeable, threadIDs);
     } else {
       threadIDs = pingCache.get(wakeable);
@@ -22447,8 +22457,11 @@
 
     if (!threadIDs.has(lanes)) {
       // Memoize using the thread ID to prevent redundant listeners.
+      // 收集 lanes
       threadIDs.add(lanes);
+      // 
       var ping = pingSuspendedRoot.bind(null, root, wakeable, lanes);
+      // 类 promise 要注册 fullfill 和 reject
       wakeable.then(ping, ping);
     }
   }
@@ -22462,6 +22475,7 @@
    * @param rootRenderLanes 产生异常时的渲染优先级
    */
   function throwException(root, returnFiber, sourceFiber, value, rootRenderLanes) {
+    
     // The source fiber did not complete.
     // 产生异常的 fiber node，标记未完成
     sourceFiber.flags |= Incomplete; // Its effect list is no longer valid.
@@ -22497,12 +22511,15 @@
       var _workInProgress = returnFiber;
 
       do {
+        // shouldCaptureSuspense 用于判断 React.Suspense 的 fallback 是否需要渲染
         if (_workInProgress.tag === SuspenseComponent && shouldCaptureSuspense(_workInProgress, hasInvisibleParentBoundary)) {
           // Found the nearest boundary.
           // Stash the promise on the boundary fiber. If the boundary times out, we'll
           // attach another listener to flip the boundary back to its normal state.
+          // 渲染 React.Suspense 的 fallback
           var wakeables = _workInProgress.updateQueue;
 
+          // 将 promise 对象收集到 fiber node 的 updateQueue 队列中
           if (wakeables === null) {
             var updateQueue = new Set();
             updateQueue.add(wakeable);
@@ -22591,7 +22608,7 @@
           // We want to ensure that a "busy" state doesn't get force committed. We want to
           // ensure that new initial loading states can commit as soon as possible.
 
-
+          // 
           attachPingListener(root, wakeable, rootRenderLanes);
           _workInProgress.flags |= ShouldCapture;
           _workInProgress.lanes = rootRenderLanes;
@@ -24803,6 +24820,7 @@
                 // rendering it again.
                 // FIXME: What if the suspended lanes are Idle? Should not restart.
                 var eventTime = requestEventTime();
+                // 
                 markRootPinged(root, suspendedLanes);
                 break;
               } // The render is suspended, it hasn't timed out, and there's no
@@ -25261,7 +25279,7 @@
    * @param thrownValue 抛出的异常信息， thrownValue 是一个 promise 对象
    */
   function handleError(root, thrownValue) {
-    debugger
+    
     do {
       // 产生异常的 fiber node，一般是 懒加载组件或者是要请求的数据还没有拿到
       var erroredWork = workInProgress;  
@@ -25439,7 +25457,7 @@
    * @param lanes 本次渲染处理的更新对应的 lanes
    */
   function renderRootSync(root, lanes) {
-    debugger
+    
     // 先存储当前执行上下文
     var prevExecutionContext = executionContext;
     // 将执行上下文设置为 renderContext
@@ -26721,24 +26739,29 @@
   }
 
   /**
-   * 是 fiber root node 挂起的赛道畅通?
-   * @param root
-   * @param wakeable
-   * @param pingedLanes
+   * 处理 Suspense 的更新
+   * @param root  fiber root node
+   * @param wakeable 类 promise 对象
+   * @param pingedLanes 已经畅通的更新(异步请求的数据/组件已经获取到，对应的 promise 对象的状态为 resolved)
    */
   function pingSuspendedRoot(root, wakeable, pingedLanes) {
+    // 是一个 weakMap(或者是 map)
     var pingCache = root.pingCache;
 
+    // wakeable 的状态已经是 resolved， 删除 wakeable
     if (pingCache !== null) {
       // The wakeable resolved, so we no longer need to memoize, because it will
       // never be thrown again.
       pingCache.delete(wakeable);
     }
 
+    // 当前时间
     var eventTime = requestEventTime();
+    // 将 pingedLanes 合并到 root.pingedLanes 中
     markRootPinged(root, pingedLanes);
-
+    // 
     if (workInProgressRoot === root && isSubsetOfLanes(workInProgressRootRenderLanes, pingedLanes)) {
+      // pingedLanes 是 workInProgressRootRenderLanes 的子集
       // Received a ping at the same priority level at which we're currently
       // rendering. We might want to restart this render. This should mirror
       // the logic of whether or not a root suspends once it completes.
@@ -26749,14 +26772,16 @@
       if (workInProgressRootExitStatus === RootSuspendedWithDelay || workInProgressRootExitStatus === RootSuspended && includesOnlyRetries(workInProgressRootRenderLanes) && now() - globalMostRecentFallbackTime < FALLBACK_THROTTLE_MS) {
         // Restart from the root.
         // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
+        // ？？
         prepareFreshStack(root, NoLanes);
       } else {
         // Even though we can't restart right now, we might get an
         // opportunity later. So we mark this render as having a ping.
+        // 本次渲染是畅通的赛道
         workInProgressRootPingedLanes = mergeLanes(workInProgressRootPingedLanes, pingedLanes);
       }
     }
-
+    // 任务调度，
     ensureRootIsScheduled(root, eventTime);
     schedulePendingInteractions(root, pingedLanes);
   }
@@ -26982,7 +27007,7 @@
         // 对当前 fiber node 进行 diff 比较，确定 old fiber node 是否可以复用，然后返回下一个待 diff 的 fiber node
         return beginWork(current, unitOfWork, lanes);
       } catch (originalError) {
-        debugger
+        
         // react render 阶段发生的异常
         // 如果当前处理的 fiber node 是一个懒加载组件 originalError 为懒加载组件对应的 promise 对象
         // 如果是 js 异常， originalError 为相应的异常信息
