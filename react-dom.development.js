@@ -16997,9 +16997,9 @@
 
     var hook = updateWorkInProgressHook();
     var queue = hook.queue;
-    if (workInProgress.type === Parent) {
-      console.log('queue', queue);
-    }
+    // if (workInProgress.type === Parent) {
+    //   console.log('queue', queue);
+    // }
     if (!(queue !== null)) {
       {
         throw Error( "Should have a queue. This is likely a bug in React. Please file an issue." );
@@ -25551,7 +25551,7 @@
     // 那么 workInProgressRoot 、workInProgress 都要重置
     if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
 
-      console.log('渲染树重置', workInProgressRootRenderLanes, lanes);
+      console.log('重置 workInProgress tree', workInProgressRootRenderLanes, lanes);
       // 重置渲染终止时间，即当前时间 + 500 ms()
       resetRenderTimer();
       // 预处理工作，设置当前要处理的 fiber root node 以及对应的 fiber node (阻塞渲染和非阻塞渲染都有这一步)
