@@ -21,44 +21,27 @@
     <div id="app"></div>
     <script type="text/babel">
 
-        const { useEffect, useState, useRef } = React;
+        const { useEffect, useState, useRef, memo, useCallback } = React;
 
         const Child = (props) => {
 
             const [number, setNumber] = useState(1);
 
-            const ref = useRef(null);
-
-            const add = () => {
-                setTimeout(() => {
-                    setNumber(number + 1);
-                }, 500);
-
-
-                // setNumber(number + 1);
-            }
-
             const click = () => {
-
-                // ref.current.click();
-                // props.callback && props.callback();
-                // setTimeout(() => {
-                //     ref.current.click();
-                // }, 500);
                 setTimeout(() => {
                     setNumber(number + 1);
-                }, 100)
+                }, 10)
                 setTimeout(() => {
                     props.callback && props.callback();
-                }, 200);
+                }, 20);
             }
 
             return (
                 <div>
 
-                    <button onClick={click}>+</button>
-                    <div  className="box" onClick={add} ref={ref}>
-                        {Array(100000).fill(number).map(item => (<span>{item}</span>))}
+                    <button onClick={click}>修改 Child + Parent</button>
+                    <div  className="box">
+                        {Array(50000).fill(number).map(item => (<span>{item}</span>))}
                     </div>
                 </div>
                 
@@ -70,18 +53,17 @@
             const buttonRef = useRef(null);
 
             const add = () => {
-                console.log(value);
                 setValue(value + 1);
             }
 
-            const click = () => {
+            const click = useCallback(() => {
                 buttonRef.current.click()
-            }
+            }, [])
 
             return (
                 <React.Fragment>
                     <div>
-                        <button ref={buttonRef} onClick={add}>+</button>
+                        <button ref={buttonRef} onClick={add}>修改 Parent</button>
                         <span>{value}</span>
                         <Child callback={click} />
                     </div>

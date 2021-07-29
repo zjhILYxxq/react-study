@@ -21012,7 +21012,6 @@
         // props 发生变化 或者 context 发生变化 或者 fiber node 的类型发生变化，那么需要重新 render 
         didReceiveUpdate = true;
       } else if (!includesSomeLane(renderLanes, updateLanes)) {
-        
         // 如何理解 renderLanes 不包括 updateLanes
         // updateLanes 是为 fiber node 的更新而分配的赛道，renderLanes 是渲染工作开始以后要处理的赛道
         // 如果 renderLanes 中不包括 updateLanes， 说明该 fiber node 不需要更新
