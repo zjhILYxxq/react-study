@@ -15970,11 +15970,13 @@
     pop(contextFiberStackCursor, fiber);
   }
 
+  // 默认的挂起上下文
   var DefaultSuspenseContext = 0; // The Suspense Context is split into two parts. The lower bits is
   // inherited deeply down the subtree. The upper bits only affect
   // this immediate suspense boundary and gets reset each new
   // boundary or suspense list.
 
+  // 
   var SubtreeSuspenseContextMask = 1; // Subtree Flags:
   // InvisibleParentSuspenseContext indicates that one of our parent Suspense
   // boundaries is not currently showing visible main content.
@@ -15989,7 +15991,7 @@
   // items into their fallback state during one of the render passes.
 
   var ForceSuspenseFallback = 2;
-  //
+  // TODO: next
   var suspenseStackCursor = createCursor(DefaultSuspenseContext);
 
   /**
@@ -20053,13 +20055,18 @@
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
 
     {
+      // 先判断 workInProgress 是否要挂起
+      // 如果没有特殊指定 fiber node 的挂起逻辑，默认不挂起
+      // 为什么一开始就要判断 fiber node 有没有挂起呢??  TODO: answer
       if (shouldSuspend(workInProgress)) {
-        // ？？
+        // 如果 fiber node 已经挂起了，给 fiber node 打 DidCapture(已经捕获)： 32 异常
+        // 本质上，react 在更新 fiber node 的过程中，出现异常，就会被挂起，那么标记就是 DidCapture
         workInProgress.flags |= DidCapture;
       }
     }
-
+    // 挂起的上下文？？
     var suspenseContext = suspenseStackCursor.current;
+    // 是否显示 fallback，默认为 false，不显示
     var showFallback = false;
     // fiber node 是否是已经挂起的
     var didSuspend = (workInProgress.flags & DidCapture) !== NoFlags;
@@ -21071,7 +21078,7 @@
 
             break;
 
-          case SuspenseComponent:  // react.suspense
+          case SuspenseComponent:  // React.Suspense
             {
               var state = workInProgress.memoizedState;
 
@@ -21111,7 +21118,7 @@
               break;
             }
 
-          case SuspenseListComponent: // react.suspense_list
+          case SuspenseListComponent: // React.SuspenseList
             {
               var didSuspendBefore = (current.flags & DidCapture) !== NoFlags;
 
@@ -21208,12 +21215,13 @@
     workInProgress.lanes = NoLanes;
 
     switch (workInProgress.tag) { // fiber node 的类型
-      case IndeterminateComponent: // 组件的类型不确定
+      case IndeterminateComponent: // 组件的类型不确定。 有时候虽然外表看起来不是类组件，但是返回值却是一个函数 render 方法的对象，此时要当做类组件处理
         {
+          // 不确定的组件只有挂载阶段。 因为在 update 阶段，早已经知道组件的类型是函数组件还是类组件
           return mountIndeterminateComponent(current, workInProgress, workInProgress.type, renderLanes);
         }
 
-      case LazyComponent: // 懒加载组件
+      case LazyComponent: // React.Lazy
         {
           var elementType = workInProgress.elementType;
           return mountLazyComponent(current, workInProgress, elementType, updateLanes, renderLanes);
@@ -21240,15 +21248,15 @@
           return updateClassComponent(current, workInProgress, _Component2, _resolvedProps, renderLanes);
         }
 
-      case HostRoot: // 如果是容器节点
+      case HostRoot: // 如果是容器 dom 节点
         // 更新 fiber root node
         return updateHostRoot(current, workInProgress, renderLanes);
 
-      case HostComponent: // 如果是原生的 dom 节点
+      case HostComponent: // 如果是 dom 节点
         // 更新原生的 dom 节点
         return updateHostComponent(current, workInProgress, renderLanes);
 
-      case HostText: // 原生的 文本节点
+      case HostText: // 文本节点
         // 更新原生的 文本节点
         return updateHostText(current, workInProgress);
 
@@ -21260,7 +21268,7 @@
         // 
         return updatePortalComponent(current, workInProgress, renderLanes);
 
-      case ForwardRef: // react.forwardRef
+      case ForwardRef: // React.ForwardRef
         {
           var type = workInProgress.type;
           var _unresolvedProps2 = workInProgress.pendingProps;
@@ -21270,10 +21278,10 @@
           return updateForwardRef(current, workInProgress, type, _resolvedProps2, renderLanes);
         }
 
-      case Fragment: // react.fragment
+      case Fragment: // react.Fragment
         return updateFragment(current, workInProgress, renderLanes);
 
-      case Mode: // react.??
+      case Mode: // react.StrictMode ??
         return updateMode(current, workInProgress, renderLanes);
 
       case Profiler: // react.profiler
@@ -21322,7 +21330,7 @@
           return mountIncompleteClassComponent(current, workInProgress, _Component3, _resolvedProps4, renderLanes);
         }
 
-      case SuspenseListComponent: // react.suspense_list
+      case SuspenseListComponent: // react.SuspenseList
         {
           return updateSuspenseListComponent(current, workInProgress, renderLanes);
         }
@@ -21345,7 +21353,7 @@
           break;
         }
 
-      case OffscreenComponent:  // React_OFFSCREENT_TYPE
+      case OffscreenComponent:  // React.OffScreen
         {
           return updateOffscreenComponent(current, workInProgress, renderLanes);
         }
@@ -28888,18 +28896,22 @@
   }
 
   /**
-   * fiber node 默认是不挂起的
-   * @param fiber
+   * react 提供了判断 fiber node 是否挂起的实现
+   * fiber node 默认不挂起
+   * 我们也可以自定义 shouldSuspendImpl
+   * @param fiber fiber node
    */
   var shouldSuspendImpl = function (fiber) {
     return false;
   };
 
   /**
-   * 判断 fiber node 是否应该挂起，默认是 false
-   * @param fiber
+   * 判断 fiber node 是否应该挂起
+   * 如果没有自定义 shouldSuspendImpl， 返回 false， 即 fiber node 不需要挂起
+   * @param fiber fiber node
    */
   function shouldSuspend(fiber) {
+    // 判断 fiber node 是否应该挂起的实现
     return shouldSuspendImpl(fiber);
   }
   var overrideHookState = null;
