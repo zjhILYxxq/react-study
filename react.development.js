@@ -29,7 +29,7 @@
   var REACT_CONTEXT_TYPE = 0xeace;
   var REACT_FORWARD_REF_TYPE = 0xead0;
   exports.Suspense = 0xead1;
-  var REACT_SUSPENSE_LIST_TYPE = 0xead8;
+  exports.SuspenseList = 0xead8;
   var REACT_MEMO_TYPE = 0xead3;
   var REACT_LAZY_TYPE = 0xead4;
   var REACT_BLOCK_TYPE = 0xead9;
@@ -52,7 +52,7 @@
     REACT_CONTEXT_TYPE = symbolFor('react.context');
     REACT_FORWARD_REF_TYPE = symbolFor('react.forward_ref');
     exports.Suspense = symbolFor('react.suspense');
-    REACT_SUSPENSE_LIST_TYPE = symbolFor('react.suspense_list');
+    exports.SuspenseList = symbolFor('react.suspense_list');
     REACT_MEMO_TYPE = symbolFor('react.memo');
     REACT_LAZY_TYPE = symbolFor('react.lazy');
     REACT_BLOCK_TYPE = symbolFor('react.block');
@@ -525,7 +525,7 @@
       case exports.Suspense:
         return 'Suspense';
 
-      case REACT_SUSPENSE_LIST_TYPE:
+      case exports.SuspenseList:
         return 'SuspenseList';
     }
 
@@ -1460,7 +1460,7 @@
     } // Note: typeof might be other than 'symbol' or 'number' (e.g. if it's a polyfill).
 
 
-    if (type === exports.Fragment || type === exports.Profiler || type === REACT_DEBUG_TRACING_MODE_TYPE || type === exports.StrictMode || type === exports.Suspense || type === REACT_SUSPENSE_LIST_TYPE || type === REACT_LEGACY_HIDDEN_TYPE || enableScopeAPI ) {
+    if (type === exports.Fragment || type === exports.Profiler || type === REACT_DEBUG_TRACING_MODE_TYPE || type === exports.StrictMode || type === exports.Suspense || type === exports.SuspenseList || type === REACT_LEGACY_HIDDEN_TYPE || enableScopeAPI ) {
       return true;
     }
 
@@ -1944,7 +1944,7 @@
       case exports.Suspense:
         return describeBuiltInComponentFrame('Suspense');
 
-      case REACT_SUSPENSE_LIST_TYPE:
+      case exports.SuspenseList:
         return describeBuiltInComponentFrame('SuspenseList');
     }
 

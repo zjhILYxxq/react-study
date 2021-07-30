@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="../react.development.js"></script>
-    <script src="../react-dom.development.js"></script>
-    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="../../react.development.js"></script>
+    <script src="../../react-dom.development.js"></script>
+    <script src="../../react-dom-server.browser.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
     <title>Document</title>
 </head>
@@ -23,6 +23,32 @@
                         name: "zjh"
                     });
                 }, 2000)
+            });
+        }
+
+        const fetchUser1 = () => {
+            console.log('fetch user1...');
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    debugger
+                    console.log("fetched user");
+                    resolve({
+                        name: "zjh1"
+                    });
+                }, 1000)
+            });
+        }
+
+        const fetchUser2 = () => {
+            console.log('fetch user2...');
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    debugger
+                    console.log("fetched user");
+                    resolve({
+                        name: "zjh2"
+                    });
+                }, 4000)
             });
         }
 
@@ -53,21 +79,47 @@
 
         function fetchProfileData() {
             let userPromise = fetchUser();
+            let userPromise1 = fetchUser1();
+            let userPromise2 = fetchUser2();
             // let postsPromise = fetchPosts();
             return {
                 user: wrapPromise(userPromise),
+                user1: wrapPromise(userPromise1),
+                user2: wrapPromise(userPromise2)
                 // posts: wrapPromise(postsPromise)
             };
         }
 
         const resource = fetchProfileData();
 
-        function ProfilePage() {
-            debugger
+        function ProfilePageList() {
             return (
-                <React.Suspense fallback={<h1>Loading profile...</h1>}>
-                    <ProfileDetails />
-                </React.Suspense>
+                <React.SuspenseList revealOrder="backwards">
+                    <React.Suspense fallback={<h1>Loading profile...1</h1>}>
+                        <ProfileDetails2 />
+                    </React.Suspense>
+                    <React.Suspense fallback={<h1>Loading profile...3</h1>}>
+                        <ProfileDetails />
+                    </React.Suspense>
+                    <React.Suspense fallback={<h1>Loading profile...2</h1>}>
+                        <ProfileDetails1 />
+                    </React.Suspense>                    
+                    
+                </React.SuspenseList>
+                
+            );
+        }
+
+        function ProfilePage() {
+            return (
+                <div>
+                    <React.Suspense fallback={<h1>Loading profile...</h1>}>
+                        <React.Suspense fallback={<ProfileDetails />}>
+                            <ProfileDetails />
+                        </React.Suspense>
+                    </React.Suspense>                 
+                </div>
+                
             );
         }
 
@@ -76,8 +128,18 @@
             const user = resource.user.read();
             return <h1>{user.name}</h1>;
         }
+        function ProfileDetails1() {
+            // Try to read user info, although it might not have loaded yet
+            const user = resource.user1.read();
+            return <h1>{user.name}</h1>;
+        }
+        function ProfileDetails2() {
+            // Try to read user info, although it might not have loaded yet
+            const user = resource.user2.read();
+            return <h1>{user.name}</h1>;
+        }
 
-        // new ReactDOM.createRoot(document.getElementById('app')).render(<ProfilePage />);
+        // new ReactDOM.createRoot(document.getElementById('app')).render(<ProfilePageList />);
 
         ReactDOM.render(<ProfilePage/>, document.getElementById('app'));
 

@@ -11683,13 +11683,17 @@
     }
   }
 
+  // 
   var valueStack = [];
+
+  // 存储 fiber node 的栈
   var fiberStack;
 
   {
     fiberStack = [];
   }
 
+  //
   var index = -1;
 
   /**
@@ -11733,6 +11737,7 @@
   }
 
   /**
+   * 
    * @param cursor
    * @param value
    * @param fiber
@@ -12671,7 +12676,9 @@
   // 0b111111111111111111111111111111
   var MAX_SIGNED_31_BIT_INT = 1073741823;
 
+  // 
   var valueCursor = createCursor(null);
+
   var rendererSigil;
 
   {
@@ -12719,6 +12726,7 @@
   }
 
   /**
+   * 
    * @param providerFiber  Context.Provider 对应的 fiber node
    * @param nextValue context 新的 value 值
    */
@@ -15929,12 +15937,18 @@
     push(contextStackCursor$1, nextRootContext, fiber);
   }
 
+  /**
+   * @param fiber
+   */
   function popHostContainer(fiber) {
     pop(contextStackCursor$1, fiber);
     pop(contextFiberStackCursor, fiber);
     pop(rootInstanceStackCursor, fiber);
   }
 
+  /**
+   * 
+   */
   function getHostContext() {
     var context = requiredContext(contextStackCursor$1.current);
     return context;
@@ -15942,7 +15956,7 @@
 
   /**
    * 
-   * @param fiber
+   * @param fiber fiber node
    */
   function pushHostContext(fiber) {
     var rootInstance = requiredContext(rootInstanceStackCursor.current);
@@ -15959,6 +15973,10 @@
     push(contextStackCursor$1, nextContext, fiber);
   }
 
+  /**
+   * 
+   * @param fiber fiber node
+   */
   function popHostContext(fiber) {
     // Do not pop unless this Fiber provided the current context.
     // pushHostContext() only pushes Fibers that provide unique contexts.
@@ -15976,6 +15994,8 @@
   // this immediate suspense boundary and gets reset each new
   // boundary or suspense list.
 
+  // Suspense Context 分为两部分。低位是沿 subtree 继承 ？？ 高位只影响直接的 suspense 边界，重置每个新边界或者 suspense 列表？？
+
   // 
   var SubtreeSuspenseContextMask = 1; // Subtree Flags:
   // InvisibleParentSuspenseContext indicates that one of our parent Suspense
@@ -15990,8 +16010,9 @@
   // ForceSuspenseFallback can be used by SuspenseList to force newly added
   // items into their fallback state during one of the render passes.
 
+  // ForceSuspenseFallback 可以被 SuspenseList 用来
   var ForceSuspenseFallback = 2;
-  // TODO: next
+  // 基于 DefaultSuspenseContext 创建一个光标  ? 挂起栈 ？？
   var suspenseStackCursor = createCursor(DefaultSuspenseContext);
 
   /**
@@ -16013,12 +16034,15 @@
 
   /**
    * 
+   * @param parentContext
+   * @param shallowContext
    */
   function setShallowSuspenseContext(parentContext, shallowContext) {
     return parentContext & SubtreeSuspenseContextMask | shallowContext;
   }
 
   /**
+   * 
    * @param parentContext
    * @param subtreeContext
    */
@@ -20052,6 +20076,7 @@
    * @param renderLanes 本次渲染的优先级
    */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
+    debugger
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
 
     {
