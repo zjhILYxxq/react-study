@@ -11697,8 +11697,8 @@
   var index = -1;
 
   /**
-   * 创建一个光标？？
-   * @param  defaultValue
+   * 创建一个光标对象
+   * @param  defaultValue  光标对象指向的 valueStack 的值
    */
   function createCursor(defaultValue) {
     return {
@@ -11707,8 +11707,8 @@
   }
 
   /**
-   * 
-   * @param cursor
+   * valueStack、fiberStack 元素出栈
+   * @param cursor 光标对象， cursor.current 的值为 valueStack 出栈元素的值
    * @param fiber 
    */
   function pop(cursor, fiber) {
@@ -11721,35 +11721,46 @@
     }
 
     {
+      // 保证 valueStack 出栈获取到的值，确实是想要的值
+      // 如果 fiber !== fiberStack[index], 意味着出栈的值不匹配，此时要抛出异常了
       if (fiber !== fiberStack[index]) {
         error('Unexpected Fiber popped.');
       }
     }
-
+    // 出栈操作，以为者 cursor.current 指向的值已经用完了
+    // 需要 valueStack 做出栈操作，重新给 cursor.current 赋予上次没有处理完的值
     cursor.current = valueStack[index];
+    // valueStack 出栈操作
     valueStack[index] = null;
 
     {
+      // fiberStack 出栈操作
       fiberStack[index] = null;
     }
 
+    // index 指向栈顶元素
     index--;
   }
 
   /**
-   * 
-   * @param cursor
-   * @param value
-   * @param fiber
+   * valueStack、fiberStack 元素入栈
+   * 先将光标对象的 current 值入 valueStack，然后再给光标对象赋值 value ？？
+   * @param cursor  光标对象(React )
+   * @param value 当前要使用的最新的值
+   * @param fiber fiberStack 入栈的 fiber node
    */
   function push(cursor, value, fiber) {
+    // index 指向栈顶元素
     index++;
+    // 到这一步，以为值 cursor.current 指向的是一个老的值，要把 old value 入栈，然后让 cursor.current 指向新的 value
     valueStack[index] = cursor.current;
 
     {
+      // fiberStack 入栈
       fiberStack[index] = fiber;
     }
 
+    // cursor.current 指向的是一个新的 value
     cursor.current = value;
   }
 
@@ -12676,7 +12687,7 @@
   // 0b111111111111111111111111111111
   var MAX_SIGNED_31_BIT_INT = 1073741823;
 
-  // 
+  // Context.Provider 类型的光标对象
   var valueCursor = createCursor(null);
 
   var rendererSigil;
@@ -15938,6 +15949,7 @@
   }
 
   /**
+   * 
    * @param fiber
    */
   function popHostContainer(fiber) {
@@ -16010,15 +16022,15 @@
   // ForceSuspenseFallback can be used by SuspenseList to force newly added
   // items into their fallback state during one of the render passes.
 
-  // ForceSuspenseFallback 可以被 SuspenseList 用来
+  // ForceSuspenseFallback 可以被 SuspenseList 用来强制 Suspense 进入 fallback ？？
   var ForceSuspenseFallback = 2;
   // 基于 DefaultSuspenseContext 创建一个光标  ? 挂起栈 ？？
   var suspenseStackCursor = createCursor(DefaultSuspenseContext);
 
   /**
-   * 
-   * @param parentContext
-   * @param flag
+   * 判断当前元素是否被 Suspense、SuspenseList 元素包裹
+   * @param parentContext suspense 上下文
+   * @param flag Suspense 的类型？？ Suspense 或者 SuspenseList
    */
   function hasSuspenseContext(parentContext, flag) {
     return (parentContext & flag) !== 0;
@@ -16042,7 +16054,7 @@
   }
 
   /**
-   * 
+   * 添加 Suspense 上下文 ？？
    * @param parentContext
    * @param subtreeContext
    */
@@ -16051,16 +16063,17 @@
   }
 
   /**
-   * 
+   * 把原来的 Suspense 上下文入栈，suspenseStackCursor 指向当前的 Suspense 上下文
    * @param fiber React.Suspense 对应的 fiber node
    * @param newContext 对应的 suspense 上下文？？
    */
   function pushSuspenseContext(fiber, newContext) {
-    // 入栈 ？？
+    // 原来的 Suspense 上下文入栈， suspenseStackCursor 指向 newContext
     push(suspenseStackCursor, newContext, fiber);
   }
 
   /**
+   * 出栈操作， suspenseStackCursor 指向上一次入栈的 Suspense 上下文
    * @param fiber React.Suspense 对应的 fiber node
    */
   function popSuspenseContext(fiber) {
@@ -20077,6 +20090,8 @@
    */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
     debugger
+    // workInProgress 是正在处理 React.Suspense 类型的 fiber node
+    // nexProps 中包含 fallback、children
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
 
     {
@@ -20089,7 +20104,7 @@
         workInProgress.flags |= DidCapture;
       }
     }
-    // 挂起的上下文？？
+    // 挂起的上下文，初始化值是 0
     var suspenseContext = suspenseStackCursor.current;
     // 是否显示 fallback，默认为 false，不显示
     var showFallback = false;
@@ -20120,7 +20135,7 @@
         }
       }
     }
-    // 
+    // 设置默认的 shallow suspense 上下文
     suspenseContext = setDefaultShallowSuspenseContext(suspenseContext);
     // 
     pushSuspenseContext(workInProgress, suspenseContext); // OK, the next part is confusing. We're about to reconcile the Suspense
@@ -20482,6 +20497,9 @@
     }
   }
 
+  /**
+   * @param firstChild
+   */
   function findLastContentRow(firstChild) {
     // This is going to find the last row among these children that is already
     // showing content on the screen, as opposed to being in fallback state or
@@ -20505,7 +20523,11 @@
 
     return lastContentRow;
   }
-
+  
+  /**
+   * 校验 SuspenseList 的 revealOrder 属性
+   * @param revealOrder SuspenseList 的 revealOrder 属性
+   */
   function validateRevealOrder(revealOrder) {
     {
       if (revealOrder !== undefined && revealOrder !== 'forwards' && revealOrder !== 'backwards' && revealOrder !== 'together' && !didWarnAboutRevealOrder[revealOrder]) {
@@ -20542,6 +20564,11 @@
     }
   }
 
+  /**
+   * 校验 SuspenseList 的 tailMode 属性
+   * @param tailMode  SuspenseList 的 tailMode 属性
+   * @param revealOrder SuspenseList 的 revealOrder 属性
+   */
   function validateTailOptions(tailMode, revealOrder) {
     {
       if (tailMode !== undefined && !didWarnAboutTailOptions[tailMode]) {
@@ -20558,6 +20585,11 @@
     }
   }
 
+  /**
+   * 
+   * @param childSlot
+   * @param index
+   */
   function validateSuspenseListNestedChild(childSlot, index) {
     {
       var isArray = Array.isArray(childSlot);
@@ -20575,6 +20607,10 @@
     return true;
   }
 
+  /**
+   * @param children
+   * @param revealOrder
+   */
   function validateSuspenseListChildren(children, revealOrder) {
     {
       if ((revealOrder === 'forwards' || revealOrder === 'backwards') && children !== undefined && children !== null && children !== false) {
@@ -20643,39 +20679,52 @@
 
 
   /**
-
-   * @param current
-   * @param workInProgress
-   * @param renderLanes
+   * 
+   * @param current   old fiber node
+   * @param workInProgress  正在处理的 fiber node，即 new fiber node
+   * @param renderLanes 本次渲染对应的优先级
    */
   function updateSuspenseListComponent(current, workInProgress, renderLanes) {
+    debugger
     var nextProps = workInProgress.pendingProps;
+    // revealOrder 属性: forwards, backwards, together
     var revealOrder = nextProps.revealOrder;
+    // tailMode 属性: collapsed, hidden
     var tailMode = nextProps.tail;
+    // 子元素
     var newChildren = nextProps.children;
     validateRevealOrder(revealOrder);
     validateTailOptions(tailMode, revealOrder);
     validateSuspenseListChildren(newChildren, revealOrder);
+    // 先对子元素进行协调，构建 workInProgress 的 child fiber node
     reconcileChildren(current, workInProgress, newChildren, renderLanes);
+    // Suspense 上下文，默认为 0
     var suspenseContext = suspenseStackCursor.current;
+    // 主要是看当前 SuspenseList 的 parent fiber node 中是否有有 SuspenseList 元素
     var shouldForceFallback = hasSuspenseContext(suspenseContext, ForceSuspenseFallback);
 
     if (shouldForceFallback) {
+      // parent fiber node 中有 SuspenseList
       suspenseContext = setShallowSuspenseContext(suspenseContext, ForceSuspenseFallback);
+      // 
       workInProgress.flags |= DidCapture;
     } else {
+      // 判断上一次渲染更新时，是否是挂起的
       var didSuspendBefore = current !== null && (current.flags & DidCapture) !== NoFlags;
 
       if (didSuspendBefore) {
+        // 上一次渲染更新时，是挂起的
         // If we previously forced a fallback, we need to schedule work
         // on any nested boundaries to let them know to try to render
         // again. This is the same as context updating.
         propagateSuspenseContextChange(workInProgress, workInProgress.child, renderLanes);
       }
 
+      // suspenseContext 为 0， 即 suspenseList 对应的 suspenseContext 为 0
       suspenseContext = setDefaultShallowSuspenseContext(suspenseContext);
     }
 
+    // 
     pushSuspenseContext(workInProgress, suspenseContext);
 
     if ((workInProgress.mode & BlockingMode) === NoMode) {
@@ -20759,6 +20808,12 @@
     return workInProgress.child;
   }
 
+  /**
+   * 
+   * @param current
+   * @param workInProgress
+   * @param renderLanes
+   */
   function updatePortalComponent(current, workInProgress, renderLanes) {
     pushHostContainer(workInProgress, workInProgress.stateNode.containerInfo);
     var nextChildren = workInProgress.pendingProps;
@@ -21791,6 +21846,7 @@
 
       case SuspenseComponent:  // suspense component
         {
+          debugger
           popSuspenseContext(workInProgress);
           var nextState = workInProgress.memoizedState;
 
