@@ -15967,7 +15967,7 @@
   }
 
   /**
-   * 
+   * 原生
    * @param fiber fiber node
    */
   function pushHostContext(fiber) {
@@ -16194,6 +16194,10 @@
   // 用于判断是否处于 hydrate 中
   var isHydrating = false;
 
+  /**
+   * 
+   * @param fiber
+   */
   function enterHydrationState(fiber) {
 
     var parentInstance = fiber.stateNode.containerInfo;
@@ -16203,6 +16207,11 @@
     return true;
   }
 
+  /**
+   * 
+   * @param returnFiber
+   * @param instance
+   */
   function deleteHydratableInstance(returnFiber, instance) {
     {
       switch (returnFiber.tag) {
@@ -16233,6 +16242,11 @@
     }
   }
 
+  /**
+   * 
+   * @param returnFiber
+   * @param fiber
+   */
   function insertNonHydratedInstance(returnFiber, fiber) {
     fiber.flags = fiber.flags & ~Hydrating | Placement;
 
@@ -16290,6 +16304,10 @@
     }
   }
 
+  /**
+   * @param fiber
+   * @param nextInstance
+   */
   function tryHydrate(fiber, nextInstance) {
     switch (fiber.tag) {
       case HostComponent:
@@ -16397,6 +16415,10 @@
     return false;
   }
 
+  /**
+   * 
+   * @param fiber
+   */
   function prepareToHydrateHostTextInstance(fiber) {
 
     var textInstance = fiber.stateNode;
@@ -16434,6 +16456,9 @@
     return shouldUpdate;
   }
 
+  /**
+   * @param fiber
+   */
   function skipPastDehydratedSuspenseInstance(fiber) {
 
     var suspenseState = fiber.memoizedState;
@@ -16448,6 +16473,9 @@
     return getNextHydratableInstanceAfterSuspenseInstance(suspenseInstance);
   }
 
+  /**
+   * @param fiber
+   */
   function popToNextHostParent(fiber) {
     var parent = fiber.return;
 
@@ -16458,6 +16486,9 @@
     hydrationParentFiber = parent;
   }
 
+  /**
+   * @param fiber
+   */
   function popHydrationState(fiber) {
 
     if (fiber !== hydrationParentFiber) {
@@ -16531,6 +16562,9 @@
     rendererSigil$1 = {};
   }
 
+  /**
+   * @param mutableSource
+   */
   function markSourceAsDirty(mutableSource) {
     workInProgressSources.push(mutableSource);
   }
@@ -16549,11 +16583,13 @@
 
     workInProgressSources.length = 0;
   }
+  
   function getWorkInProgressVersion(mutableSource) {
     {
       return mutableSource._workInProgressVersionPrimary;
     }
   }
+
   function setWorkInProgressVersion(mutableSource, version) {
     {
       mutableSource._workInProgressVersionPrimary = version;
@@ -16561,6 +16597,7 @@
 
     workInProgressSources.push(mutableSource);
   }
+
   function warnAboutMultipleRenderersDEV(mutableSource) {
     {
       {
@@ -16697,6 +16734,10 @@
     }
   }
 
+  /**
+   * @param nextDeps
+   * @param prevDeps
+   */
   function areHookInputsEqual(nextDeps, prevDeps) {
     {
       if (ignorePreviousDependencies) {
@@ -16913,6 +16954,9 @@
     didScheduleRenderPhaseUpdateDuringThisPass = false;
   }
 
+  /**
+   * 
+   */
   function mountWorkInProgressHook() {
     var hook = {
       memoizedState: null,
@@ -16933,6 +16977,9 @@
     return workInProgressHook;
   }
 
+  /**
+   * 
+   */
   function updateWorkInProgressHook() {
     // This function is used both for updates and for re-renders triggered by a
     // render phase update. It assumes there is either a current hook we can
@@ -16995,17 +17042,29 @@
     return workInProgressHook;
   }
 
+  /**
+   * 
+   */
   function createFunctionComponentUpdateQueue() {
     return {
       lastEffect: null
     };
   }
 
+  /**
+   * @param state
+   * @param action
+   */
   function basicStateReducer(state, action) {
     // $FlowFixMe: Flow doesn't like mixed types
     return typeof action === 'function' ? action(state) : action;
   }
 
+  /**
+   * @param reducer
+   * @param initialArg
+   * @param init
+   */
   function mountReducer(reducer, initialArg, init) {
     var hook = mountWorkInProgressHook();
     var initialState;
@@ -17164,6 +17223,11 @@
     return [hook.memoizedState, dispatch];
   }
 
+  /**
+   * @param reducer
+   * @param initialArg
+   * @param init
+   */
   function rerenderReducer(reducer, initialArg, init) {
     var hook = updateWorkInProgressHook();
     var queue = hook.queue;
@@ -17217,6 +17281,11 @@
     return [newState, dispatch];
   }
 
+  /**
+   * @param root
+   * @param source
+   * @param getSnapshot
+   */
   function readFromUnsubcribedMutableSource(root, source, getSnapshot) {
     {
       warnAboutMultipleRenderersDEV(source);
@@ -17290,6 +17359,12 @@
     }
   }
 
+  /**
+   * @param hook
+   * @param source
+   * @param getSnapshot
+   * @param subscribe
+   */
   function useMutableSource(hook, source, getSnapshot, subscribe) {
     var root = getWorkInProgressRoot();
 
@@ -17457,10 +17532,17 @@
     return [hook.memoizedState, dispatch];
   }
 
+  /**
+   * 
+   * @param {} initialState 
+   */
   function updateState(initialState) {
     return updateReducer(basicStateReducer);
   }
 
+  /**
+   * @param initialState
+   */
   function rerenderState(initialState) {
     return rerenderReducer(basicStateReducer);
   }
@@ -17503,6 +17585,9 @@
     return effect;
   }
 
+  /**
+   * @param initialValue
+   */
   function mountRef(initialValue) {
     var hook = mountWorkInProgressHook();
     var ref = {
@@ -17517,6 +17602,9 @@
     return ref;
   }
 
+  /**
+   * @param initialValue
+   */
   function updateRef(initialValue) {
     var hook = updateWorkInProgressHook();
     return hook.memoizedState;
@@ -17619,6 +17707,10 @@
     return updateEffectImpl(Update, Layout, create, deps);
   }
 
+  /**
+   * @param create
+   * @param ref
+   */
   function imperativeHandleEffect(create, ref) {
     if (typeof ref === 'function') {
       var refCallback = ref;
@@ -17647,6 +17739,11 @@
     }
   }
 
+  /**
+   * @param ref
+   * @param create
+   * @param deps
+   */
   function mountImperativeHandle(ref, create, deps) {
     {
       if (typeof create !== 'function') {
@@ -17659,6 +17756,11 @@
     return mountEffectImpl(Update, Layout, imperativeHandleEffect.bind(null, create, ref), effectDeps);
   }
 
+  /**
+   * @param ref
+   * @param create
+   * @param deps
+   */
   function updateImperativeHandle(ref, create, deps) {
     {
       if (typeof create !== 'function') {
@@ -17678,6 +17780,11 @@
 
   var updateDebugValue = mountDebugValue;
 
+  /**
+   * 
+   * @param {} callback 
+   * @param {*} deps 
+   */
   function mountCallback(callback, deps) {
     var hook = mountWorkInProgressHook();
     var nextDeps = deps === undefined ? null : deps;
@@ -17685,6 +17792,10 @@
     return callback;
   }
 
+  /**
+   * @param callback
+   * @param deps
+   */
   function updateCallback(callback, deps) {
     var hook = updateWorkInProgressHook();
     var nextDeps = deps === undefined ? null : deps;
@@ -17704,6 +17815,10 @@
     return callback;
   }
 
+  /**
+   * @param nextCreate
+   * @param deps
+   */
   function mountMemo(nextCreate, deps) {
     var hook = mountWorkInProgressHook();
     var nextDeps = deps === undefined ? null : deps;
@@ -17712,6 +17827,11 @@
     return nextValue;
   }
 
+  /**
+   * 
+   * @param {} nextCreate 
+   * @param {*} deps 
+   */
   function updateMemo(nextCreate, deps) {
     var hook = updateWorkInProgressHook();
     var nextDeps = deps === undefined ? null : deps;
@@ -17733,6 +17853,9 @@
     return nextValue;
   }
 
+  /**
+   * @param value
+   */
   function mountDeferredValue(value) {
     var _mountState = mountState(value),
         prevValue = _mountState[0],
@@ -17751,6 +17874,9 @@
     return prevValue;
   }
 
+  /**
+   * @param value
+   */
   function updateDeferredValue(value) {
     var _updateState = updateState(),
         prevValue = _updateState[0],
@@ -17769,6 +17895,9 @@
     return prevValue;
   }
 
+  /**
+   * @param value
+   */
   function rerenderDeferredValue(value) {
     var _rerenderState = rerenderState(),
         prevValue = _rerenderState[0],
@@ -17812,6 +17941,9 @@
     }
   }
 
+  /**
+   * 
+   */
   function mountTransition() {
     var _mountState2 = mountState(false),
         isPending = _mountState2[0],
@@ -17824,6 +17956,9 @@
     return [start, isPending];
   }
 
+  /**
+   * 
+   */
   function updateTransition() {
     var _updateState2 = updateState(),
         isPending = _updateState2[0];
@@ -17833,6 +17968,9 @@
     return [start, isPending];
   }
 
+  /**
+   * 
+   */
   function rerenderTransition() {
     var _rerenderState2 = rerenderState(),
         isPending = _rerenderState2[0];
@@ -17909,12 +18047,18 @@
       return _id;
     }
   }
-
+  
+  /**
+   * 
+   */
   function updateOpaqueIdentifier() {
     var id = updateState()[0];
     return id;
   }
 
+  /**
+   * 
+   */
   function rerenderOpaqueIdentifier() {
     var id = rerenderState()[0];
     return id;
