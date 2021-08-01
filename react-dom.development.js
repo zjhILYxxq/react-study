@@ -16055,7 +16055,7 @@
 
   /**
    * 添加 Suspense 上下文 ？？
-   * @param parentContext
+   * @param parentContext  之前的 Suspense 上下文
    * @param subtreeContext
    */
   function addSubtreeSuspenseContext(parentContext, subtreeContext) {
@@ -16077,7 +16077,8 @@
    * @param fiber React.Suspense 对应的 fiber node
    */
   function popSuspenseContext(fiber) {
-    // 出栈 ？？
+    // 出栈操作， suspenseStackCousor.current 指向上一次入栈的 Suspense 上下文
+    // fiber 是用来保证出栈的元素是所需的对应的元素
     pop(suspenseStackCursor, fiber);
   }
 
@@ -19301,7 +19302,7 @@
    * 挂载/更新 React_OFFSCREEN_TYPE  类型的 fiber node
    * @param current old fiber node
    * @param workInProgress 当前正在处理的 fiber node， 即 new fiber node
-   * @param rendrLanes
+   * @param rendrLanes 本次渲染要处理的更新
    */
   function updateOffscreenComponent(current, workInProgress, renderLanes) {
     // { visible: true, children: xxxx}
@@ -20182,12 +20183,20 @@
     retryLane: NoLane
   };
 
+  /**
+   * @param renderLanes
+   */
   function mountSuspenseOffscreenState(renderLanes) {
     return {
       baseLanes: renderLanes
     };
   }
 
+  /**
+   * 
+   * @param prevOffscreenState
+   * @param renderLanes
+   */
   function updateSuspenseOffscreenState(prevOffscreenState, renderLanes) {
     return {
       baseLanes: mergeLanes(prevOffscreenState.baseLanes, renderLanes)
@@ -20196,6 +20205,7 @@
 
 
   /**
+   * 
    * @param suspenseContext
    * @param current
    * @param workInProgress
@@ -20281,7 +20291,7 @@
     }
     // 设置默认的 shallow suspense 上下文
     suspenseContext = setDefaultShallowSuspenseContext(suspenseContext);
-    // 
+    // 记录当前的 suspense 上下文，把原来的 suspense 上下文入栈
     pushSuspenseContext(workInProgress, suspenseContext); // OK, the next part is confusing. We're about to reconcile the Suspense
     // boundary's children. This involves some custom reconcilation logic. Two
     // main reasons this is so complicated.
@@ -20305,7 +20315,7 @@
     // which branch we're currently rendering. Ideally we would model this using
     // a stack.
 
-    if (current === null) {
+    if (current === null) {   // Suspense fiber node 挂载操作
       // Initial mount
       // If we're currently hydrating, try to hydrate this boundary.
       // But only if this has a fallback.
@@ -20358,6 +20368,7 @@
       // This is an update.
       // If the current fiber has a SuspenseState, that means it's already showing
       // a fallback.
+      // 
       var prevState = current.memoizedState;
 
       if (prevState !== null) {
@@ -20417,12 +20428,11 @@
    * 挂载 React.Suspense 的子元素
    * @param workInProgress  当前正在处理的 fiber node， 即 new fiber node
    * @param primaryChild React.Suspense 子元素对应的 react element
-   * @param renderLanes
+   * @param renderLanes 本次渲染要处理的更新
    */
   function mountSuspensePrimaryChildren(workInProgress, primaryChildren, renderLanes) {
     // 当前的模式,如果是 Concurrent 模式，那么就是 7
     var mode = workInProgress.mode;
-    // 
     var primaryChildProps = {
       mode: 'visible',
       children: primaryChildren // react element
@@ -20471,7 +20481,9 @@
 
       fallbackChildFragment = createFiberFromFragment(fallbackChildren, mode, renderLanes, null);
     } else {
+      // 创建一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
       primaryChildFragment = createFiberFromOffscreen(primaryChildProps, mode, NoLanes, null);
+      //
       fallbackChildFragment = createFiberFromFragment(fallbackChildren, mode, renderLanes, null);
     }
 
@@ -21579,6 +21591,7 @@
 
       case OffscreenComponent:  // React.OffScreen
         {
+          // 挂载/更新 REACT_OFFSCREEN_TYPE 类型的 fiber node
           return updateOffscreenComponent(current, workInProgress, renderLanes);
         }
 
@@ -22704,9 +22717,10 @@
    * @param returnFiber parent fiber node
    * @param sourceFiber 产生异常的 fiber node
    * @param value 异常
-   * @param rootRenderLanes 产生异常时的渲染优先级
+   * @param rootRenderLanes 产生异常时的渲染要处理的更新
    */
   function throwException(root, returnFiber, sourceFiber, value, rootRenderLanes) {
+    debugger
     
     // The source fiber did not complete.
     // 产生异常的 fiber node，标记未完成
@@ -22725,8 +22739,10 @@
         // 阻塞渲染？？
         // Reset the memoizedState to what it was before we attempted
         // to render it.
+        // old fiber node
         var currentSource = sourceFiber.alternate;
 
+        // 这一步是什么意思？？
         if (currentSource) {
           sourceFiber.updateQueue = currentSource.updateQueue;
           sourceFiber.memoizedState = currentSource.memoizedState;
@@ -22738,6 +22754,7 @@
       }
 
       // 判断是否有不可见的 parent suspense 上下文
+      // 即出现异常的 fiber node 是否被 Suspense 包裹
       var hasInvisibleParentBoundary = hasSuspenseContext(suspenseStackCursor.current, InvisibleParentSuspenseContext); // Schedule the nearest Suspense to re-render the timed out view.
       // parent fiber node
       var _workInProgress = returnFiber;
@@ -25508,12 +25525,12 @@
   /**
    * 处理异常
    * @param root fiber root node
-   * @param thrownValue 抛出的异常信息， thrownValue 是一个 promise 对象
+   * @param thrownValue 抛出的异常信息
    */
   function handleError(root, thrownValue) {
     
     do {
-      // 产生异常的 fiber node，一般是 懒加载组件或者是要请求的数据还没有拿到
+      // 产生异常的 fiber node，一般是 懒加载组件或者是要请求的数据还没有拿到 ？？
       var erroredWork = workInProgress;  
 
       try {
@@ -25552,6 +25569,7 @@
         throwException(root, erroredWork.return, erroredWork, thrownValue, workInProgressRootRenderLanes);
         completeUnitOfWork(erroredWork);
       } catch (yetAnotherThrownValue) {
+        // 处理异常的过程中又出现了新的异常
         // Something in the return path also threw.
         thrownValue = yetAnotherThrownValue;
 
@@ -25716,6 +25734,7 @@
         workLoopSync();
         break;
       } catch (thrownValue) {
+        // 处理异常
         handleError(root, thrownValue);
       }
     } while (true);
@@ -28391,6 +28410,7 @@
           return createFiberFromSuspenseList(pendingProps, mode, lanes, key);
 
         case REACT_OFFSCREEN_TYPE: // offscreen 
+          // 创建一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
           return createFiberFromOffscreen(pendingProps, mode, lanes, key);
 
         case REACT_LEGACY_HIDDEN_TYPE: // legacy hidden
@@ -28577,8 +28597,8 @@
 
   /**
    * 创建一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
-   * @param pedingProps
-   * @param mode
+   * @param pedingProps  props
+   * @param mode 
    * @param lanes
    * @param key
    */
