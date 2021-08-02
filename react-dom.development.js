@@ -16108,7 +16108,7 @@
     if (props.fallback === undefined) {
       return false;
     } // Regular boundaries always capture.
-    // 没有明确表示要阻止 fallback， 返回 true
+    // 没有明确表示要阻止 fallback，即没有 unstable_avoidThisFallback 属性， 返回 true
     if (props.unstable_avoidThisFallback !== true) {
       return true;
     } // If it's a boundary we should avoid, then we prefer to bubble up to the
@@ -19305,7 +19305,8 @@
    * @param rendrLanes 本次渲染要处理的更新
    */
   function updateOffscreenComponent(current, workInProgress, renderLanes) {
-    // { visible: true, children: xxxx}
+    // { mode: 'visible', children: xxxx}
+    // mode 的值为 visible， 意味着 OffScreen 类型的 fiber node 的子元素要显示？？
     var nextProps = workInProgress.pendingProps;
     // react element
     var nextChildren = nextProps.children;
@@ -19313,7 +19314,7 @@
     var prevState = current !== null ? current.memoizedState : null;
 
     if (nextProps.mode === 'hidden' || nextProps.mode === 'unstable-defer-without-hiding') {
-      // 隐藏 ？？
+      // 子元素要隐藏
       if ((workInProgress.mode & ConcurrentMode) === NoMode) {
         // In legacy sync mode, don't defer the subtree. Render it now.
         // TODO: Figure out what we should do in Blocking mode.
@@ -19321,6 +19322,7 @@
           baseLanes: NoLanes
         };
         workInProgress.memoizedState = nextState;
+        // 
         pushRenderLanes(workInProgress, renderLanes);
       } else if (!includesSomeLane(renderLanes, OffscreenLane)) {
         // 
@@ -19358,10 +19360,11 @@
         pushRenderLanes(workInProgress, subtreeRenderLanes);
       }
     } else {
-      // 显示 ？？
+      // 子元素要显示，意味着要渲染 ？？
       var _subtreeRenderLanes;
 
       if (prevState !== null) {
+        // 
         _subtreeRenderLanes = mergeLanes(prevState.baseLanes, renderLanes); // Since we're not hidden anymore, reset the state
 
         workInProgress.memoizedState = null;
@@ -19371,7 +19374,7 @@
         // a push/pop misalignment.
         _subtreeRenderLanes = renderLanes;
       }
-      // ？？
+      // 
       pushRenderLanes(workInProgress, _subtreeRenderLanes);
     }
 
@@ -20284,7 +20287,7 @@
         // current 为 null 表示是一个新的挂载
         // current.memoizedState 不为 null 表示 fallback 状态已经展示
         if (nextProps.fallback !== undefined && nextProps.unstable_avoidThisFallback !== true) {
-          // 添加 suspense 上下文 ？？
+          // Suspense 会使用 InvisibleParentSuspenseContext 即 1 作为 suspense 上下文
           suspenseContext = addSubtreeSuspenseContext(suspenseContext, InvisibleParentSuspenseContext);
         }
       }
@@ -22794,6 +22797,7 @@
             sourceFiber.flags &= ~(LifecycleEffectMask | Incomplete);
 
             if (sourceFiber.tag === ClassComponent) {
+              // 类组件要做什么处理？？
               var currentSourceFiber = sourceFiber.alternate;
 
               if (currentSourceFiber === null) {
@@ -22812,7 +22816,7 @@
             } // The source fiber did not complete. Mark it with Sync priority to
             // indicate that it still has pending work.
 
-
+            // 产生异常的 fiber node 的 render 阶段未完成。标记它的 lanes 为 SyneLane，表示他一直有未完成的工作
             sourceFiber.lanes = mergeLanes(sourceFiber.lanes, SyncLane); // Exit without suspending.
 
             return;
@@ -24375,6 +24379,7 @@
   // 子树要渲染的赛道 ？？
   var subtreeRenderLanes = NoLanes;
 
+  // 创建一个关于 subtreeRenderLanes 的光标
   var subtreeRenderLanesCursor = createCursor(NoLanes); // Whether to root completed, errored, suspended, etc.
 
   // fiber root 退出渲染阶段的状态：RootCompleted、RootIncomplete、RootErrored、RootSuspended、RootSuspendedWithDelay；
@@ -25442,24 +25447,29 @@
   }
 
   /**
-   * 
-   * @param fiber 
-   * @param lanes
+   * 将老的 subtreeRenderLanes 入栈，subtreeRenderLanesCursor.current 指向新的 subtreeRenderLanes
+   * @param fiber OffScreen 类型的 fiber node
+   * @param lanes 本次渲染时要处理的更新
    */
   function pushRenderLanes(fiber, lanes) {
-    // 
+    // 将 subtreeRenderLanesCursor.current 指向的 lanes 入栈
+    // 然后 subtreeRenderLanesCursor.current 指向新的 subtreeRenderLanes
     push(subtreeRenderLanesCursor, subtreeRenderLanes, fiber);
-    // 
+    // 将 lanes 合并到 subtreeRenderLanes 中
     subtreeRenderLanes = mergeLanes(subtreeRenderLanes, lanes);
-    // 
+    // 将 lanes 合并到 workInProgressRootIncludedLanes 中
+    // 更新过程中涉及到的 lane 都会合并到 workInProgressRootIncludedLanes 中
     workInProgressRootIncludedLanes = mergeLanes(workInProgressRootIncludedLanes, lanes);
   }
 
   /**
-   * @param 
+   * 将老的 subtreeRenderLanes 出栈， subtreeRenderLanesCursor.current 指向出栈的 subtreeRenderLanes
+   * @param  fiber
    */
   function popRenderLanes(fiber) {
+    // 获取出栈的 subtreeRenderLanes
     subtreeRenderLanes = subtreeRenderLanesCursor.current;
+    // 出栈操作
     pop(subtreeRenderLanesCursor, fiber);
   }
 

@@ -79,13 +79,13 @@
 
         function fetchProfileData() {
             let userPromise = fetchUser();
-            let userPromise1 = fetchUser1();
-            let userPromise2 = fetchUser2();
+            // let userPromise1 = fetchUser1();
+            // let userPromise2 = fetchUser2();
             // let postsPromise = fetchPosts();
             return {
                 user: wrapPromise(userPromise),
-                user1: wrapPromise(userPromise1),
-                user2: wrapPromise(userPromise2)
+                // user1: wrapPromise(userPromise1),
+                // user2: wrapPromise(userPromise2)
                 // posts: wrapPromise(postsPromise)
             };
         }
