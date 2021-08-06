@@ -4366,6 +4366,7 @@
   /*           */
   1028; // Passive & Update & Callback & Ref & Snapshot
 
+  // 512(useEffect) + 4(update) + 32(callback) + 256(Snapshot) + 128(ref)
   var LifecycleEffectMask =
   /*          */
   932; // Union of all host effects
@@ -19377,7 +19378,7 @@
       // 
       pushRenderLanes(workInProgress, _subtreeRenderLanes);
     }
-
+    // 协调 primary child
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     return workInProgress.child;
   } // Note: These happen to have identical begin phases, for now. We shouldn't hold
@@ -20265,16 +20266,18 @@
     var suspenseContext = suspenseStackCursor.current;
     // 是否显示 fallback，默认为 false，不显示
     var showFallback = false;
-    // fiber node 是否是已经挂起的
+    // workInProgress.flags & DidCapture 不为 0， 意味着 Suspense fiber node 已经捕获到了 child fiber node 抛出的类 promise 异常数据
+    // Suspense fiber node 第一次协调的时候，flags 为空， didSuspensed 为 false
+    // 等捕获到 child fiber node 抛出的类 promise 异常数据后，Suspense fiber node 重新协调， didSuspend 为 ture
     var didSuspend = (workInProgress.flags & DidCapture) !== NoFlags;
 
     if (didSuspend || shouldRemainOnFallback(suspenseContext, current)) {
       // Something in this boundary's subtree already suspended. Switch to
       // rendering the fallback children.
-      // fiber node 已经挂起，此时要渲染 fallback 对应的 children
+      // suspense fiber node 已经挂起，此时要渲染 fallback 对应的 children
       // 显示挂起 fiber node 的 fallback
       showFallback = true;
-      // 
+      // 去掉 DidCapture 标记
       workInProgress.flags &= ~DidCapture;
     } else {
       // Attempting the main content
@@ -20332,7 +20335,8 @@
       var nextFallbackChildren = nextProps.fallback;
 
       if (showFallback) {
-        // // fallback 已经显示
+        // Suspense 已经挂起，此时需要显示 fallback 了
+        // 
         var fallbackFragment = mountSuspenseFallbackChildren(workInProgress, nextPrimaryChildren, nextFallbackChildren, renderLanes);
         var primaryChildFragment = workInProgress.child;
         primaryChildFragment.memoizedState = mountSuspenseOffscreenState(renderLanes);
@@ -20342,7 +20346,7 @@
         // This is a CPU-bound tree. Skip this tree and show a placeholder to
         // unblock the surrounding content. Then immediately retry after the
         // initial commit.
-        // ？？
+        // Suspense 使用了 unstable_expectedLoadTime 属性
         var _fallbackFragment = mountSuspenseFallbackChildren(workInProgress, nextPrimaryChildren, nextFallbackChildren, renderLanes);
 
         var _primaryChildFragment = workInProgress.child;
@@ -20448,20 +20452,24 @@
   }
 
   /**
-   * 
-   * @param workInProgress
-   * @param primaryChildren
-   * @param fallbackChild
-   * @param renderLanes
+   * 挂载 Suspense 的 fallback
+   * @param workInProgress  正在协调的 Suspense fiber node
+   * @param primaryChildren primary fiber node
+   * @param fallbackChild fallback 对应的 react element
+   * @param renderLanes 本次渲染要处理的更新
    */
   function mountSuspenseFallbackChildren(workInProgress, primaryChildren, fallbackChildren, renderLanes) {
+    // 
     var mode = workInProgress.mode;
+    // offscreen fiber node
     var progressedPrimaryFragment = workInProgress.child;
     var primaryChildProps = {
       mode: 'hidden',
       children: primaryChildren
     };
+    // primaryChild 对应的 fragment
     var primaryChildFragment;
+    // fallback 对应的 fragment
     var fallbackChildFragment;
 
     if ((mode & BlockingMode) === NoMode && progressedPrimaryFragment !== null) {
@@ -20481,7 +20489,7 @@
         primaryChildFragment.selfBaseDuration = 0;
         primaryChildFragment.treeBaseDuration = 0;
       }
-
+      // 创建 fallback 对应的 fiber node
       fallbackChildFragment = createFiberFromFragment(fallbackChildren, mode, renderLanes, null);
     } else {
       // 创建一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
@@ -22017,7 +22025,8 @@
             if ( (workInProgress.mode & ProfileMode) !== NoMode) {
               transferActualDuration(workInProgress);
             }
-
+            // Suspense fiber node 已经捕获到了 child fiber node 抛出的异常数据
+            // 此时 Suspense fiber node 需要重新协调
             return workInProgress;
           }
 
@@ -22729,7 +22738,7 @@
     // 产生异常的 fiber node，标记未完成
     sourceFiber.flags |= Incomplete; // Its effect list is no longer valid.
 
-    // 清空异常 fiber node 的副作用
+    // 清空异常 fiber node 的副作用(sorceFiber 协调过程中出现了异常，那么就需要先把收集的副作用给清理掉)
     sourceFiber.firstEffect = sourceFiber.lastEffect = null;
 
     // 
@@ -22739,7 +22748,7 @@
       var wakeable = value;
 
       if ((sourceFiber.mode & BlockingMode) === NoMode) {
-        // 阻塞渲染？？
+        // 同步非阻塞渲染
         // Reset the memoizedState to what it was before we attempted
         // to render it.
         // old fiber node
@@ -22747,6 +22756,7 @@
 
         // 这一步是什么意思？？
         if (currentSource) {
+          // 为什么要有这一步？？
           sourceFiber.updateQueue = currentSource.updateQueue;
           sourceFiber.memoizedState = currentSource.memoizedState;
           sourceFiber.lanes = currentSource.lanes;
@@ -22769,11 +22779,13 @@
           // Stash the promise on the boundary fiber. If the boundary times out, we'll
           // attach another listener to flip the boundary back to its normal state.
           // 渲染 React.Suspense 的 fallback
+          // Suspense fiber node 的 updateQueue 用于收集 child fiber node 发生异常抛出的类 promise 对象
           var wakeables = _workInProgress.updateQueue;
 
           // 将 promise 对象收集到 fiber node 的 updateQueue 队列中
           if (wakeables === null) {
             var updateQueue = new Set();
+            // updateQueue 收集类 promise 对象
             updateQueue.add(wakeable);
             _workInProgress.updateQueue = updateQueue;
           } else {
@@ -22789,11 +22801,16 @@
 
 
           if ((_workInProgress.mode & BlockingMode) === NoMode) {
+            // 同步非阻塞渲染
+            // 给 Suspense fiber node 打上 DidCaptrue 标记，标志着已经捕获到 child fiber node 抛出的类 promise 对象
             _workInProgress.flags |= DidCapture;
+            // 给发生异常的 fiber node 打上 ForceUpdateForLegacySuspense 标记
             sourceFiber.flags |= ForceUpdateForLegacySuspense; // We're going to commit this fiber even though it didn't complete.
             // But we shouldn't call any lifecycle methods or callbacks. Remove
             // all lifecycle effect tags.
 
+            // 把发生异常的 fiber node 上的副作用标记移除，并且去掉 Incomplete
+            // 实际上的意思是， 发生异常的 fiber node 已经完成了协调，没有任何子元素，也没有任何副作用
             sourceFiber.flags &= ~(LifecycleEffectMask | Incomplete);
 
             if (sourceFiber.tag === ClassComponent) {
@@ -24141,7 +24158,7 @@
           return;
         }
 
-      case SuspenseComponent: // ??
+      case SuspenseComponent: // 在 commit 阶段处理 Suspense fiber node 收集的类 promise 对象
         {
           commitSuspenseComponent(finishedWork);
           attachSuspenseRetryListeners(finishedWork);
@@ -24189,10 +24206,11 @@
   }
 
   /**
-   * 
+   * commit 阶段处理 Suspense fiber node
    * @param finishedWork new fiber node
    */
   function commitSuspenseComponent(finishedWork) {
+    debugger
     var newState = finishedWork.memoizedState;
 
     if (newState !== null) {
@@ -24235,6 +24253,10 @@
     }
   }
 
+  /**
+   * 
+   * @param finishedWork  Suspense fiber node
+   */
   function attachSuspenseRetryListeners(finishedWork) {
     // If this boundary just timed out, then it will have a set of wakeables.
     // For each wakeable, attach a listener so that when it resolves, React
@@ -24261,6 +24283,7 @@
           }
 
           retryCache.add(wakeable);
+          // 类 promise 对象注册 fullfilled、rejected
           wakeable.then(retry, retry);
         }
       });
@@ -25448,6 +25471,7 @@
 
   /**
    * 将老的 subtreeRenderLanes 入栈，subtreeRenderLanesCursor.current 指向新的 subtreeRenderLanes
+   * 
    * @param fiber OffScreen 类型的 fiber node
    * @param lanes 本次渲染时要处理的更新
    */
@@ -27048,9 +27072,9 @@
   }
 
   /**
-   * 
-   * @param boundaryFiber
-   * @param retryLane
+   * 重新处理延时的边界问题
+   * @param boundaryFiber  发生延时的 fiber node
+   * @param retryLane 本次渲染的更新
    */
   function retryTimedOutBoundary(boundaryFiber, retryLane) {
     // The boundary fiber (a Suspense component or SuspenseList component)
@@ -27091,7 +27115,7 @@
       // never be thrown again.
       retryCache.delete(wakeable);
     }
-
+    // 重新处理延时的边界问题
     retryTimedOutBoundary(boundaryFiber, retryLane);
   } // Computes the next Just Noticeable Difference (JND) boundary.
   // The theory is that a person can't tell the difference between small differences in time.
@@ -28608,9 +28632,9 @@
   /**
    * 创建一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
    * @param pedingProps  props
-   * @param mode 
-   * @param lanes
-   * @param key
+   * @param mode  fiber node 的 mode， ConcurrentMode、BlockingMode、StrictMode
+   * @param lanes 本次渲染要处理的更新
+   * @param key key 值
    */
   function createFiberFromOffscreen(pendingProps, mode, lanes, key) {
     // 创建一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
@@ -28619,6 +28643,7 @@
     // instead.
 
     {
+      // fiber node 的 type 为 REACT_OFFSCREEN_TYPE
       fiber.type = REACT_OFFSCREEN_TYPE;
     }
 
@@ -28628,6 +28653,7 @@
   }
 
   /**
+   * 
    * @param pendingProps
    * @param mode
    * @param lanes

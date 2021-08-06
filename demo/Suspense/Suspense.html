@@ -114,9 +114,7 @@
             return (
                 <div>
                     <React.Suspense fallback={<h1>Loading profile...</h1>}>
-                        <React.Suspense fallback={<ProfileDetails />}>
-                            <ProfileDetails />
-                        </React.Suspense>
+                        <ProfileDetails />
                     </React.Suspense>                 
                 </div>
                 
