@@ -11060,7 +11060,7 @@
   function commitUpdate(domElement, updatePayload, type, oldProps, newProps, internalInstanceHandle) {
     // Update the props handle so that we know which props are the ones with
     // with current event handlers.
-    // 将新的 props 缓存到 new fiber node 上
+    // 将新的 props 缓存到 workInProgress fiber node 上
     updateFiberProps(domElement, newProps); // Apply the diff to the DOM node.
     // 更新 dom 节点的属性
     updateProperties(domElement, updatePayload, type, oldProps, newProps);
@@ -11961,7 +11961,7 @@
 
   /**
    * 
-   * @param workInProgress new fiber node
+   * @param workInProgress workInProgress fiber node
    */
   function pushContextProvider(workInProgress) {
     {
@@ -12928,11 +12928,11 @@
 
   /**
    * 获取 context 的准备工作
-   * @param workInProgress new fiber node
+   * @param workInProgress workInProgress fiber node
    * @param renderLanes
    */
   function prepareToReadContext(workInProgress, renderLanes) {
-    // 当前准备要渲染的 new fiber node
+    // 当前准备要渲染的 workInProgress fiber node
     currentlyRenderingFiber = workInProgress;
     // 
     lastContextDependency = null;
@@ -13037,7 +13037,7 @@
       baseState: fiber.memoizedState, // 前一次更新计算出来的状态？？
       firstBaseUpdate: null, // 指针，指向前一次更新时 updateQueue 中第一个被跳过的 update 对象？？
       lastBaseUpdate: null, // 指针，指向后一次更新时
-      shared: { // shared 的意思是， old fiber node 和 new fiber node 共享一条更新队列
+      shared: { // shared 的意思是， current fiber node 和 workInProgress fiber node 共享一条更新队列
         pending: null  // pendind 用于存储本次更新的 update 队列
       },
       effects: null // 数组，保存 callback 不为空的 update 对象？？
@@ -13047,10 +13047,10 @@
   }
 
   /**
-   * 如果 old fiber node 和 new fiber node 的 updateQueue 是相同的，那么要把 old fiber node 的 updateQueue
-   * 拷贝一份给 new fiber node
-   * @param current old fiber node
-   * @param workInProgress new fiber node
+   * 如果 current fiber node 和 workInProgress fiber node 的 updateQueue 是相同的，那么要把 current fiber node 的 updateQueue
+   * 拷贝一份给 workInProgress fiber node
+   * @param current current fiber node
+   * @param workInProgress workInProgress fiber node
    */
   function cloneUpdateQueue(current, workInProgress) {
     // Clone the update queue from current. Unless it's already a clone.
@@ -13092,7 +13092,7 @@
   /**
    * 将 update 对象添加到 fiber node 的 updateQueue 队列中
    * fiber node 的 update 对象是按照生成的时间排序，其中 pending 指针指向最后一个 update 对象， pending.next 指向第一个 update 对象
-   * @params fiber old fiber node
+   * @params fiber current fiber node
    * @params update update 对象
    */
   function enqueueUpdate(fiber, update) {
@@ -13322,23 +13322,23 @@
     return prevState;
   }
   /**
-   * 处理 new fiber node 的 updateQueue
+   * 处理 workInProgress fiber node 的 updateQueue
    * 根据本次更新的优先级，处理满足优先级条件的 update，不满足优先级条件的 update 下次更新时处理
-   * @param workInProgress  new fiber node
+   * @param workInProgress  workInProgress fiber node
    * @param props fiber node 的 props
    * @param instance 类组件实例 
    * @param renderLanes render lanes ？？
    */
   function processUpdateQueue(workInProgress, props, instance, renderLanes) {
     // This is always non-null on a ClassComponent or HostRoot
-    // new fiber node 的 updateQueue
+    // workInProgress fiber node 的 updateQueue
     var queue = workInProgress.updateQueue;  // 对于类组件、原生的容器节点，updateQueue 永远不为空
     // 是否需要强制更新 ？？
     hasForceUpdate = false;
 
     {
       // fiber node 当前要处理的 update 列表
-      // shared 的意思是， old fiber node 和 new fiber node 共享一个 update 队列
+      // shared 的意思是， current fiber node 和 workInProgress fiber node 共享一个 update 队列
       currentlyProcessingQueue = queue.shared;
     }
     // 将上次更新遗留的第一个 update 作为本次更新的第一个 update
@@ -13373,13 +13373,13 @@
       // queue is a singly-linked list with no cycles, we can append to both
       // lists and take advantage of structural sharing.
       // TODO: Pass `current` as argument
-      // old fiber node
+      // current fiber node
       var current = workInProgress.alternate;
     
       // 本次更新，也有可能会被打断，那么所有的 pendingUpdate 都会变成遗留 update。那么就需要先将本次更新的 pendingUpdate 缓存到 
-      // old fiber node 的遗留 update 队列中
+      // current fiber node 的遗留 update 队列中
       if (current !== null) {
-        // old fiber node 存在
+        // current fiber node 存在
         // This is always non-null on a ClassComponent or HostRoot
         // current 是当前要协调的 fiber node， updateQueue 是当前要处理的 updateQueue 
         var currentQueue = current.updateQueue;
@@ -13390,8 +13390,8 @@
           // 这里为什么要这么做
           if (currentLastBaseUpdate === null) {
             // fiber root node 对应的 fiber node， 它的 lastBaseUpdate 是 null
-            // 上一次更新时没有遗留 update，那么就把本次更新的 firstPendingUpdate 缓存到 old fiber node 的 firstBaseUpdate
-            // 假设，本次渲染被打断，那么本次需要更新的 update 都会作为遗留 update 缓存到 old fiber node 上
+            // 上一次更新时没有遗留 update，那么就把本次更新的 firstPendingUpdate 缓存到 current fiber node 的 firstBaseUpdate
+            // 假设，本次渲染被打断，那么本次需要更新的 update 都会作为遗留 update 缓存到 current fiber node 上
             currentQueue.firstBaseUpdate = firstPendingUpdate;
           } else {
             // 上次更新有遗留的 update，本次更新又被打断，那就把本次的 update 作为遗留 update ，合并到上次遗留的 update 之后
@@ -13530,10 +13530,10 @@
       // that regardless.
       // newLanes 是指跳过的 update 对应的赛道，将这些赛道合并到 workInProgressRootSkippedLanes 中
       markSkippedUpdateLanes(newLanes);
-      // 将 newLanes 存储到 new fiber node 的 lanes 中，下次更新时，就会作为 old fiber node 的 lanes 了
+      // 将 newLanes 存储到 workInProgress fiber node 的 lanes 中，下次更新时，就会作为 current fiber node 的 lanes 了
       // 如果 fiber node 所有的 update 都处理完了，那么它的 lanes 就是 0
       workInProgress.lanes = newLanes;
-      // new state 会保存到 new fiber node 的 memoizedState 中
+      // new state 会保存到 workInProgress fiber node 的 memoizedState 中
       workInProgress.memoizedState = newState;
     }
 
@@ -13668,7 +13668,7 @@
 
   /**
    * 执行类组件的静态方法： getDerivedStateFromProps，获取新的 state
-   * @param workInProgress   new fiber node
+   * @param workInProgress   workInProgress fiber node
    * @param ctor 类组件构造函数
    * @param getDerivedStateFromProps 类组件的静态方法： getDerivedStateFromProps
    * @param nextProps new props
@@ -13720,7 +13720,7 @@
      */
     enqueueSetState: function (inst, payload, callback) {
       console.log('workInProgress', workInProgress);
-      // 类组件实例对应的 old fiber node
+      // 类组件实例对应的 current fiber node
       var fiber = get(inst);
       // 执行 setState 方法触发更新时，需要基于当前时间创建一个新的时间戳
       var eventTime = requestEventTime();
@@ -13738,7 +13738,7 @@
 
         update.callback = callback;
       }
-      // 将新建的 update 对象添加到 old fiber node 的 updateQueue 中
+      // 将新建的 update 对象添加到 current fiber node 的 updateQueue 中
       enqueueUpdate(fiber, update);
       // // 为 fiber node 的更新， 安排一个调度任务
       scheduleUpdateOnFiber(fiber, lane, eventTime);
@@ -13805,7 +13805,7 @@
    * - 如果定义了 shouldComponentUpdate， 根据 shouldComponentUpdate 的返回值来决定是否需要重新渲染；
    * - 如果是纯组件，对 props、state 做浅比较；
    * - 直接返回 true
-   * @param workInProgress new fiber node
+   * @param workInProgress workInProgress fiber node
    * @param ctor  类组件对应的构造方法
    * @param oldProps old props
    * @param newProps new props
@@ -13857,7 +13857,7 @@
 
   /**
    * 校验类组件实例(主要看是否提供 render 方法 等)
-   * @param workInProgress new fiber node
+   * @param workInProgress workInProgress fiber node
    * @param ctor 类组件构造方法
    * @param newProps new props
    */
@@ -13994,7 +13994,7 @@
 
   /**
    * 创建一个类组件实例，建立类组件实例和 fiber node 的关联关系
-   * @param workInProgress new fiber node
+   * @param workInProgress workInProgress fiber node
    * @param ctor 类组件构造方法
    * @param props new props
    */
@@ -14139,7 +14139,7 @@
 
   /**
    * 执行类组件实例的 componentWillMount(UNSAFE_componentWillMount) 生命周期方法
-   * @param workInProgress new fiber node
+   * @param workInProgress workInProgress fiber node
    * @param instance 类组件实例
    */
   function callComponentWillMount(workInProgress, instance) {
@@ -14168,7 +14168,7 @@
 
   /**
    * 触发类组件的 componentWillReceiveProps 生命周期方法
-   * @param workInProgress  new fiber node
+   * @param workInProgress  workInProgress fiber node
    * @param instance 类组件实例
    * @param newProps 类组件新的 props
    * @param newContext 类组件新的 context
@@ -14203,7 +14203,7 @@
 
   /**
    * 挂载类组件实例
-   * @param workInProgress new fiber node
+   * @param workInProgress workInProgress fiber node
    * @param ctor 类组件构造方法
    * @param newProps new props
    * @param renderLanes
@@ -14281,7 +14281,7 @@
       // 更新 state
       instance.state = workInProgress.memoizedState;
     }
-    // 如果类组件定义了 componentDidMount 生命周期方法，需要给 new fiber node 添加 Update 标记
+    // 如果类组件定义了 componentDidMount 生命周期方法，需要给 workInProgress fiber node 添加 Update 标记
     // 在 react commit 阶段，根据 Update 标记，触发类组件的生命周期方法
     if (typeof instance.componentDidMount === 'function') {
       workInProgress.flags |= Update;
@@ -14290,7 +14290,7 @@
 
   /**
    * 恢复组件实例挂载 ？？
-   * @param workInProgress new fiber node
+   * @param workInProgress workInProgress fiber node
    * @param ctor 类组件构造方法
    * @param newProps new props
    * @param renderLanes
@@ -14394,8 +14394,8 @@
    * - 处理 fiber node 对应的 update 对象，获取更新以后的 state 值；
    * - 根据 props、state、context 等，判断类组件是否需要重新渲染；
    * - 不管类组件是否需要重新渲染，如果定义了 componentDidUpdate、getSnapshotBeforeUpdate，在 commit 阶段都要触发；
-   * @param current old fiber node
-   * @param workInProgress new fiber node
+   * @param current current fiber node
+   * @param workInProgress workInProgress fiber node
    * @param ctor 类组件构造方法
    * @param newProps new props
    * @param renderLanes 本次渲染要处理的更新
@@ -14403,7 +14403,7 @@
   function updateClassInstance(current, workInProgress, ctor, newProps, renderLanes) {
     // 类组件实例
     var instance = workInProgress.stateNode;
-    // 将 old fiber node 的 updateQueue 克隆一份给 new fiber node
+    // 将 current fiber node 的 updateQueue 克隆一份给 workInProgress fiber node
     cloneUpdateQueue(current, workInProgress);
     // 
     var unresolvedOldProps = workInProgress.memoizedProps;
@@ -14726,7 +14726,7 @@
       // effects aren't added until the complete phase. Once we implement
       // resuming, this may not be true.
 
-      // new fiber node 的最后一个副作用
+      // workInProgress fiber node 的最后一个副作用
       var last = returnFiber.lastEffect;
       // effect 指针指向一个 fiber node ？？
       if (last !== null) {
@@ -14747,7 +14747,7 @@
      */
     function deleteRemainingChildren(returnFiber, currentFirstChild) {
       // 为什么 mountChildFibers 不需要最终副作用
-      // mount 阶段，不需要删除 old fiber node，也就不需要追踪删除 old fiber 导致的副作用
+      // mount 阶段，不需要删除 current fiber node，也就不需要追踪删除 old fiber 导致的副作用
       if (!shouldTrackSideEffects) {
         // Noop.
         return null;
@@ -14767,9 +14767,9 @@
     }
 
     /**
-     * 将 old fiber node 及其兄弟 fiber node 收集到一个 map 中，key 值为 fiber node 的 key 或者 index
+     * 将 current fiber node 及其兄弟 fiber node 收集到一个 map 中，key 值为 fiber node 的 key 或者 index
      * @param returnFiber parent fiber node
-     * @param currentFirstChild old fiber node
+     * @param currentFirstChild current fiber node
      */
     function mapRemainingChildren(returnFiber, currentFirstChild) {
       // Add the remaining children to a temporary map so that we can find them by
@@ -14794,7 +14794,7 @@
     /**
      * fiber node 不需要新增、删除，只需要更新
      * 此时可以复用原来的 fiber node
-     * @param fiber old fiber node
+     * @param fiber current fiber node
      * @param pendingProps 当前 fiber node 的 新的 props
      */
     function useFiber(fiber, pendingProps) {
@@ -14809,32 +14809,32 @@
     /**
      * 放置 fiber node，确定 fiber node 的位置，然后决定对应的 dom 节点的位置
      * @param newFiber  新的 fiber node
-     * @param lastPlacedIndex 上一次定位时 old fiber node 用的 fiber node
-     * @param newIndex  new fiber node 新的位置
+     * @param lastPlacedIndex 上一次定位时 current fiber node 用的 fiber node
+     * @param newIndex  workInProgress fiber node 新的位置
      */
     function placeChild(newFiber, lastPlacedIndex, newIndex) {
-      // new fiber node 的位置
+      // workInProgress fiber node 的位置
       newFiber.index = newIndex;
 
       if (!shouldTrackSideEffects) {
         // Noop.
         return lastPlacedIndex;
       }
-      // new fiber node 对应的 old fiber node
+      // workInProgress fiber node 对应的 current fiber node
       var current = newFiber.alternate;
 
       if (current !== null) {
-        // old fiber node 存在，说明是 update 操作，new fiber node 对应的 dom 节点可能需要做 move 操作
-        // old fiber node 的位置
+        // current fiber node 存在，说明是 update 操作，workInProgress fiber node 对应的 dom 节点可能需要做 move 操作
+        // current fiber node 的位置
         var oldIndex = current.index;
         /** 
          * update 阶段，
-         * old fiber node 为 A B C D E, new fiber node 为 D B A E C
-         * 第一次做对比时，new fiber node 为 D，newIndex 为 0，对应的 old fiber node 的 oldIndex 为 3，此时 lastPlacedIndex 为 3；
-         * 第二次做对比时，new fiber node 为 B，newIndex 为 1，对应的 old fiber node 的 oldIndex 为 1， 1 < 3, 说明原来 B 在 D 之前，需要将 B 移动到 D 之后， 此时 lastPlacedIndex 依旧为 3；
-         * 第三次做对比时，new fiber node 为 A，newIndex 为 2，对应的 old fiber node 的 oldIndex 为 0， 0 < 3, 说明原来 A 在 D 之前，需要将 A 移动到 D 之后， 此时 lastPlacedIndex 依旧为 3；
-         * 第四次做对比时，new fiber node 为 E，newIndex 为 3，对应的 old fiber node 的 oldIndex 为 4， 4 > 3, 说明原来 E 在 D 之后，不需要移动 E， 此时 lastPlacedIndex 为 4；
-         * 第五次做对比时，new fiber node 为 C，newIndex 为 4，对应的 old fiber node 的 oldIndex 为 2， 2 < 4, 说明原来 C 在 E 之后，需要将 C 移动到 E 之后
+         * current fiber node 为 A B C D E, workInProgress fiber node 为 D B A E C
+         * 第一次做对比时，workInProgress fiber node 为 D，newIndex 为 0，对应的 current fiber node 的 oldIndex 为 3，此时 lastPlacedIndex 为 3；
+         * 第二次做对比时，workInProgress fiber node 为 B，newIndex 为 1，对应的 current fiber node 的 oldIndex 为 1， 1 < 3, 说明原来 B 在 D 之前，需要将 B 移动到 D 之后， 此时 lastPlacedIndex 依旧为 3；
+         * 第三次做对比时，workInProgress fiber node 为 A，newIndex 为 2，对应的 current fiber node 的 oldIndex 为 0， 0 < 3, 说明原来 A 在 D 之前，需要将 A 移动到 D 之后， 此时 lastPlacedIndex 依旧为 3；
+         * 第四次做对比时，workInProgress fiber node 为 E，newIndex 为 3，对应的 current fiber node 的 oldIndex 为 4， 4 > 3, 说明原来 E 在 D 之后，不需要移动 E， 此时 lastPlacedIndex 为 4；
+         * 第五次做对比时，workInProgress fiber node 为 C，newIndex 为 4，对应的 current fiber node 的 oldIndex 为 2， 2 < 4, 说明原来 C 在 E 之后，需要将 C 移动到 E 之后
          */
         if (oldIndex < lastPlacedIndex) {
           // This is a move.
@@ -14847,7 +14847,7 @@
           return oldIndex;
         }
       } else {
-        // old fiber node 不存在， new fiber node 对应的 dom 节点需要做 insert 操作
+        // current fiber node 不存在， workInProgress fiber node 对应的 dom 节点需要做 insert 操作
         // This is an insertion.
         newFiber.flags = Placement;
         return lastPlacedIndex;
@@ -14894,15 +14894,15 @@
     }
 
     /**
-     * 对比 old fiber node 和 new react element， 判断 new fiber node 是复用 old fiber node，还是新建一个 fiber node
+     * 对比 current fiber node 和 new react element， 判断 workInProgress fiber node 是复用 current fiber node，还是新建一个 fiber node
      * fiber node 的类型一样， 就可以复用
      * @param returnFiber  parent fiber node
-     * @param current old fiber node
+     * @param current current fiber node
      * @param element new react element
      * @param lanes
      */
     function updateElement(returnFiber, current, element, lanes) {
-      // 如果 old fiber node 存在，要比较类型是否相同
+      // 如果 current fiber node 存在，要比较类型是否相同
       if (current !== null) {
         if (current.elementType === element.type || ( // Keep this check inline so it only runs on the false path:
          isCompatibleFamilyForHotReloading(current, element) )) {
@@ -14921,7 +14921,7 @@
         }
       } // Insert
 
-      // old fiber node 不存在，直接新建一个新的 fiber node
+      // current fiber node 不存在，直接新建一个新的 fiber node
       var created = createFiberFromElement(element, returnFiber.mode, lanes);
       created.ref = coerceRef(returnFiber, current, element);
       created.return = returnFiber;
@@ -15035,25 +15035,25 @@
     }
 
     /**
-     * 对比 old fiber node 和 new react element，判断 old fiber node 是否可以复用
-     * 如果可以复用，返回原来的 fiber node；如果不可以复用，返回 new fiber node
-     * old fiber node 要可复用，需要保证 key 值、fiber node 的类型相同
+     * 对比 current fiber node 和 new react element，判断 current fiber node 是否可以复用
+     * 如果可以复用，返回原来的 fiber node；如果不可以复用，返回 workInProgress fiber node
+     * current fiber node 要可复用，需要保证 key 值、fiber node 的类型相同
      * 注意，如果 key 值不相等，那么就会返回 null
      * @param returnFiber  parent fiber node 
-     * @param oldFiber  old fiber node
+     * @param oldFiber  current fiber node
      * @param newChild new react element
      * @param lanes
      */
     function updateSlot(returnFiber, oldFiber, newChild, lanes) {
       // Update the fiber if the keys match, otherwise return null.
-      // old fiber node 的 key 值
+      // current fiber node 的 key 值
       var key = oldFiber !== null ? oldFiber.key : null;
 
       if (typeof newChild === 'string' || typeof newChild === 'number') {
         // Text nodes don't have keys. If the previous node is implicitly keyed
         // we can continue to replace it without aborting even if it is not a text
         // node.
-        // 如果有 key 值，说明 old fiber node 可能是 dom 节点或者组件节点，此时 new child是字符串或者数字
+        // 如果有 key 值，说明 current fiber node 可能是 dom 节点或者组件节点，此时 new child是字符串或者数字
         //
         if (key !== null) {
           return null;
@@ -15070,9 +15070,9 @@
                 if (newChild.type === REACT_FRAGMENT_TYPE) {
                   return updateFragment(returnFiber, oldFiber, newChild.props.children, lanes, key);
                 }
-                // 将 old fiber node 和 new react element 做比较，判断 new react element 是复用原来的 fiber node
-                // 还是新建一个 new fiber node
-                // 只要类型一样，就可以复用 old fiber node
+                // 将 current fiber node 和 new react element 做比较，判断 new react element 是复用原来的 fiber node
+                // 还是新建一个 workInProgress fiber node
+                // 只要类型一样，就可以复用 current fiber node
                 return updateElement(returnFiber, oldFiber, newChild, lanes);
               } else {
                 // 如果 key 值不相等，直接返回 null
@@ -15111,9 +15111,9 @@
     }
 
     /**
-     * 将每一个 new react element 和剩余的 old fiber node 做匹配，获取 new react element 对应的 fiber node
+     * 将每一个 new react element 和剩余的 current fiber node 做匹配，获取 new react element 对应的 fiber node
      * 如果没有找到， 返回 null
-     * @param existingChildren 剩余的全部 old fiber node，是一个 map， key 为 fiber node 的 key 值， value 为 fiber node
+     * @param existingChildren 剩余的全部 current fiber node，是一个 map， key 为 fiber node 的 key 值， value 为 fiber node
      * @param returnFiber parent fiber node
      * @param newIdx new react element 的 index
      * @param newChild  new react element
@@ -15132,14 +15132,14 @@
         switch (newChild.$$typeof) {
           case REACT_ELEMENT_TYPE:
             {
-              // 根据 new react element 的 key(或者 index)，找到匹配的 old fiber node
+              // 根据 new react element 的 key(或者 index)，找到匹配的 current fiber node
               var _matchedFiber = existingChildren.get(newChild.key === null ? newIdx : newChild.key) || null;
 
               if (newChild.type === REACT_FRAGMENT_TYPE) {
                 return updateFragment(returnFiber, _matchedFiber, newChild.props.children, lanes, newChild.key);
               }
 
-              // 比较 old fiber node 和 new react element，只要对应的一样，就可以复用 old fiber node
+              // 比较 current fiber node 和 new react element，只要对应的一样，就可以复用 current fiber node
               // 否则要新建一个 fiber node
               // 如果能找到 key(index) 匹配的 fiber node 且 fiber node 的类型相同，就可以复用；
               // 否则，就要新建一个 fiber node
@@ -15219,8 +15219,8 @@
     }
     /**
      * 将一个列表的 react element 全部转化为 fiber node
-     * @param returnFiber new fiber node(作为 parent fiber node 的存在)
-     * @param currentFirstChild old fiber node 的第一个子节点
+     * @param returnFiber workInProgress fiber node(作为 parent fiber node 的存在)
+     * @param currentFirstChild current fiber node 的第一个子节点
      * @param newChildren 新的 react element 列表
      * @param lanes lanes ？？
      */
@@ -15253,9 +15253,9 @@
 
       var resultingFirstChild = null;  // ??
       var previousNewFiber = null; // ??
-      var oldFiber = currentFirstChild; // old fiber node 的第一个子节点
+      var oldFiber = currentFirstChild; // current fiber node 的第一个子节点
       var lastPlacedIndex = 0;
-      var newIdx = 0;   // new fiber node 的位置
+      var newIdx = 0;   // workInProgress fiber node 的位置
       var nextOldFiber = null; // 下一个 old child fiber node
 
       
@@ -15269,7 +15269,7 @@
           nextOldFiber = oldFiber.sibling;   // 获取old brother fiber node
         }
 
-        // 对比 old fiber node 和 new react element， 判断 old fiber node 是否可以复用
+        // 对比 current fiber node 和 new react element， 判断 current fiber node 是否可以复用
         // 如果 key 值相等和 fiber node 的类型相同，那就可以复用；
         // 如果 key 值不相等，那么返回的 newFiber 为 null；
         var newFiber = updateSlot(returnFiber, oldFiber, newChildren[newIdx], lanes);
@@ -15312,7 +15312,7 @@
         previousNewFiber = newFiber;
         oldFiber = nextOldFiber;
       }
-      // 列表中的 react element 已经处理完毕，如果还有剩下的 old child fiber node，把这些 old fiber node 删除掉，并在 commit 阶段处理删除引起的副作用
+      // 列表中的 react element 已经处理完毕，如果还有剩下的 old child fiber node，把这些 current fiber node 删除掉，并在 commit 阶段处理删除引起的副作用
       if (newIdx === newChildren.length) {
         // We've reached the end of the new children. We can delete the rest.
         deleteRemainingChildren(returnFiber, oldFiber);
@@ -15330,30 +15330,30 @@
           if (_newFiber === null) {
             continue;
           }
-          // 此时 old fiber node 都已经没有了， 新的 fiber node 做的是插入操作
+          // 此时 current fiber node 都已经没有了， 新的 fiber node 做的是插入操作
           lastPlacedIndex = placeChild(_newFiber, lastPlacedIndex, newIdx);
 
           if (previousNewFiber === null) {
             // TODO: Move out of the loop. This only happens for the first run.
-            // 将 new fiber node 作为第一个节点
+            // 将 workInProgress fiber node 作为第一个节点
             resultingFirstChild = _newFiber;
           } else {
-            // 将上一个 new fiber node 的 sibling 指针指向新的 new fiber node
+            // 将上一个 workInProgress fiber node 的 sibling 指针指向新的 workInProgress fiber node
             previousNewFiber.sibling = _newFiber;
           }
           
           previousNewFiber = _newFiber;
         }
-        // 返回的实际一个 new fiber node 列表
+        // 返回的实际一个 workInProgress fiber node 列表
         return resultingFirstChild;
       } // Add all children to a key map for quick lookups.
 
-      // 将 old fiber node 及其兄弟 fiber node 收集到一个 map 中，key 值为 fiber node 的 key 或者 index
+      // 将 current fiber node 及其兄弟 fiber node 收集到一个 map 中，key 值为 fiber node 的 key 或者 index
       // existingChildren 是一个 map
       var existingChildren = mapRemainingChildren(returnFiber, oldFiber); // Keep scanning and use the map to restore deleted items as moves.
 
       for (; newIdx < newChildren.length; newIdx++) {
-        // 从 existingChildren 中找到与 new react element 的 key(index) 匹配的 old fiber node，如果没有，新建一个 fiber node
+        // 从 existingChildren 中找到与 new react element 的 key(index) 匹配的 current fiber node，如果没有，新建一个 fiber node
         var _newFiber2 = updateFromMap(existingChildren, returnFiber, newIdx, newChildren[newIdx], lanes);
 
         if (_newFiber2 !== null) {
@@ -15368,7 +15368,7 @@
               existingChildren.delete(_newFiber2.key === null ? newIdx : _newFiber2.key);
             }
           }
-          // 比较 new fiber node 和 old fiber node 的未知，确定 new fiber node 是否需要做(移动、插入操作)；
+          // 比较 workInProgress fiber node 和 current fiber node 的未知，确定 workInProgress fiber node 是否需要做(移动、插入操作)；
           lastPlacedIndex = placeChild(_newFiber2, lastPlacedIndex, newIdx);
 
           if (previousNewFiber === null) {
@@ -15542,7 +15542,7 @@
         return resultingFirstChild;
       } // Add all children to a key map for quick lookups.
 
-      // 将 old fiber node 及其兄弟 fiber node 收集到一个 map 中，key 值为 fiber node 的 key 或者 index
+      // 将 current fiber node 及其兄弟 fiber node 收集到一个 map 中，key 值为 fiber node 的 key 或者 index
       // existingChildren 是一个 map
       var existingChildren = mapRemainingChildren(returnFiber, oldFiber); // Keep scanning and use the map to restore deleted items as moves.
 
@@ -15611,16 +15611,16 @@
     }
     /**
      * 将单个 react element 转化为 fiber node
-     * 先将 react element 和 old fiber nodes 做对比，判断 old fiber nodes 中是否有可复用的 fiber node
-     * @param returnFiber new fiber node(是作为 parent fiber node 的存在)
-     * @param currentFirstChild old fiber node 的第一个子节点
+     * 先将 react element 和 current fiber nodes 做对比，判断 current fiber nodes 中是否有可复用的 fiber node
+     * @param returnFiber workInProgress fiber node(是作为 parent fiber node 的存在)
+     * @param currentFirstChild current fiber node 的第一个子节点
      * @param element react element
      * @param lanes 本次更新对应的优先级
      */
     function reconcileSingleElement(returnFiber, currentFirstChild, element, lanes) {
       // react element 的 key 值
       var key = element.key;
-      // old fiber node
+      // current fiber node
       var child = currentFirstChild;
 
       while (child !== null) { 
@@ -15658,7 +15658,7 @@
               {
                 if (child.elementType === element.type || ( // Keep this check inline so it only runs on the false path:
                  isCompatibleFamilyForHotReloading(child, element) )) {
-                  // key 值匹配，元素类型也匹配，那么 old fiber node 可以复用，剩下的 old fiber node 就可以全部删除了
+                  // key 值匹配，元素类型也匹配，那么 current fiber node 可以复用，剩下的 current fiber node 就可以全部删除了
                   deleteRemainingChildren(returnFiber, child.sibling);
 
                   // 复用原来的 fiber node
@@ -15689,7 +15689,7 @@
         child = child.sibling;
       }
 
-      // 遍历完 old fiber node，依旧没有找到匹配的 fiber node，此时要创建新的 fiber node
+      // 遍历完 current fiber node，依旧没有找到匹配的 fiber node，此时要创建新的 fiber node
       if (element.type === REACT_FRAGMENT_TYPE) {  // 如果 react element 对应的的 react.Fragment
         // 基于 fragment 的 child react element 创建 fiber node
         var created = createFiberFromFragment(element.props.children, returnFiber.mode, lanes, element.key);
@@ -15749,8 +15749,8 @@
 
     /**
      * 协调 child fiber nodes
-     * @param returnFiber new fiber node
-     * @param currentFirstChild old fiber node 的第一个子节点
+     * @param returnFiber workInProgress fiber node
+     * @param currentFirstChild current fiber node 的第一个子节点
      * @param newChild new react element
      * @param lanes
      */
@@ -15855,7 +15855,7 @@
   var mountChildFibers = ChildReconciler(false);
 
   /**
-   * 将 old fiber node 的 child 拷贝一份给 new fiber node
+   * 将 current fiber node 的 child 拷贝一份给 workInProgress fiber node
    * @param current 老的 fiber node
    * @param workInProgress 新的 fiber node
    */
@@ -15871,7 +15871,7 @@
     }
     // 实际上是 old fiber 的 child
     var currentChild = workInProgress.child;
-    // 基于 old fiber node 返回一个 new child fiber node
+    // 基于 current fiber node 返回一个 new child fiber node
     var newChild = createWorkInProgress(currentChild, currentChild.pendingProps);
     workInProgress.child = newChild;
     newChild.return = workInProgress;
@@ -16352,7 +16352,7 @@
 
   /**
    * 尝试声明下一次可水化的实例？？
-   * @param fiber new fiber node
+   * @param fiber workInProgress fiber node
    */
   function tryToClaimNextHydratableInstance(fiber) {
     if (!isHydrating) {
@@ -16777,8 +16777,8 @@
 
   /**
    * 渲染函数式组件
-   * @param current  old fiber node
-   * @param workInProgress new fiber node
+   * @param current  current fiber node
+   * @param workInProgress workInProgress fiber node
    * @param Component 函数组件方法
    * @param props new props
    * @param secondArg
@@ -16898,8 +16898,8 @@
 
   /**
    * 函数组件实际不需要更新，不需要对 child fiber node 做 diff 比较
-   * @param current  old fiber node
-   * @param workInProgress new fiber node
+   * @param current  current fiber node
+   * @param workInProgress workInProgress fiber node
    * @param lanes 
    */
   function bailoutHooks(current, workInProgress, lanes) {
@@ -19031,7 +19031,7 @@
       // we will add them all to the child before it gets rendered. That means
       // we can optimize this reconciliation pass by not tracking side-effects.
 
-      // old fiber node 为 null， 那意味着此时是一个挂载操作，需要为子元素创建 child fiber node
+      // current fiber node 为 null， 那意味着此时是一个挂载操作，需要为子元素创建 child fiber node
       workInProgress.child = mountChildFibers(workInProgress, null, nextChildren, renderLanes);
     } else {
       // If the current child is the same as the work in progress, it means that
@@ -19040,7 +19040,7 @@
       // If we had any progressed work already, that is invalid at this point so
       // let's throw it out.
 
-      // old fiber node 不为 null，此时是一个更新操作
+      // current fiber node 不为 null，此时是一个更新操作
       workInProgress.child = reconcileChildFibers(workInProgress, current.child, nextChildren, renderLanes);
     }
   }
@@ -19126,8 +19126,8 @@
 
   /**
    * 更新 react.memo 组件
-   * @param current   old fiber node
-   * @param workInProgress new fiber node
+   * @param current   current fiber node
+   * @param workInProgress workInProgress fiber node
    * @param Component 函数组件
    * @param nextProps new props
    * @param updateLanes 
@@ -19216,8 +19216,8 @@
 
   /**
    * 更新没有指定 compare 的 react.memo 组件
-   * @param current  old fiber node
-   * @param workInProgress new fiber node
+   * @param current  current fiber node
+   * @param workInProgress workInProgress fiber node
    * @param Component 函数组件
    * @param nextProps new props
    * @param updateLanes 
@@ -19301,8 +19301,8 @@
 
   /**
    * 挂载/更新 React_OFFSCREEN_TYPE  类型的 fiber node
-   * @param current old fiber node
-   * @param workInProgress 当前正在处理的 fiber node， 即 new fiber node
+   * @param current current fiber node
+   * @param workInProgress 当前正在处理的 fiber node， 即 workInProgress fiber node
    * @param rendrLanes 本次渲染要处理的更新
    */
   function updateOffscreenComponent(current, workInProgress, renderLanes) {
@@ -19427,11 +19427,11 @@
   }
   /**
    * commit 阶段是否要处理 ref 导致的副作用
-   * @param current  old fiber node
-   * @param workInProgress new fiber node
+   * @param current  current fiber node
+   * @param workInProgress workInProgress fiber node
    */
   function markRef(current, workInProgress) {
-    // new fiber node 对应的 ref
+    // workInProgress fiber node 对应的 ref
     var ref = workInProgress.ref;
 
     // 如果是 update 阶段，且新旧 fiber node 的 ref 不一致，需要在 commit 阶段处理 ref 造成的副作用
@@ -19443,8 +19443,8 @@
   }
   /**
    * 对函数类型的组件做更新(挂载)操作
-   * @param current   old fiber node
-   * @param workInProgress new fiber node
+   * @param current   current fiber node
+   * @param workInProgress workInProgress fiber node
    * @param Component 函数方法
    * @param nextProps new props
    * @param renderLanes 本次渲染要处理的更新的优先级
@@ -19509,8 +19509,8 @@
 
   /**
    * 对类组件做更新(挂载)操作
-   * @param current old fiber node, 如果 old fiber node 为 null，就是挂载操作，否则为 update 操作
-   * @param workInProgress new fiber node
+   * @param current current fiber node, 如果 current fiber node 为 null，就是挂载操作，否则为 update 操作
+   * @param workInProgress workInProgress fiber node
    * @param Component 类组件构造方法
    * @param nextProps 新的 props
    * @param renderLanes
@@ -19557,7 +19557,7 @@
         // inside a non-concurrent tree, in an inconsistent state. We want to
         // treat it like a new mount, even though an empty version of it already
         // committed. Disconnect the alternate pointers.
-        // 类组件的实例不存在，但是 old fiber node 已经存在 ？？
+        // 类组件的实例不存在，但是 current fiber node 已经存在 ？？
         // 仅仅在阻塞渲染中出现挂起的情况是会发生这种情况？？
         // 此时需要重新挂载
         current.alternate = null;
@@ -19574,11 +19574,11 @@
       shouldUpdate = true;
     } else if (current === null) {
       // In a resume, we'll already have an instance we can reuse.
-      // 类组件的 instance 存在，但是 old fiber node 不存在，需要做恢复操作
+      // 类组件的 instance 存在，但是 current fiber node 不存在，需要做恢复操作
       // 什么情况下，会触发恢复操作呢？？
       shouldUpdate = resumeMountClassInstance(workInProgress, Component, nextProps, renderLanes);
     } else {
-      // 类组件 instance 存在， old fiber node 也存在，说明此时是 update 阶段
+      // 类组件 instance 存在， current fiber node 也存在，说明此时是 update 阶段
       // 需要比较新旧 fiber node， 来决定类组件是否需要重新渲染(不管是否需要重新渲染，getSnapshotBeforeUpdate、componentDidUpdate 生命周期方法，如果定义了，commit 阶段都会触发)
       shouldUpdate = updateClassInstance(current, workInProgress, Component, nextProps, renderLanes);
     }
@@ -19605,8 +19605,8 @@
    * 挂载阶段， 直接执行组件实例的render 方法， 返回组件对应的 react 元素树，并将react元素树的根节点转化为fiber node
    * 更新阶段， 如果需要更新， 重新执行组件实例的 render 方法， 返回新的 react element 树， 并将react元素树的根节点转化为fiber node
    *    如果不需要更新， 直接处理子元素
-   * @param current old fiber node
-   * @param workInProgress new fiber node
+   * @param current current fiber node
+   * @param workInProgress workInProgress fiber node
    * @param Component 类组件构造方法
    * @param shouldUpdate 组件是否需要更新
    * @param hasContext 
@@ -19625,13 +19625,13 @@
       if (hasContext) {
         invalidateContextProvider(workInProgress, Component, false);
       }
-      // 类组件不需要渲染，那么直接把 old fiber node 的所有 child fiber node 拷贝给 new fiber node
+      // 类组件不需要渲染，那么直接把 current fiber node 的所有 child fiber node 拷贝给 workInProgress fiber node
       // 看 child fiber node 是否需要更新，如果需要，返回 child fiber node； 不需要，直接返回 null
       return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
     }
     // 类组价对应的 instance 实例
     var instance = workInProgress.stateNode; // Rerender
-    // 缓存当前正在处理的 new fiber node
+    // 缓存当前正在处理的 workInProgress fiber node
     ReactCurrentOwner$1.current = workInProgress;
     var nextChildren;
 
@@ -19682,7 +19682,7 @@
     } // Memoize state using the values we just used to render.
     // TODO: Restructure so we never read values from the instance.
 
-    // 到这一步， fiber node 已经处理完了，下一次会作为 old fiber node 存在，这一次的 state 会作为下一次更新的 old state
+    // 到这一步， fiber node 已经处理完了，下一次会作为 current fiber node 存在，这一次的 state 会作为下一次更新的 old state
     workInProgress.memoizedState = instance.state; // The context might have changed so we need to recalculate it.
 
     if (hasContext) {
@@ -19801,8 +19801,8 @@
 
   /**
    * 对原生的 dom 节点做更新操作
-   * @param current   old fiber node
-   * @param workInProgress new fiber node
+   * @param current   current fiber node
+   * @param workInProgress workInProgress fiber node
    * @param renderLanes
    */
   function updateHostComponent(current, workInProgress, renderLanes) {
@@ -19810,11 +19810,11 @@
     pushHostContext(workInProgress);
     
     if (current === null) {
-      // 如果 old fiber node 为 null ？？
+      // 如果 current fiber node 为 null ？？
       // 这是一个什么操作 ？？ 和 hydrate 有关
       tryToClaimNextHydratableInstance(workInProgress);
     }
-    // new fiber node 对应的 dom 标签字符串
+    // workInProgress fiber node 对应的 dom 标签字符串
     var type = workInProgress.type;
     // new props
     var nextProps = workInProgress.pendingProps;
@@ -19850,8 +19850,8 @@
 
   /**
    * 对文本节点做更新(挂载) 操作
-   * @param current old fiber node
-   * @param workInProgress new fiber node
+   * @param current current fiber node
+   * @param workInProgress workInProgress fiber node
    */
   function updateHostText(current, workInProgress) {
     if (current === null) {
@@ -20209,17 +20209,18 @@
 
 
   /**
-   * 
-   * @param suspenseContext
-   * @param current
-   * @param workInProgress
-   * @param renderLanes
+   * Suspense 是否依然要显示 fallback
+   * @param suspenseContext  suspense 上下文
+   * @param current   current fiber node
+   * @param workInProgress workInProgress fiber node
+   * @param renderLanes 本次渲染要处理的更新
    */
   function shouldRemainOnFallback(suspenseContext, current, workInProgress, renderLanes) {
     // If we're already showing a fallback, there are cases where we need to
     // remain on that fallback regardless of whether the content has resolved.
     // For example, SuspenseList coordinates when nested content appears.
     if (current !== null) {
+      // Suspense fiber node 进入 update 阶段
       var suspenseState = current.memoizedState;
 
       if (suspenseState === null) {
@@ -20227,14 +20228,19 @@
         // is true. More precise name might be "ForceRemainSuspenseFallback".
         // Note: This is a factoring smell. Can't remain on a fallback if there's
         // no fallback to remain on.
-        return false;
+        return false;  // 如果 suspenseState 应清空，就不需要再显示 fallback 了
       }
     } // Not currently showing content. Consult the Suspense context.
 
-
+    // 如果 Suspense fiber node 的 parent fiber node 是 SuspenseList fiber node
+    // 那么就需要显示 fallback 了？？ 为什么
     return hasSuspenseContext(suspenseContext, ForceSuspenseFallback);
   }
 
+  /**
+   * @param current  current fiber node
+   * @param renderLanes 
+   */
   function getRemainingWorkInPrimaryTree(current, renderLanes) {
     // TODO: Should not remove render lanes that were pinged during this render
     return removeLanes(current.childLanes, renderLanes);
@@ -20242,8 +20248,8 @@
 
   /**
    * 挂载/更新 Suspense fiber node
-   * @param current  old fiber node
-   * @param workInProgress 当前正在处理的 fiber node，即 new fiber node
+   * @param current  current fiber node
+   * @param workInProgress 当前正在处理的 fiber node，即 workInProgress fiber node
    * @param renderLanes 本次渲染的优先级
    */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
@@ -20270,7 +20276,7 @@
     // Suspense fiber node 第一次协调的时候，flags 为空， didSuspensed 为 false
     // 等捕获到 child fiber node 抛出的类 promise 异常数据后，Suspense fiber node 重新协调， didSuspend 为 ture
     var didSuspend = (workInProgress.flags & DidCapture) !== NoFlags;
-
+    // 判断是否需要显示 fallback。如果 Suspense 是挂起的或者 parent fiber node 是 SuspenseList，那么就需要显示 faalback
     if (didSuspend || shouldRemainOnFallback(suspenseContext, current)) {
       // Something in this boundary's subtree already suspended. Switch to
       // rendering the fallback children.
@@ -20371,16 +20377,16 @@
         // 挂载 React.Suspense 的子元素，返回一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
         return mountSuspensePrimaryChildren(workInProgress, nextPrimaryChildren, renderLanes);
       }
-    } else {
+    } else {  // Suspense fiber node 的更新操作
       // This is an update.
       // If the current fiber has a SuspenseState, that means it's already showing
       // a fallback.
-      // 
+      // 如果 old fiber fiber 已经有了 suspense state，表示 fallback 已经显示了
       var prevState = current.memoizedState;
 
-      if (prevState !== null) {
+      if (prevState !== null) { // fallback 当前在显示
 
-        if (showFallback) {
+        if (showFallback) {  // 尽管 fallback 已经显示了，但是依旧需要显示
           var _nextFallbackChildren2 = nextProps.fallback;
           var _nextPrimaryChildren2 = nextProps.children;
 
@@ -20392,17 +20398,17 @@
           _primaryChildFragment3.childLanes = getRemainingWorkInPrimaryTree(current, renderLanes);
           workInProgress.memoizedState = SUSPENDED_MARKER;
           return _fallbackChildFragment;
-        } else {
+        } else { // fallback 不需要再显示了
           var _nextPrimaryChildren3 = nextProps.children;
-
+          // 更新 Suspense fiber node 的 child fiber node - OffScreen fiber node
           var _primaryChildFragment4 = updateSuspensePrimaryChildren(current, workInProgress, _nextPrimaryChildren3, renderLanes);
-
+          // 将 memoizedState 置为 null
           workInProgress.memoizedState = null;
           return _primaryChildFragment4;
         }
-      } else {
+      } else {  // fallback 当前没有显示了
         // The current tree is not already showing a fallback.
-        if (showFallback) {
+        if (showFallback) {  // 超时？？需要显示 fallback
           // Timed out.
           var _nextFallbackChildren3 = nextProps.fallback;
           var _nextPrimaryChildren4 = nextProps.children;
@@ -20417,11 +20423,12 @@
 
           workInProgress.memoizedState = SUSPENDED_MARKER;
           return _fallbackChildFragment2;
-        } else {
+        } else {  // 没有超时？？不需要显示 fallback，按流程继续操作 child fiber node
           // Still haven't timed out. Continue rendering the children, like we
           // normally do.
           var _nextPrimaryChildren5 = nextProps.children;
 
+          //
           var _primaryChildFragment6 = updateSuspensePrimaryChildren(current, workInProgress, _nextPrimaryChildren5, renderLanes);
 
           workInProgress.memoizedState = null;
@@ -20433,7 +20440,7 @@
 
   /**
    * 挂载 React.Suspense 的子元素
-   * @param workInProgress  当前正在处理的 fiber node， 即 new fiber node
+   * @param workInProgress  当前正在处理的 fiber node， 即 workInProgress fiber node
    * @param primaryChild React.Suspense 子元素对应的 react element
    * @param renderLanes 本次渲染要处理的更新
    */
@@ -20505,21 +20512,37 @@
     return fallbackChildFragment;
   }
 
+  /**
+   * 复用 current fiber node
+   * @param current  current fiber node
+   * @param offscreenProps { mode: 'visible', children: xxxx}
+   */
   function createWorkInProgressOffscreenFiber(current, offscreenProps) {
     // The props argument to `createWorkInProgress` is `any` typed, so we use this
     // wrapper function to constrain it.
     return createWorkInProgress(current, offscreenProps);
   }
 
+  /**
+   * 更新 Suspense fiber node 的 child fiber node - Offscreen fiber node
+   * @param current   current fiber node
+   * @param workInProgress workInProgress fiber node
+   * @param parmaryChildren Suspense 的 child react element
+   * @param renderLanes 本次更新渲染要处理的更新
+   */
   function updateSuspensePrimaryChildren(current, workInProgress, primaryChildren, renderLanes) {
+    // offscreen fiber node
     var currentPrimaryChildFragment = current.child;
+    // fallback fiber node
     var currentFallbackChildFragment = currentPrimaryChildFragment.sibling;
+    // 复用 offscreen fiber node
     var primaryChildFragment = createWorkInProgressOffscreenFiber(currentPrimaryChildFragment, {
       mode: 'visible',
       children: primaryChildren
     });
 
     if ((workInProgress.mode & BlockingMode) === NoMode) {
+      // 同步阻塞渲染， ？？
       primaryChildFragment.lanes = renderLanes;
     }
 
@@ -20528,15 +20551,25 @@
 
     if (currentFallbackChildFragment !== null) {
       // Delete the fallback child fragment
+      // 移除掉 fallback 对应的 fiber node
       currentFallbackChildFragment.nextEffect = null;
+      // 给 fallback fiber node 添加 Deletion 标记
       currentFallbackChildFragment.flags = Deletion;
       workInProgress.firstEffect = workInProgress.lastEffect = currentFallbackChildFragment;
     }
-
+    // parmaryChildFragment 是 offscreent fiber node
     workInProgress.child = primaryChildFragment;
     return primaryChildFragment;
   }
 
+  /**
+   * 
+   * @param current
+   * @param workInProgress
+   * @param primaryChildren
+   * @param fallbackChildren
+   * @param renderLanes
+   */
   function updateSuspenseFallbackChildren(current, workInProgress, primaryChildren, fallbackChildren, renderLanes) {
     var mode = workInProgress.mode;
     var currentPrimaryChildFragment = current.child;
@@ -20610,6 +20643,11 @@
     return fallbackChildFragment;
   }
 
+  /**
+   * 
+   * @param fiber
+   * @param renderLanes
+   */
   function scheduleWorkOnFiber(fiber, renderLanes) {
     fiber.lanes = mergeLanes(fiber.lanes, renderLanes);
     var alternate = fiber.alternate;
@@ -20621,6 +20659,12 @@
     scheduleWorkOnParentPath(fiber.return, renderLanes);
   }
 
+  /**
+   * 
+   * @param workInProgress
+   * @param firstChild
+   * @param renderLanes
+   */
   function propagateSuspenseContextChange(workInProgress, firstChild, renderLanes) {
     // Mark any Suspense boundaries with fallbacks as having work to do.
     // If they were previously forced into fallbacks, they may now be able
@@ -20665,6 +20709,7 @@
   }
 
   /**
+   * 
    * @param firstChild
    */
   function findLastContentRow(firstChild) {
@@ -20775,6 +20820,7 @@
   }
 
   /**
+   * 
    * @param children
    * @param revealOrder
    */
@@ -20813,6 +20859,15 @@
     }
   }
 
+  /**
+   * 
+   * @param workInProgress
+   * @param isBackwards
+   * @param tail
+   * @param lastContentRow
+   * @param tailMode
+   * @param lastEffectBeforeRendering
+   */
   function initSuspenseListRenderState(workInProgress, isBackwards, tail, lastContentRow, tailMode, lastEffectBeforeRendering) {
     var renderState = workInProgress.memoizedState;
 
@@ -20847,8 +20902,8 @@
 
   /**
    * 
-   * @param current   old fiber node
-   * @param workInProgress  正在处理的 fiber node，即 new fiber node
+   * @param current   current
+   * @param workInProgress  正在处理的 fiber node，即 workInProgress fiber node
    * @param renderLanes 本次渲染对应的优先级
    */
   function updateSuspenseListComponent(current, workInProgress, renderLanes) {
@@ -21003,8 +21058,8 @@
 
   /**
    * 更新(挂载) Context.Provider 类型的 fiber node
-   * @param current  old fiber node
-   * @param workInProgress new fiber node
+   * @param current  current fiber
+   * @param workInProgress workInProgress fiber node
    * @param renderLanes 本次渲染要处理的更新的优先级
    */
   function updateContextProvider(current, workInProgress, renderLanes) {
@@ -21126,10 +21181,10 @@
   }
 
   /**
-   * 把 old fiber node 的 child fiber nodes 直接拷贝给 new fiber node
+   * 把 current fiber node 的 child fiber nodes 直接拷贝给 workInProgress fiber node
    * 如果 fiber node 没有重新渲染，那么 child fiber node 也就没有什么变化
-   * @param current old fiber node
-   * @param workInProgress new fiber node
+   * @param current current fiber node
+   * @param workInProgress work
    * @param renderLanes 本次渲染要处理的更新的优先级
    */
   function bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes) {
@@ -21143,8 +21198,8 @@
       stopProfilerTimerIfRunning();
     }
 
-    // new fiber node 跳过处理，可能是没有更新，也可能是更新优先级不够
-    // 如果是 new fiber node 的更新优先级不够，那么要讲对应的更新，合并到 workInProgressRootSkippedLanes 中
+    // workInProgress 跳过处理，可能是没有更新，也可能是更新优先级不够
+    // 如果是 workInProgress fiber 的更新优先级不够，那么要讲对应的更新，合并到 workInProgressRootSkippedLanes 中
     markSkippedUpdateLanes(workInProgress.lanes); // Check if the children have any pending work.
 
     // 检查一下 child fiber 是否发生了更新
@@ -21157,7 +21212,7 @@
     } else {
       // This fiber doesn't have work, but its subtree does. Clone the child
       // fibers and continue.
-      // 直接将 old fiber node 的 child fiber node 拷贝给 new fiber node
+      // 直接将 current fiber node 的 child fiber node 拷贝给 workInProgress fiber node
       cloneChildFibers(current, workInProgress);
       return workInProgress.child;
     }
@@ -21227,8 +21282,8 @@
   /**
    * 对当前 fiber node 进行 diff 比较，判断 fiber node 是否可以复用，并返回下一个待 diff 的 child fiber node
    * 判断策略：
-   * - 如果 old fiber node 为空，那就不是 更新操作了，而是挂载操作；
-   * - old fiber node 存在，如果 props 发生变化、依赖的 context 发生变化、fiber node 的类型整个都变了，那么 fiber node 肯定是要更新的；
+   * - 如果 current fiber node 为空，那就不是 更新操作了，而是挂载操作；
+   * - current fiber node 存在，如果 props 发生变化、依赖的 context 发生变化、fiber node 的类型整个都变了，那么 fiber node 肯定是要更新的；
    * - 如果 props、依赖的 context、 fiber node 的类型都没有变化，就要看 fiber node 的 updateQueue 是否有 update 以及 update 的优先级是否够，
    *   如果没有 update 或者 update 的优先级不够，那么当前 fiber node 就不要更新了；另外，如果 fiber node 不需要更新， 所有 child fiber node 也不需要更新，
    *   那么这个 fiber node 以及所有的 child fiber node 就处理完了；
@@ -21236,8 +21291,8 @@
    * 
    * 如果 fiber node 需要更新，不同类型的 fiber node 的更新策略为：
    * - 容器节点(HostRoot): 
-   * @param current old fiber node
-   * @param workInProgress new fiber node
+   * @param current current fiber node
+   * @param workInProgress workInProgress fiber node
    * @param renderLanes 本次渲染要处理的更新
    */
   function beginWork(current, workInProgress, renderLanes) {
@@ -21341,6 +21396,7 @@
                 if (includesSomeLane(renderLanes, primaryChildLanes)) {
                   // The primary children have pending work. Use the normal path
                   // to attempt to render the primary children again.
+                  // 挂载 / 更新 Suspense fiber node
                   return updateSuspenseComponent(current, workInProgress, renderLanes);
                 } else {
                   // The primary child fragment does not have pending work marked
@@ -21428,7 +21484,7 @@
             }
         }
 
-        // 判断 new fiber node - workInProgress 的 子节点是否需要更新
+        // 判断 workInProgress fiber node - workInProgress 的 子节点是否需要更新
         // 如果需要更新(renderLanes 和 childLanes 有交集)， 返回 workInProgress 的子节点
         // 如果不需要更新，直接返回 null
         // 看 child fiber node 是否需要更新，如果需要，返回 child fiber node； 不需要，直接返回 null
@@ -21621,7 +21677,7 @@
 
   /**
    * 给 fiber node 打上 update 标记，主要是为了处理副作用 ？？
-   * @param workInProgress new fiber node 
+   * @param workInProgress workInProgress fiber node 
    */
   function markUpdate(workInProgress) {
     // Tag the fiber with an update effect. This turns a Placement into
@@ -21632,7 +21688,7 @@
 
   /**
    * 给 fiber node 打上 ref 标记， 在 commit 阶段处理
-   * @param workInProgress new fiber node
+   * @param workInProgress workInProgress fiber node
    */
   function markRef$1(workInProgress) {
     workInProgress.flags |= Ref;
@@ -21836,8 +21892,8 @@
   /**
    * completeWork 主要是针对 dom element 类型的 fiber node
    * 如果是挂载阶段，创建新的 dom 节点；如果是更新阶段，通过查看 dom 节点的属性是否发生变化，来决定 dom 节点是否需要更新
-   * @param current  old fiber node
-   * @param workInProgress new fiber node
+   * @param current  current fiber node
+   * @param workInProgress workInProgress fiber node
    * @param rendrLanes 本次渲染要处理的更新
    */
   function completeWork(current, workInProgress, renderLanes) {
@@ -21912,7 +21968,7 @@
           var rootContainerInstance = getRootHostContainer();
           // dom 节点的标签类型
           var type = workInProgress.type;
-          // current 为 old fiber node， workInProgress.stateNode 为新的 dom 节点,
+          // current 为 current fiber node， workInProgress.stateNode 为新的 dom 节点,
           if (current !== null && workInProgress.stateNode != null) {
             // 比较 dom 节点的 old props 和 new props，找到变化的 props，然后打上 update 标记，然后在 commit 节点更新 dom 节点的属性
             updateHostComponent$1(current, workInProgress, type, newProps, rootContainerInstance);
@@ -22751,7 +22807,7 @@
         // 同步非阻塞渲染
         // Reset the memoizedState to what it was before we attempted
         // to render it.
-        // old fiber node
+        // current fiber node
         var currentSource = sourceFiber.alternate;
 
         // 这一步是什么意思？？
@@ -22963,7 +23019,7 @@
 
   /**
    * 类组件卸载时执行 componentWillUnmount 方法
-   * @param current old fiber node
+   * @param current current fiber node
    * @param instance 类组件实例对象
    */
   function safelyCallComponentWillUnmount(current, instance) {
@@ -22980,7 +23036,7 @@
 
   /**
    * 分离 ref， 即将 ref.current 置为 null
-   * @param old fiber node
+   * @param current fiber node
    */
   function safelyDetachRef(current) {
     var ref = current.ref;
@@ -23018,8 +23074,8 @@
 
   /**
    * 处理类组件的 getSnapshotBeforeUpdate 生命周期方法
-   * @param current old fiber node
-   * @param finishedWork new fiber node
+   * @param current current fiber node
+   * @param finishedWork workInProgress fiber node
    */
   function commitBeforeMutationLifeCycles(current, finishedWork) {
     switch (finishedWork.tag) {
@@ -23102,7 +23158,7 @@
   /**
    * 处理函数组件的 useLayoutEffect、useEffect 返回的 destory 方法
    * @param tag 
-   * @param finishedWork new fiber node
+   * @param finishedWork workInProgress fiber node
    */
   function commitHookEffectListUnmount(tag, finishedWork) {
     var updateQueue = finishedWork.updateQueue;
@@ -23133,7 +23189,7 @@
    * 如果 tag 是 Layout | hasEffect， 即 3， 那么就是处理 useLayoutEffect 注册的 effect
    * 如果 tag 是 Passive | hasEffect， 即 5， 那么就是处理 useEffect 注册的 effect
    * @param tag 用于判断是 useEffect 还是 useLayoutEffect
-   * @param finishedWork new fiber node
+   * @param finishedWork workInProgress fiber node
    */
   function commitHookEffectListMount(tag, finishedWork) {
     var updateQueue = finishedWork.updateQueue;
@@ -23176,7 +23232,7 @@
 
   /**
    * 异步调度处理 useEffect 对应的 effect
-   * @param finishedWork new fiber node
+   * @param finishedWork workInProgress fiber node
    */
   function schedulePassiveEffects(finishedWork) {
     
@@ -23207,8 +23263,8 @@
   /**
    * 执行组件的生命周期方法
    * @param finishedRoot fiber root node
-   * @param current  old fiber node
-   * @param finishedWork new fiber node
+   * @param current  current fiber node
+   * @param finishedWork workInProgress fiber node
    * @param commitedLanes
    */
   function commitLifeCycles(finishedRoot, current, finishedWork, committedLanes) {
@@ -23455,7 +23511,7 @@
 
   /**
    * 绑定 ref
-   * @param finishedWork new fiber node
+   * @param finishedWork workInProgress fiber node
    */
   function commitAttachRef(finishedWork) {
     var ref = finishedWork.ref;
@@ -23488,19 +23544,19 @@
   }
 
   /**
-   * 处理 old fiber node 对应的 ref 对象，将其 ref.current 置为 null
-   * @param current old fiber node
+   * 处理 current fiber node 对应的 ref 对象，将其 ref.current 置为 null
+   * @param current current fiber node
    */
   function commitDetachRef(current) {
-    // old fiber node 对应的 ref
+    // current fiber node 对应的 ref
     var currentRef = current.ref;
 
     if (currentRef !== null) {
       if (typeof currentRef === 'function') {
-        // 将 old fiber node 对应的 ref.current 置为 null
+        // 将 current fiber node 对应的 ref.current 置为 null
         currentRef(null);
       } else {
-        // 将 old fiber node 的 ref 置为 null，防止内存泄漏
+        // 将 current fiber node 的 ref 置为 null，防止内存泄漏
         currentRef.current = null;
       }
     }
@@ -23697,7 +23753,7 @@
   /**
    * 根据当前 fiber node， 获取 parent dom 对应的 parent fiber node
    * 即找到当前 fiber node 的 dom 节点的 parent dom 节点对应的 fiber node
-   * @param fiber new fiber node
+   * @param fiber workInProgress fiber node
    */
   function getHostParentFiber(fiber) {
     // 获取 fiber 的 parent fiber node
@@ -23786,7 +23842,7 @@
    * 对 dom 节点进行 insert、move 操作
    * insert、move 操作是基于原生的 insertBefore、appendChild 方法做的
    * 如果要使用 insertBefore，需要找到定位的 before 节点
-   * @param finishedWork  new fiber node
+   * @param finishedWork  workInProgress fiber node
    */
   function commitPlacement(finishedWork) {
 
@@ -23860,7 +23916,7 @@
     var isHost = tag === HostComponent || tag === HostText; 
 
     if (isHost || enableFundamentalAPI ) {
-      // new fiber node 对应的 dom 节点
+      // workInProgress fiber node 对应的 dom 节点
       var stateNode = isHost ? node.stateNode : node.stateNode.instance;
 
       // 如果有 before 节点， 使用原生的 insertBefore 方法添加节点；否则使用 appendChild 添加节点
@@ -23930,7 +23986,7 @@
   /**
    * 基于原生的 removeChild 方法删除 dom 节点
    * @param finishedRoot
-   * @param current  要移除的 old fiber node
+   * @param current  要移除的 current fiber node
    * @param renderPriorityLevel
    */
   function unmountHostComponents(finishedRoot, current, renderPriorityLevel) {
@@ -24043,7 +24099,7 @@
    * - 函数组件，要执行 useEffect 返回的 destory
    * - dom 节点，要将对应的 ref.current 置为 null，通过 removeChild 方法移除 dom 节点
    * @param finishedRoot fiber root node
-   * @param current  要删除的 old fiber node
+   * @param current  要删除的 current fiber node
    * @param renderPriorityLevel
    */
   function commitDeletion(finishedRoot, current, renderPriorityLevel) {
@@ -24053,9 +24109,9 @@
       // 处理 删除 fiber node 引发的副作用
       unmountHostComponents(finishedRoot, current);
     }
-    // old fiber node
+    // current fiber node
     var alternate = current.alternate;
-    // 将 old fiber node 对应的 alternate 重置
+    // 将 current fiber node 对应的 alternate 重置
     detachFiberMutation(current);
 
     if (alternate !== null) {
@@ -24065,8 +24121,8 @@
 
   /**
    * 处理函数组件的 useLayoutEffect 的 destory，更新 dom 节点的属性
-   * @param current   old fiber node
-   * @param finishedWork new fiber node
+   * @param current   current fiber node
+   * @param finishedWork workInProgress fiber node
    */
   function commitWork(current, finishedWork) {
 
@@ -24207,7 +24263,7 @@
 
   /**
    * commit 阶段处理 Suspense fiber node
-   * @param finishedWork new fiber node
+   * @param finishedWork workInProgress fiber node
    */
   function commitSuspenseComponent(finishedWork) {
     debugger
@@ -24254,7 +24310,7 @@
   }
 
   /**
-   * 
+   * 给 Suspense 收集的类 promise 对象注册 onFullfilled、onRejected 方法
    * @param finishedWork  Suspense fiber node
    */
   function attachSuspenseRetryListeners(finishedWork) {
@@ -24264,6 +24320,7 @@
     var wakeables = finishedWork.updateQueue;
 
     if (wakeables !== null) {
+      // 清空 updateQueue
       finishedWork.updateQueue = null;
       var retryCache = finishedWork.stateNode;
 
@@ -24293,6 +24350,11 @@
   // TODO: Use an effect tag.
 
 
+  /**
+   * 
+   * @param current  current fiber node
+   * @param finishedWork
+   */
   function isSuspenseBoundaryBeingHidden(current, finishedWork) {
     if (current !== null) {
       var oldState = current.memoizedState;
@@ -24308,7 +24370,7 @@
 
   /**
    * 将 dom 节点的文本内容置为空
-   * @param current new fiber node
+   * @param current workInProgress fiber node
    */
   function commitResetTextContent(current) {
     // 将 dom 节点的文本内容置为空
@@ -24347,7 +24409,8 @@
   var ReactCurrentDispatcher$2 = ReactSharedInternals.ReactCurrentDispatcher,
       ReactCurrentOwner$2 = ReactSharedInternals.ReactCurrentOwner,
       IsSomeRendererActing = ReactSharedInternals.IsSomeRendererActing;
-  var NoContext =
+  
+  var NoContext =   // 无上下文
   /*             */
   0;
   var BatchedContext = // 批量处理上下文
@@ -24793,12 +24856,12 @@
     // 将新分配的更新赛道合并到 fiber node 原来的赛道中
     // lanes，上一次渲染结束(完成？？中断？？)遗留的更新；
     sourceFiber.lanes = mergeLanes(sourceFiber.lanes, lane);
-    // old fiber node
+    // current fiber node
     var alternate = sourceFiber.alternate;
 
-    // 如果 old fiber node 存在，即 update 阶段
+    // 如果 current fiber node 存在，即 update 阶段
     if (alternate !== null) {
-      // 把为 fiber root node 分配的通道，合并到指定的 old fiber node 中
+      // 把为 fiber root node 分配的通道，合并到指定的 current fiber node 中
       alternate.lanes = mergeLanes(alternate.lanes, lane);
     }
 
@@ -24808,7 +24871,7 @@
       }
     } // Walk the parent path to the root and update the child expiration time.
 
-    // new fiber node
+    // workInProgress fiber node
     var node = sourceFiber;
     // parent fiber node
     var parent = sourceFiber.return;
@@ -25907,7 +25970,7 @@
     // The current, flushed, state of this fiber is the alternate. Ideally
     // nothing should rely on this, but relying on it here means that we don't
     // need an additional field on the work in progress.
-    // 当前 fiber node 的备用，即 old fiber node
+    // 当前 fiber node 的备用，即 current fiber node
     var current = unitOfWork.alternate;
     // 将当前要处理的 fiber node 缓存到全局变量 current 中
     setCurrentFiber(unitOfWork);
@@ -25929,8 +25992,8 @@
 
     // fiber node 渲染完成，将全局变量 current 中缓存的 fiber node 清理掉
     resetCurrentFiber();
-    // new fiber node 已经处理完毕， new props 会存储到 memoizedProps 中
-    // 此次的 new fiber node 会作为下一次渲染的 old fiber node，相应的 new props 会作为下一次的 old props
+    // workInProgress fiber node 已经处理完毕， new props 会存储到 memoizedProps 中
+    // 此次的 workInProgress fiber node 会作为下一次渲染的 current fiber node，相应的 new props 会作为下一次的 old props
     unitOfWork.memoizedProps = unitOfWork.pendingProps;
 
     if (next === null) {
@@ -25955,14 +26018,14 @@
     
     // Attempt to complete the current unit of work, then move to the next
     // sibling. If there are no more siblings, return to the parent fiber.
-    // 要处理的 fiber node， 即 new fiber node
+    // 要处理的 fiber node， 即 workInProgress fiber node
     var completedWork = unitOfWork;
 
     do {
       // The current, flushed, state of this fiber is the alternate. Ideally
       // nothing should rely on this, but relying on it here means that we don't
       // need an additional field on the work in progress.
-      // old fiber node
+      // current fiber node
       var current = completedWork.alternate;
       // parent fiber nodeEnd
       var returnFiber = completedWork.return; // Check if the work completed or if something threw.
@@ -26516,7 +26579,7 @@
   function commitBeforeMutationEffects() {
     
     while (nextEffect !== null) {
-      // nextEffect 为 new fiber node， current 为 old fiber node
+      // nextEffect 为 workInProgress fiber node， current 为 current fiber node
       var current = nextEffect.alternate;
 
       // 处理 dom 节点删除以后的 autoFocus? blur? 逻辑
@@ -26582,12 +26645,12 @@
         commitResetTextContent(nextEffect);
       }
 
-      if (flags & Ref) {  // 处理 old fiber node 对应的 ref
-        // old fiber node
+      if (flags & Ref) {  // 处理 current fiber node 对应的 ref
+        // current fiber node
         var current = nextEffect.alternate;
 
         if (current !== null) {
-          // 将 old fiber node 的 ref.current 置为 null，防止内存泄漏
+          // 将 current fiber node 的 ref.current 置为 null，防止内存泄漏
           commitDetachRef(current);
         }
       } // The following switch statement is only concerned about placement,
@@ -27277,7 +27340,7 @@
     /**
      * 开始处理 fiber node
      * @param current old fiber noe
-     * @param unitOfWork new fiber node
+     * @param unitOfWork workInProgress fiber node
      * @param lanes 本次渲染要处理的更新集合
      */
     beginWork$1 = function (current, unitOfWork, lanes) {
@@ -27289,7 +27352,7 @@
       var originalWorkInProgressCopy = assignFiberPropertiesInDEV(dummyFiber, unitOfWork);
 
       try {
-        // 对当前 fiber node 进行 diff 比较，确定 old fiber node 是否可以复用，然后返回下一个待 diff 的 fiber node
+        // 对当前 fiber node 进行 diff 比较，确定 current fiber node 是否可以复用，然后返回下一个待 diff 的 fiber node
         return beginWork(current, unitOfWork, lanes);
       } catch (originalError) {
         
@@ -28189,7 +28252,7 @@
   } // This is used to create an alternate fiber to do work on.
 
   /**
-   * 基于 old fiber node， 返回一个新的 fiber node()
+   * 基于 current fiber node， 返回一个新的 fiber node()
    * @param current 一个 fiber node
    * @param pendingProps
    */
@@ -28248,7 +28311,7 @@
     workInProgress.child = current.child;
     workInProgress.memoizedProps = current.memoizedProps;
     workInProgress.memoizedState = current.memoizedState;
-    // new fiber node 和 old fiber node 共享同一个 updateQueue
+    // workInProgress fiber node 和 current fiber node 共享同一个 updateQueue
     workInProgress.updateQueue = current.updateQueue; // Clone the dependencies object. This is mutated during the render phase, so
     // it cannot be shared with the current fiber.
 
