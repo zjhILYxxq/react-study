@@ -5610,7 +5610,7 @@
   /**
    * 获取下一个要处理的赛道集合
    * 选择策略：
-   * - 第一步, 拿到 pendingLanes(所有待处理的更新)、expiredLanes(已经过期的更新)、suspendedLanes(挂起的更新)、pingedLanes(懒加载的组件/异步数据已经拿到，对应的更新已经畅通了)；
+   * - 第一步, 拿到 pendingLanes(所有待处理的更新)、expiredLanes(已经过期的更新)、suspendedLanes(暂停的更新)、pingedLanes(懒加载的组件/异步数据已经拿到，对应的更新已经畅通了)；
    *          pendingLanes 中会包含 expiredLanes、suspendedLanes、pingedLanes；
    * - 第二步, 如果有 expiredLanes (已经处理过期的更新), 先选择过期的更新作为 nextLanes；
    * - 第三步, 如果没有过期的更新，那么先从 pendingLanes 中选出优先级比空闲优先级高的更新 nonIdlePendingLanes, 
@@ -5652,7 +5652,7 @@
     var nextLanePriority = NoLanePriority;
     // 过期的赛道
     var expiredLanes = root.expiredLanes;
-    // 挂起的赛道
+    // 暂停的赛道
     var suspendedLanes = root.suspendedLanes;
     // 畅通的赛道
     var pingedLanes = root.pingedLanes; // Check if any work has expired.
@@ -5671,17 +5671,17 @@
       var nonIdlePendingLanes = pendingLanes & NonIdleLanes;
 
       if (nonIdlePendingLanes !== NoLanes) {  // 非空闲工作
-        // 查看非空闲赛道中是否有挂起的赛道
-        // pending 中有可能存在挂起的更新
+        // 查看非空闲赛道中是否有暂停的赛道
+        // pending 中有可能存在暂停的更新
         var nonIdleUnblockedLanes = nonIdlePendingLanes & ~suspendedLanes;
 
         if (nonIdleUnblockedLanes !== NoLanes) { // 待处理的非空闲非阻塞的更细
-          // 如果没有挂起的赛道，直接从所有赛道中选取优先级最高的赛道
+          // 如果没有暂停的赛道，直接从所有赛道中选取优先级最高的赛道
           nextLanes = getHighestPriorityLanes(nonIdleUnblockedLanes);
           // 最高优先级
           nextLanePriority = return_highestLanePriority;
         } else {
-          // 如果有挂起的赛道，要先从非空闲赛道中选出已经畅通的赛通，然后从畅通的赛通中选出优先级最高的赛道
+          // 如果有暂停的赛道，要先从非空闲赛道中选出已经畅通的赛通，然后从畅通的赛通中选出优先级最高的赛道
           // 到这一步，意味着待处理的更新都是阻塞的？？如果待处理的更新时从阻塞变为 pinged 的，那么优先处理
           var nonIdlePingedLanes = nonIdlePendingLanes & pingedLanes;
 
@@ -5727,7 +5727,7 @@
     // higher priority.
 
     // 如果我们已经在渲染过程中，切换 lane 将会导致中断渲染，我们丢失当前工作进程。我们只能在新 lanes 有较高优先级时做这样的操作？？
-    // 没有挂起
+    // 没有暂停
     // wipLanes !== NoLanes 意味着上一次的更新导致的渲染过程没有结束
     // nextLanes 是本次渲染对应的更新，如果和 wipLanes 不一样，说明有新的更新进来
     if (wipLanes !== NoLanes && wipLanes !== nextLanes && // If we already suspended with a delay, then interrupting is fine. Don't
@@ -5867,7 +5867,7 @@
     // of this function.
     // 等待更新的赛道
     var pendingLanes = root.pendingLanes;
-    // 挂起的赛道
+    // 暂停的赛道
     var suspendedLanes = root.suspendedLanes;
     // 已经畅通的赛道(懒加载已经好了)
     var pingedLanes = root.pingedLanes;
@@ -5899,10 +5899,10 @@
         // Found a pending lane with no expiration time. If it's not suspended, or
         // if it's pinged, assume it's CPU-bound. Compute a new expiration time
         // using the current time.
-        // 找到一个没有过期时间的赛道。如果没有被挂起，或者该赛道已经 ping 通，则假定该赛道受 CPU 限制。使用当前时间，重新计算一个过期时间
+        // 找到一个没有过期时间的赛道。如果没有被暂停，或者该赛道已经 ping 通，则假定该赛道受 CPU 限制。使用当前时间，重新计算一个过期时间
         if ((lane & suspendedLanes) === NoLanes || (lane & pingedLanes) !== NoLanes) {
           // Assumes timestamps are monotonically increasing.
-          // lane & suspendedLanes === NoLanes，表示当前赛道 lane 没有被挂起；
+          // lane & suspendedLanes === NoLanes，表示当前赛道 lane 没有被暂停；
           // lane & pingedLanes !== NoLanes, 表示当前赛道已经 ping 通
           // 重新计算一个过期时间
           expirationTimes[index] = computeExpirationTime(lane, currentTime);
@@ -6260,13 +6260,13 @@
      * 理论上，任何赛道的更新，都可以解锁任何其他赛道。但是，尝试每一种可能的组合是不切实际的。我们需要一个启发去决定在哪些批次中渲染哪些赛道。
      * 现在，我们使用和老的过期时间模型一样的启发算法：尝试使用相等或者较低优先级的赛道，但是不要在不包括较低优先级更新的情况下尝试更高优先级的更新。
      * 当考虑跨不同优先级更新时上面的算法很好用，但对于具有相同优先级的更新就不够用了，因为我们要处理的这些更新时并行的。
-     * 取消挂起相同或者较低优先级的更新？？
+     * 取消暂停相同或者较低优先级的更新？？
      */
     // 找到比更新赛道优先级更高的赛道
     var higherPriorityLanes = updateLane - 1; // Turns 0b1000 into 0b0111
 
-    // suspendedLanes 表示之前被挂起的赛道。 
-    // root.suspendedLanes & higherPriorityLanes，是为了从挂起的赛道中找出有比当前更新赛道(更新)中优先级更高的赛道(更新)
+    // suspendedLanes 表示之前被暂停的赛道。 
+    // root.suspendedLanes & higherPriorityLanes，是为了从暂停的赛道中找出有比当前更新赛道(更新)中优先级更高的赛道(更新)
     root.suspendedLanes &= higherPriorityLanes;
     // 从 pinged 的赛道中找到比当前更新赛道(更新)优先级更高的赛道(更新)
     root.pingedLanes &= higherPriorityLanes;
@@ -6281,25 +6281,25 @@
   }
 
   /**
-   * 标记 fiber root node 赛道中挂起的赛道
+   * 标记 fiber root node 赛道中暂停的赛道
    * 这一步，做了三件事情：
-   * - 将挂起的赛道，合并到 fiber root node 的 suspendedLanes 中；
-   * - 对比挂起的赛道，找到 pinged 的赛道(31 条赛道，除去挂起的赛道，剩下的就是畅通的赛道？？)；
-   * - 清理掉挂起赛道对应的过期时间；
+   * - 将暂停的赛道，合并到 fiber root node 的 suspendedLanes 中；
+   * - 对比暂停的赛道，找到 pinged 的赛道(31 条赛道，除去暂停的赛道，剩下的就是畅通的赛道？？)；
+   * - 清理掉暂停赛道对应的过期时间；
    * @params root fiber root node
-   * @params suspendedLanes 挂起的赛道集合
+   * @params suspendedLanes 暂停的赛道集合
    */
   function markRootSuspended(root, suspendedLanes) {
-    // 把之前挂起的赛道集合，合并到 fiber root node 的 suspendedLanes 集合中
+    // 把之前暂停的赛道集合，合并到 fiber root node 的 suspendedLanes 集合中
     root.suspendedLanes |= suspendedLanes;
-    // 没有挂起的赛道，就是 pinged 的赛道 ？？
+    // 没有暂停的赛道，就是 pinged 的赛道 ？？
     root.pingedLanes &= ~suspendedLanes; // The suspended lanes are no longer CPU-bound. Clear their expiration times.
-    // 挂起的赛道不在有 cpu 的限制，所以可以清除他们对应的过期时间
+    // 暂停的赛道不在有 cpu 的限制，所以可以清除他们对应的过期时间
     // fiber root node 各个赛道的过期时间
     var expirationTimes = root.expirationTimes;
-    // 挂起的赛道
+    // 暂停的赛道
     var lanes = suspendedLanes;
-    // 清理掉挂起赛道对应的过期时间
+    // 清理掉暂停赛道对应的过期时间
     while (lanes > 0) {
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
@@ -6308,13 +6308,13 @@
     }
   }
   /**
-   * 将挂起的赛道，状态置为畅通
+   * 将暂停的赛道，状态置为畅通
    * @param root fiber root node 
    * @param pingedLanes 畅通的赛道
    * @param eventTime
    */
   function markRootPinged(root, pingedLanes, eventTime) {
-    // 将状态变为畅通的挂起赛道，合并到 pingedLanes 中
+    // 将状态变为畅通的暂停赛道，合并到 pingedLanes 中
     root.pingedLanes |= root.suspendedLanes & pingedLanes;
   }
 
@@ -16001,7 +16001,7 @@
     pop(contextFiberStackCursor, fiber);
   }
 
-  // 默认的挂起上下文
+  // 默认的暂停上下文
   var DefaultSuspenseContext = 0; // The Suspense Context is split into two parts. The lower bits is
   // inherited deeply down the subtree. The upper bits only affect
   // this immediate suspense boundary and gets reset each new
@@ -16025,7 +16025,7 @@
 
   // ForceSuspenseFallback 可以被 SuspenseList 用来强制 Suspense 进入 fallback ？？
   var ForceSuspenseFallback = 2;
-  // 基于 DefaultSuspenseContext 创建一个光标  ? 挂起栈 ？？
+  // 基于 DefaultSuspenseContext 创建一个光标  ? 暂停栈 ？？
   var suspenseStackCursor = createCursor(DefaultSuspenseContext);
 
   /**
@@ -16099,7 +16099,7 @@
         // A dehydrated boundary always captures.
         return true;
       }
-      // 如果 fallback 存在，说明 primary children 已经挂起了
+      // 如果 fallback 存在，说明 primary children 已经暂停了
       return false;
     }
     // props 中包含 primary children 和 fallback
@@ -19558,7 +19558,7 @@
         // treat it like a new mount, even though an empty version of it already
         // committed. Disconnect the alternate pointers.
         // 类组件的实例不存在，但是 current fiber node 已经存在 ？？
-        // 仅仅在阻塞渲染中出现挂起的情况是会发生这种情况？？
+        // 仅仅在阻塞渲染中出现暂停的情况是会发生这种情况？？
         // 此时需要重新挂载
         current.alternate = null;
         workInProgress.alternate = null; // Since this is conceptually a new fiber, schedule a Placement effect
@@ -20259,16 +20259,16 @@
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
 
     {
-      // 先判断 workInProgress 是否要挂起
-      // 如果没有特殊指定 fiber node 的挂起逻辑，默认不挂起
-      // 为什么一开始就要判断 fiber node 有没有挂起呢??  TODO: answer
+      // 先判断 workInProgress 是否要暂停
+      // 如果没有特殊指定 fiber node 的暂停逻辑，默认不暂停
+      // 为什么一开始就要判断 fiber node 有没有暂停呢??  TODO: answer
       if (shouldSuspend(workInProgress)) {
-        // 如果 fiber node 已经挂起了，给 fiber node 打 DidCapture(已经捕获)： 32 异常
-        // 本质上，react 在更新 fiber node 的过程中，出现异常，就会被挂起，那么标记就是 DidCapture
+        // 如果 fiber node 已经暂停了，给 fiber node 打 DidCapture(已经捕获)： 32 异常
+        // 本质上，react 在更新 fiber node 的过程中，出现异常，就会被暂停，那么标记就是 DidCapture
         workInProgress.flags |= DidCapture;
       }
     }
-    // 挂起的上下文，初始化值是 0
+    // 暂停的上下文，初始化值是 0
     var suspenseContext = suspenseStackCursor.current;
     // 是否显示 fallback，默认为 false，不显示
     var showFallback = false;
@@ -20276,12 +20276,12 @@
     // Suspense fiber node 第一次协调的时候，flags 为空， didSuspensed 为 false
     // 等捕获到 child fiber node 抛出的类 promise 异常数据后，Suspense fiber node 重新协调， didSuspend 为 ture
     var didSuspend = (workInProgress.flags & DidCapture) !== NoFlags;
-    // 判断是否需要显示 fallback。如果 Suspense 是挂起的或者 parent fiber node 是 SuspenseList，那么就需要显示 faalback
+    // 判断是否需要显示 fallback。如果 Suspense 是暂停的或者 parent fiber node 是 SuspenseList，那么就需要显示 faalback
     if (didSuspend || shouldRemainOnFallback(suspenseContext, current)) {
       // Something in this boundary's subtree already suspended. Switch to
       // rendering the fallback children.
-      // suspense fiber node 已经挂起，此时要渲染 fallback 对应的 children
-      // 显示挂起 fiber node 的 fallback
+      // suspense fiber node 已经暂停，此时要渲染 fallback 对应的 children
+      // 显示暂停 fiber node 的 fallback
       showFallback = true;
       // 去掉 DidCapture 标记
       workInProgress.flags &= ~DidCapture;
@@ -20341,7 +20341,7 @@
       var nextFallbackChildren = nextProps.fallback;
 
       if (showFallback) {
-        // Suspense 已经挂起，此时需要显示 fallback 了
+        // Suspense 已经暂停，此时需要显示 fallback 了
         // 
         var fallbackFragment = mountSuspenseFallbackChildren(workInProgress, nextPrimaryChildren, nextFallbackChildren, renderLanes);
         var primaryChildFragment = workInProgress.child;
@@ -20931,11 +20931,11 @@
       // 
       workInProgress.flags |= DidCapture;
     } else {
-      // 判断上一次渲染更新时，是否是挂起的
+      // 判断上一次渲染更新时，是否是暂停的
       var didSuspendBefore = current !== null && (current.flags & DidCapture) !== NoFlags;
 
       if (didSuspendBefore) {
-        // 上一次渲染更新时，是挂起的
+        // 上一次渲染更新时，是暂停的
         // If we previously forced a fallback, we need to schedule work
         // on any nested boundaries to let them know to try to render
         // again. This is the same as context updating.
@@ -22934,7 +22934,34 @@
           // We want to ensure that a "busy" state doesn't get force committed. We want to
           // ensure that new initial loading states can commit as soon as possible.
 
-          // 
+          /**
+           * 当前是 concurrent 模式， 继续 Suspense 流程。
+           * 在接下来的过程中，我们会使用一组启发式的方法是否将 render 过程转变为 complete 、restart、suspened commit。
+           * 实际的逻辑分布在不同的地方。
+           * 
+           * 第一个原则，如果我们在 root 渲染更新完成以后要暂停，此时如果收到取消暂停的更新或者 ping，那么就需要重新启动？？ 反之亦然。
+           * 暂停的唯一原因是你可能想在 commmit 操作之前重新启动，然而在暂停期间重新启动是没有意义的。
+           * 
+           * 过于激进的重新启动也是不好的，因为它会耗尽任何中件加载状态。所以我们采用启发式的方法去决定什么时候暂停？？
+           * 
+           * 如果没有 promise 抛出或者所有 fallback 相同且已经显示，那就不需要暂停/重新启动。
+           * 
+           * 如果是一颗新的 Suspense 边界树的初始渲染并触发了 fallback，那么就不需要暂停/重新启动。
+           * 我们希望可以确保尽快的显示初始加载状态。
+           * 
+           * 如果我们遇到延时情况，例如我们从一个内容切换为回退时，我们应该始终挂起或者重新启动。
+           * Transitions 适用于这种情况，如果没有，使用 JND 替代。
+           * 
+           * 如果我们已经显示了一个 fallback 并且它正在被"重试"，允许我们显示另一个级别？？，但依然有一个内部边界要显示
+           * fallback，那么我们在上次显示 fallback 的地方暂停/重新启动 500ms ？？
+           * 
+           * 这可以有效地将渐进式加载限制在一致的提交序列中。也让我们有机会重新开始稍早到达完成状态。
+           * 
+           * 如果由于批处理存在歧义，则优先解决：1) 延迟； 2)初始渲染； 3)重试
+           * 
+           * 我们要确保"忙碌"状态不会被强制提交，新的初始加载状态可以尽快提交。
+           * 
+           */
           attachPingListener(root, wakeable, rootRenderLanes);
           _workInProgress.flags |= ShouldCapture;
           _workInProgress.lanes = rootRenderLanes;
@@ -24762,7 +24789,7 @@
          * 将会产生中断当前渲染，然后切换到新的更新的副作用？？
          * (确保不会覆盖我们已经开始的渲染)
          */
-        // 标记 fiber root node 中挂起的赛道
+        // 标记 fiber root node 中暂停的赛道
         markRootSuspended$1(root, workInProgressRootRenderLanes);
       }
     } // TODO: requestUpdateLanePriority also reads the priority. Pass the
@@ -25133,7 +25160,7 @@
           break;
         }
 
-      case RootSuspended: // 渲染被挂起
+      case RootSuspended: // 渲染被暂停
         {
           markRootSuspended$1(root, lanes); // We have an acceptable loading state. We need to figure out if we
           // should immediately commit it or wait a bit.
@@ -25178,7 +25205,7 @@
           break;
         }
 
-      case RootSuspendedWithDelay:  // 渲染被延迟挂起
+      case RootSuspendedWithDelay:  // 渲染被延迟暂停
         {
           markRootSuspended$1(root, lanes);
 
@@ -25237,16 +25264,16 @@
   /**
    * 
    * @param root  fiber root node
-   * @param suspendedLanes 挂起的赛道集合(如果 fiber root node 是阻塞挂起的，那么他之前对应的更新都是挂起的)
+   * @param suspendedLanes 暂停的赛道集合(如果 fiber root node 是阻塞暂停的，那么他之前对应的更新都是暂停的)
    */
   function markRootSuspended$1(root, suspendedLanes) {
     // When suspending, we should always exclude lanes that were pinged or (more
     // rarely, since we try to avoid it) updated during the render phase.
     // TODO: Lol maybe there's a better way to factor this besides this
     // obnoxiously named function :)
-    // 从挂起的赛道集合 suspendedLanes 中移除 pinged 的赛道
+    // 从暂停的赛道集合 suspendedLanes 中移除 pinged 的赛道
     suspendedLanes = removeLanes(suspendedLanes, workInProgressRootPingedLanes);
-    // 从挂起的赛道集合 suspendedLanes 中移除更新赛道 ？？
+    // 从暂停的赛道集合 suspendedLanes 中移除更新赛道 ？？
     suspendedLanes = removeLanes(suspendedLanes, workInProgressRootUpdatedLanes);
     // 
     markRootSuspended(root, suspendedLanes);
@@ -25607,7 +25634,7 @@
     workInProgressRootSkippedLanes = NoLanes;
     // 渲染过程中产生的新的更新
     workInProgressRootUpdatedLanes = NoLanes;
-    // pinged 的挂起的更新
+    // pinged 的暂停的更新
     workInProgressRootPingedLanes = NoLanes;
 
     {
@@ -28847,7 +28874,7 @@
     // 存储每个赛道的过期时间
     this.expirationTimes = createLaneMap(NoTimestamp); // 过期时间 ？？ NoTimestamo(无时间戳？？) 为 -1
     this.pendingLanes = NoLanes; // 本次渲染等待处理的更新 
-    this.suspendedLanes = NoLanes; // 挂起赛道 
+    this.suspendedLanes = NoLanes; // 暂停赛道 
     this.pingedLanes = NoLanes; // 畅通的赛道
     this.expiredLanes = NoLanes; // 过期的赛道
     this.mutableReadLanes = NoLanes; // 可变读取赛道 
@@ -29240,8 +29267,8 @@
   }
 
   /**
-   * react 提供了判断 fiber node 是否挂起的实现
-   * fiber node 默认不挂起
+   * react 提供了判断 fiber node 是否暂停的实现
+   * fiber node 默认不暂停
    * 我们也可以自定义 shouldSuspendImpl
    * @param fiber fiber node
    */
@@ -29250,12 +29277,12 @@
   };
 
   /**
-   * 判断 fiber node 是否应该挂起
-   * 如果没有自定义 shouldSuspendImpl， 返回 false， 即 fiber node 不需要挂起
+   * 判断 fiber node 是否应该暂停
+   * 如果没有自定义 shouldSuspendImpl， 返回 false， 即 fiber node 不需要暂停
    * @param fiber fiber node
    */
   function shouldSuspend(fiber) {
-    // 判断 fiber node 是否应该挂起的实现
+    // 判断 fiber node 是否应该暂停的实现
     return shouldSuspendImpl(fiber);
   }
   var overrideHookState = null;
@@ -29452,7 +29479,7 @@
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
-    // 设置 fiber node 挂起的判断逻辑方法
+    // 设置 fiber node 暂停的判断逻辑方法
     setSuspenseHandler = function (newShouldSuspendImpl) {
       shouldSuspendImpl = newShouldSuspendImpl;
     };
