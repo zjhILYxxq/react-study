@@ -20188,7 +20188,8 @@
   };
 
   /**
-   * @param renderLanes
+   * 挂载 Suspense 状态 ？？
+   * @param renderLanes 本次渲染要处理的更新
    */
   function mountSuspenseOffscreenState(renderLanes) {
     return {
@@ -20335,17 +20336,19 @@
         tryToClaimNextHydratableInstance(workInProgress); // This could've been a dehydrated suspense component.
       }
 
-      // React.Suspense 的子元素
+      // React.Suspense 的子元素，即 Suspense 包裹的元素
       var nextPrimaryChildren = nextProps.children;
       // React.Suspense 的 fallback 属性
       var nextFallbackChildren = nextProps.fallback;
 
       if (showFallback) {
         // Suspense 已经暂停，此时需要显示 fallback 了
-        // 
+        // 挂载 fallback 节点
         var fallbackFragment = mountSuspenseFallbackChildren(workInProgress, nextPrimaryChildren, nextFallbackChildren, renderLanes);
         var primaryChildFragment = workInProgress.child;
+        // offscreen fiber node 的 memoizedState 为 { baseLanes: xxxx }
         primaryChildFragment.memoizedState = mountSuspenseOffscreenState(renderLanes);
+        // Suspense fiber node 的 memoizedState 为 { dehydrated: null, retryLane: 0 }
         workInProgress.memoizedState = SUSPENDED_MARKER;
         return fallbackFragment;
       } else if (typeof nextProps.unstable_expectedLoadTime === 'number') {
@@ -20496,7 +20499,7 @@
         primaryChildFragment.selfBaseDuration = 0;
         primaryChildFragment.treeBaseDuration = 0;
       }
-      // 创建 fallback 对应的 fiber node
+      // 创建一个 fragment 类型的 fiber node 作为 fallback fiber node 的 parent fiber node
       fallbackChildFragment = createFiberFromFragment(fallbackChildren, mode, renderLanes, null);
     } else {
       // 创建一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
@@ -20507,6 +20510,7 @@
 
     primaryChildFragment.return = workInProgress;
     fallbackChildFragment.return = workInProgress;
+    // fragment 类型的 fiber node 会作为 offScreen fiber node 的 sibling
     primaryChildFragment.sibling = fallbackChildFragment;
     workInProgress.child = primaryChildFragment;
     return fallbackChildFragment;
@@ -22069,12 +22073,20 @@
         }
 
       case SuspenseComponent:  // suspense component
+        /**
+         * Suspenes fiber node 的 complete 阶段有三中情况：
+         * 1. child fiber node 抛出异常，Suspense 收到异常,打上 DidCapture 标志,重新协调;
+         * 2. Suspense 渲染 fallback，
+         * 3. 
+         */
         {
           debugger
           popSuspenseContext(workInProgress);
+          // nextState 为 { dehydrated: null, retryLane: 0 }
           var nextState = workInProgress.memoizedState;
 
           if ((workInProgress.flags & DidCapture) !== NoFlags) {
+            // Suspense fiber node 已经捕获到了 child fiber node 异常，打上了 DidCapture 标记，需要重新协调
             // Something suspended. Re-render with the fallback children.
             workInProgress.lanes = renderLanes; // Do not reset the effect list.
 
@@ -22085,8 +22097,9 @@
             // 此时 Suspense fiber node 需要重新协调
             return workInProgress;
           }
-
+          // 本次渲染是否需要延时
           var nextDidTimeout = nextState !== null;
+          // 上次渲染是否需要延时
           var prevDidTimeout = false;
 
           if (current === null) {
@@ -22094,17 +22107,19 @@
               popHydrationState(workInProgress);
             }
           } else {
+            // 上次渲染时 Suspense fiber node 被暂停
             var prevState = current.memoizedState;
             prevDidTimeout = prevState !== null;
           }
 
-          if (nextDidTimeout && !prevDidTimeout) {
+          if (nextDidTimeout && !prevDidTimeout) { // 上次没有延时，本次延时
             // If this subtreee is running in blocking mode we can suspend,
             // otherwise we won't suspend.
             // TODO: This will still suspend a synchronous tree if anything
             // in the concurrent tree already suspended during this render.
             // This is a known bug.
             if ((workInProgress.mode & BlockingMode) !== NoMode) {
+              // 非阻塞模式
               // TODO: Move this back to throwException because this is too late
               // if this is a large tree which is common for initial loads. We
               // don't know if we should restart a render or not until we get
@@ -22129,11 +22144,15 @@
           {
             // TODO: Only schedule updates if these values are non equal, i.e. it changed.
             if (nextDidTimeout || prevDidTimeout) {
+              // 延时或者没有延时，都需要在 commit 阶段处理 Suspense fiber node 的副作用
+              // 目前来看，如果状态变为 suspense， 那么需要在 commit 阶段处理副作用；
+              // 如果状态有 suspense 变为 pinged， 在 commit 阶段没有副作用要处理；
               // If this boundary just timed out, schedule an effect to attach a
               // retry listener to the promise. This flag is also used to hide the
               // primary children. In mutation mode, we also need the flag to
               // *unhide* children that were previously hidden, so check if this
               // is currently timed out, too.
+              // 打上 Update 标记，需要在 commit 阶段给收集的类 promise 对象注册 onFullfilled、onRejected
               workInProgress.flags |= Update;
             }
           }
@@ -25689,8 +25708,9 @@
           // suspended render.
           stopProfilerTimerIfRunningAndRecordDelta(erroredWork, true);
         }
-        // 父组件异常处理？？
+        // 父组件异常处理，将 child fiber node 返回的异常数据 - 类 promise 对象收集起来
         throwException(root, erroredWork.return, erroredWork, thrownValue, workInProgressRootRenderLanes);
+        // 发生异常的 fiber node 进入 complete 阶段
         completeUnitOfWork(erroredWork);
       } catch (yetAnotherThrownValue) {
         // 处理异常的过程中又出现了新的异常
@@ -26037,7 +26057,7 @@
   }
 
   /**
-   * 创建 fiber node 对应的真实 dom 节点
+   * complete 阶段，创建 fiber node 对应的真实 dom 节点
    * complete 可以理解为 render 阶段已经完成，即 react element 已经转化为 fiber node，接下来需要将 fiber node 转化为 dom 节点
    * @param unitOfWork fiber node
    */
