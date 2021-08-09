@@ -4367,6 +4367,7 @@
   1028; // Passive & Update & Callback & Ref & Snapshot
 
   // 512(useEffect) + 4(update) + 32(callback) + 256(Snapshot) + 128(ref)
+  // 用于清除 fiber node 上的副作用
   var LifecycleEffectMask =
   /*          */
   932; // Union of all host effects
@@ -18985,7 +18986,8 @@
   }
 
   /**
-   * @param fiber
+   * 转移实际持续时间
+   * @param fiber Suspense、SuspenseList 或者定义了错误边界的类组件 fiber node
    */
   function transferActualDuration(fiber) {
     // Transfer time spent rendering these children so we don't lose it
@@ -18993,6 +18995,7 @@
     // where we should count the work of multiple passes.
     var child = fiber.child;
 
+    // 将 child fiber node 的实际持续时间全部转移到对应的 returnFiber 上
     while (child) {
       fiber.actualDuration += child.actualDuration;
       child = child.sibling;
@@ -22084,8 +22087,8 @@
         /**
          * Suspenes fiber node 的 complete 阶段有三中情况：
          * 1. child fiber node 抛出异常，Suspense 收到异常,打上 DidCapture 标志,重新协调;
-         * 2. Suspense 渲染 fallback，
-         * 3. 
+         * 2. Suspense 渲染 fallback，complete；
+         * 3. child fiber node 协调成成， Suspense complete；
          */
         {
           debugger
@@ -22099,6 +22102,7 @@
             workInProgress.lanes = renderLanes; // Do not reset the effect list.
 
             if ( (workInProgress.mode & ProfileMode) !== NoMode) {
+              // 将 child fiber node 的实际持续时间，全部转移到 Suspense fiber node 上
               transferActualDuration(workInProgress);
             }
             // Suspense fiber node 已经捕获到了 child fiber node 抛出的异常数据
@@ -22123,9 +22127,11 @@
           if (nextDidTimeout && !prevDidTimeout) { // 上次没有延时，本次延时
             // If this subtreee is running in blocking mode we can suspend,
             // otherwise we won't suspend.
+            // 如果子树以阻塞模式运行，我们可以暂停，否则我们不会暂停
             // TODO: This will still suspend a synchronous tree if anything
             // in the concurrent tree already suspended during this render.
             // This is a known bug.
+            // 如果在渲染期间， concurrent 树的任何内容已经暂停，那么同步树仍然会暂停？？
             if ((workInProgress.mode & BlockingMode) !== NoMode) {
               // 非阻塞模式
               // TODO: Move this back to throwException because this is too late
@@ -22135,15 +22141,23 @@
               // If this render already had a ping or lower pri updates,
               // and this is the first time we know we're going to suspend we
               // should be able to immediately restart from within throwException.
+
+              // 如果是常见的初始加载时的大树，移回 throwException 已经太晚了。？？
+              // 在我们得到这个标记之前，我们不知道是否应该重新启动渲染，这时候已经太晚了 ？？
+              // 如果此时这个渲染已经有一个 ping 或者低优先级的更新，这是我们第一次知道我们将要暂停，我们应该能够立即从
+              // throwException 中启动？？
               var hasInvisibleChildContext = current === null && workInProgress.memoizedProps.unstable_avoidThisFallback !== true;
 
               if (hasInvisibleChildContext || hasSuspenseContext(suspenseStackCursor.current, InvisibleParentSuspenseContext)) {
                 // If this was in an invisible tree or a new render, then showing
                 // this boundary is ok.
+                // 如果这是在不可见的 tree 中或者是一个新的 render，则显示边界是 ok 的 ？？
+                // 标记更新退出的状态为 RootSuspended：3
                 renderDidSuspend();
               } else {
                 // Otherwise, we're going to have to hide content so we should
                 // suspend for longer if possible.
+                // 否则，我们将不得不隐藏内容。所以如果可能的话，我们应该暂停更长的时间
                 renderDidSuspendDelayIfPossible();
               }
             }
@@ -22510,12 +22524,16 @@
           var _flags2 = workInProgress.flags;
 
           if (_flags2 & ShouldCapture) {
+            // 去掉 Suspense fiber node 的 ShouldCapture 标记，并打上 DidCapture 标记
+            // 意味着 child fiber node 协调时发生的异常，已经被 Suspense fiber node 捕获
             workInProgress.flags = _flags2 & ~ShouldCapture | DidCapture; // Captured a suspense effect. Re-render the boundary.
 
             if ( (workInProgress.mode & ProfileMode) !== NoMode) {
+              // 将 child fiber node 的实际持续时间，全部转移到 Suspense fiber node 上
               transferActualDuration(workInProgress);
             }
 
+            // 返回 Suspense fiber node
             return workInProgress;
           }
 
@@ -25828,7 +25846,7 @@
   }
 
   /**
-   * 
+   * 记录本次更新的结束时的状态为 RootSuspended： 3
    */
   function renderDidSuspend() {
     if (workInProgressRootExitStatus === RootIncomplete) {
@@ -26191,11 +26209,13 @@
         var _next = unwindWork(completedWork); // Because this fiber did not complete, don't reset its expiration time.
 
 
+        // 一般情况下，如果 _next 不是 null，说明需要重新协调，一般是 Suspense fiber node
         if (_next !== null) {
           // If completing this work spawned new work, do that next. We'll come
           // back here again.
           // Since we're restarting, remove anything that is not a host effect
           // from the effect tag.
+          // 移除所有不属于 host 的 effect ？？
           _next.flags &= HostEffectMask;
           workInProgress = _next;
           return;
