@@ -20905,8 +20905,9 @@
 
 
   /**
-   * 
-   * @param current   current
+   * 挂载/更新 SuspenseList fiber node
+   * SuspenseList 只有在 concurrent 模式下才有用，在 legacy 模式下，没有用
+   * @param current   current fiber node
    * @param workInProgress  正在处理的 fiber node，即 workInProgress fiber node
    * @param renderLanes 本次渲染对应的优先级
    */
@@ -20917,12 +20918,13 @@
     var revealOrder = nextProps.revealOrder;
     // tailMode 属性: collapsed, hidden
     var tailMode = nextProps.tail;
-    // 子元素
+    // 子元素，是 Suspense 类型的 react element
     var newChildren = nextProps.children;
     validateRevealOrder(revealOrder);
     validateTailOptions(tailMode, revealOrder);
     validateSuspenseListChildren(newChildren, revealOrder);
     // 先对子元素进行协调，构建 workInProgress 的 child fiber node
+    // 此时，所有的 child fiber node 都是 suspense 类型的 fiber node
     reconcileChildren(current, workInProgress, newChildren, renderLanes);
     // Suspense 上下文，默认为 0
     var suspenseContext = suspenseStackCursor.current;
@@ -20936,6 +20938,7 @@
       workInProgress.flags |= DidCapture;
     } else {
       // 判断上一次渲染更新时，是否是暂停的
+      // 如果 current fiber node 不为空，且已经打上了 DidCapture 标记，说明上一次渲染时，SuspenseList fiber node 被暂停了
       var didSuspendBefore = current !== null && (current.flags & DidCapture) !== NoFlags;
 
       if (didSuspendBefore) {
@@ -20956,6 +20959,7 @@
     if ((workInProgress.mode & BlockingMode) === NoMode) {
       // In legacy mode, SuspenseList doesn't work so we just
       // use make it a noop by treating it as the default revealOrder.
+      // 同步阻塞渲染模式下， SuspenseList 不起作用
       workInProgress.memoizedState = null;
     } else {
       switch (revealOrder) {
@@ -21639,6 +21643,7 @@
 
       case SuspenseListComponent: // react.SuspenseList
         {
+          // 挂载/更新 SuspenseList fiber node
           return updateSuspenseListComponent(current, workInProgress, renderLanes);
         }
 
