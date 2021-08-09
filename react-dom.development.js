@@ -18984,6 +18984,9 @@
     }
   }
 
+  /**
+   * @param fiber
+   */
   function transferActualDuration(fiber) {
     // Transfer time spent rendering these children so we don't lose it
     // after we rerender. This is used as a helper in special cases
@@ -22448,12 +22451,12 @@
 
   /**
    * 
-   * @param workInProgress  fiber node
+   * @param workInProgress  workInProgress fiber node
    * @param renderLanes 本次渲染要处理的更新对应的 lane
    */
   function unwindWork(workInProgress, renderLanes) {
     switch (workInProgress.tag) {
-      case ClassComponent:
+      case ClassComponent:  // 类组件
         {
           var Component = workInProgress.type;
 
@@ -22476,7 +22479,7 @@
           return null;
         }
 
-      case HostRoot:
+      case HostRoot:  // 原生的容器节点
         {
           popHostContainer(workInProgress);
           popTopLevelContextObject(workInProgress);
@@ -22493,14 +22496,14 @@
           return workInProgress;
         }
 
-      case HostComponent:
+      case HostComponent:  // 原生的 dom 节点
         {
           // TODO: popHydrationState
           popHostContext(workInProgress);
           return null;
         }
 
-      case SuspenseComponent:
+      case SuspenseComponent:  // React.Suspense
         {
           popSuspenseContext(workInProgress);
 
@@ -22519,7 +22522,7 @@
           return null;
         }
 
-      case SuspenseListComponent:
+      case SuspenseListComponent:  // React.SuspenseList
         {
           popSuspenseContext(workInProgress); // SuspenseList doesn't actually catch anything. It should've been
           // caught by a nested boundary. If not, it should bubble through.
@@ -22527,11 +22530,11 @@
           return null;
         }
 
-      case HostPortal:
+      case HostPortal:  // React.portal
         popHostContainer(workInProgress);
         return null;
 
-      case ContextProvider:
+      case ContextProvider:  // Context.Provider
         popProvider(workInProgress);
         return null;
 
@@ -22545,6 +22548,9 @@
     }
   }
 
+  /**
+   *@param interruptedWork 
+   */
   function unwindInterruptedWork(interruptedWork) {
     switch (interruptedWork.tag) {
       case ClassComponent:
@@ -22595,6 +22601,10 @@
     }
   }
 
+  /**
+   * @param value
+   * @param source
+   */
   function createCapturedValue(value, source) {
     // If the value is an error, call this function immediately after it is thrown
     // so the stack is accurate.
@@ -22684,6 +22694,11 @@
   // weakMap
   var PossiblyWeakMap$1 = typeof WeakMap === 'function' ? WeakMap : Map;
 
+  /**
+   * @param fiber
+   * @param errorInfo
+   * @param lane
+   */
   function createRootErrorUpdate(fiber, errorInfo, lane) {
     var update = createUpdate(NoTimestamp, lane); // Unmount the root by rendering null.
 
@@ -22703,6 +22718,11 @@
     return update;
   }
 
+  /**
+   * @param fiber
+   * @param errorInfo
+   * @param lane
+   */
   function createClassErrorUpdate(fiber, errorInfo, lane) {
     var update = createUpdate(NoTimestamp, lane);
     update.tag = CaptureUpdate;
@@ -22773,6 +22793,7 @@
     // Attach a listener to the promise to "ping" the root and retry. But only if
     // one does not already exist for the lanes we're currently rendering (which
     // acts like a "thread ID" here).
+    // rootCache 是一个 weakMap, 收集异常的类 promise 对象
     var pingCache = root.pingCache;
     var threadIDs;
 
@@ -22796,9 +22817,9 @@
       // Memoize using the thread ID to prevent redundant listeners.
       // 收集 lanes
       threadIDs.add(lanes);
-      // 
+      // 暂停的 fiber node 的处理逻辑
       var ping = pingSuspendedRoot.bind(null, root, wakeable, lanes);
-      // 类 promise 要注册 fullfill 和 reject
+      // 类 promise 要注册 onfullfill 和 onreject
       wakeable.then(ping, ping);
     }
   }
@@ -22881,7 +22902,7 @@
 
 
           if ((_workInProgress.mode & BlockingMode) === NoMode) {
-            // 同步非阻塞渲染
+            // 同步阻塞渲染
             // 给 Suspense fiber node 打上 DidCaptrue 标记，标志着已经捕获到 child fiber node 抛出的类 promise 对象
             _workInProgress.flags |= DidCapture;
             // 给发生异常的 fiber node 打上 ForceUpdateForLegacySuspense 标记
@@ -22986,8 +23007,12 @@
            * 我们要确保"忙碌"状态不会被强制提交，新的初始加载状态可以尽快提交。
            * 
            */
+
+          // concurrent 模式下，在这里直接给异常的类 promise 对象注册 onFullfilled 和 onRejected ？？
           attachPingListener(root, wakeable, rootRenderLanes);
+          // 给 Suspense fiber node 做 ShouldCapture 标记
           _workInProgress.flags |= ShouldCapture;
+          // 
           _workInProgress.lanes = rootRenderLanes;
           return;
         } // This boundary already captured during this render. Continue to the next
@@ -25716,6 +25741,8 @@
         // 父组件异常处理，将 child fiber node 返回的异常数据 - 类 promise 对象收集起来
         throwException(root, erroredWork.return, erroredWork, thrownValue, workInProgressRootRenderLanes);
         // 发生异常的 fiber node 进入 complete 阶段
+        // 如果是 concurrent 模式，发生异常的 fiber node 标记为 Incomplete，即协调未完成
+        // 如果是 legacy 模式，发生异常的 fiber node 的 Incomplete 标记会被移除
         completeUnitOfWork(erroredWork);
       } catch (yetAnotherThrownValue) {
         // 处理异常的过程中又出现了新的异常
@@ -26087,6 +26114,9 @@
         // 如果 compltedWork.flags & Incomplete 不是 0， 说明 compltedWork 打了 Incomplte 标记，有异常
         // 反之，说明 compltedWork 的第一阶段已经完成
 
+        // completedWork 没有 Incomplete 标记，即协调已完成。如果 completedWork 在协调过程中发生了异常
+        // 那么在 legacy 模式下， Incomplete 标记会被移除，当做已经完成了协调
+
         setCurrentFiber(completedWork);
         var next = void 0;
 
@@ -26153,10 +26183,11 @@
           }
         }
       } else {
-        // 渲染未完成
         // This fiber did not complete because something threw. Pop values off
         // the stack without entering the complete phase. If this is a boundary,
         // capture values if possible.
+        // 协调未完成。如果 fiber node 在协调过程中发生了异常，在 concurrent 模式下，代码会走这一分支
+        // 
         var _next = unwindWork(completedWork); // Because this fiber did not complete, don't reset its expiration time.
 
 
@@ -26173,10 +26204,11 @@
         if ( (completedWork.mode & ProfileMode) !== NoMode) {
           // Record the render duration for the fiber that errored.
           stopProfilerTimerIfRunningAndRecordDelta(completedWork, false); // Include the time spent working on failed children before continuing.
-
+          // 实际持续时间？？
           var actualDuration = completedWork.actualDuration;
           var child = completedWork.child;
 
+          // 把 child fiber node 的持续时间，添加到当前 fiber node 中
           while (child !== null) {
             actualDuration += child.actualDuration;
             child = child.sibling;
@@ -26187,7 +26219,9 @@
 
         if (returnFiber !== null) {
           // Mark the parent fiber as incomplete and clear its effect list.
+          // 标记 retureFiber 也是未完成的，把 returnFiber 的副作用都清理掉
           returnFiber.firstEffect = returnFiber.lastEffect = null;
+          // 给 returnFiber 标记  Incomplete
           returnFiber.flags |= Incomplete;
         }
       }
@@ -27145,7 +27179,7 @@
    * @param pingedLanes 已经畅通的更新(异步请求的数据/组件已经获取到，对应的 promise 对象的状态为 resolved)
    */
   function pingSuspendedRoot(root, wakeable, pingedLanes) {
-    // 是一个 weakMap(或者是 map)
+    // 是一个 weakMap(或者是 map)，收集异常的类 promise 对象
     var pingCache = root.pingCache;
 
     // wakeable 的状态已经是 resolved， 删除 wakeable
@@ -27172,7 +27206,6 @@
       if (workInProgressRootExitStatus === RootSuspendedWithDelay || workInProgressRootExitStatus === RootSuspended && includesOnlyRetries(workInProgressRootRenderLanes) && now() - globalMostRecentFallbackTime < FALLBACK_THROTTLE_MS) {
         // Restart from the root.
         // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
-        // ？？
         prepareFreshStack(root, NoLanes);
       } else {
         // Even though we can't restart right now, we might get an
