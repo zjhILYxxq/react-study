@@ -6061,12 +6061,13 @@
 
   /**
    * 
-   * @param wipLanes
-   * @param pendingLanes
+   * @param wipLanes 当前工作中的所有 lanes
+   * @param pendingLanes 待处理的 lanes
    */
   function findTransitionLane(wipLanes, pendingLanes) {
     // First look for lanes that are completely unclaimed, i.e. have no
     // pending work.
+
     var lane = pickArbitraryLane(TransitionLanes & ~pendingLanes);
 
     if (lane === NoLane) {
@@ -6086,16 +6087,19 @@
   // be pure function, so that it always returns the same lane for given inputs.
 
   /**
-   * 找到要重试的赛道
-   * @param wipLanes
+   * 从当前工作中的所有的 lanes 中找到 retry lanes
+   * @param wipLanes 当前工作中的所有 lanes
    */
   function findRetryLane(wipLanes) {
     // This is a fork of `findUpdateLane` designed specifically for Suspense
     // "retries" — a special update that attempts to flip a Suspense boundary
     // from its placeholder state to its primary/resolved state.
+    // RetryLanes 是 32 位赛道的第 23 - 26 位
+    // 根据 wipLanes，选出未被占用的且优先级最高的 retry lane
     var lane = pickArbitraryLane(RetryLanes & ~wipLanes);
 
     if (lane === NoLane) {
+      // 以为者 retry 类型的 lane 都已经被占用了，那么直接从 RetryLanes 中选优先级最高的 lane
       lane = pickArbitraryLane(RetryLanes);
     }
 
@@ -6267,9 +6271,9 @@
     var higherPriorityLanes = updateLane - 1; // Turns 0b1000 into 0b0111
 
     // suspendedLanes 表示之前被暂停的赛道。 
-    // root.suspendedLanes & higherPriorityLanes，是为了从暂停的赛道中找出有比当前更新赛道(更新)中优先级更高的赛道(更新)
+    // root.suspendedLanes & higherPriorityLanes，是为了从暂停的赛道中找出有比当前更新赛道(更新)中优先级更高的 suspensed 赛道(更新)
     root.suspendedLanes &= higherPriorityLanes;
-    // 从 pinged 的赛道中找到比当前更新赛道(更新)优先级更高的赛道(更新)
+    // 从 pinged 的赛道中找到比当前更新赛道(更新)优先级更高的 pinged 赛道(更新)
     root.pingedLanes &= higherPriorityLanes;
     // 
     var eventTimes = root.eventTimes;
@@ -20260,7 +20264,6 @@
    * @param renderLanes 本次渲染的优先级
    */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
-    debugger
     // workInProgress 是正在处理 React.Suspense 类型的 fiber node
     // nexProps 中包含 fallback、children
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
@@ -22851,8 +22854,6 @@
    * @param rootRenderLanes 产生异常时的渲染要处理的更新
    */
   function throwException(root, returnFiber, sourceFiber, value, rootRenderLanes) {
-    debugger
-    
     // The source fiber did not complete.
     // 产生异常的 fiber node，标记未完成
     sourceFiber.flags |= Incomplete; // Its effect list is no longer valid.
@@ -24769,26 +24770,30 @@
 
   /**
    * 为 fiber node 分配 RetryLane 类型的赛道
-   * @param fiber fiber node
+   * @param fiber Suspense fiber node
    */
   function requestRetryLane(fiber) {
     // This is a fork of `requestUpdateLane` designed specifically for Suspense
     // "retries" — a special update that attempts to flip a Suspense boundary
     // from its placeholder state to its primary/resolved state.
     // Special cases
+    // 这是 requestUpdateLane 的一个分支，专门为 Suspense 重试而设计 - 一种特殊的更新，试图将 Suspense 从暂停状态变为 resolved 状态
+    // mode，用于判断是 concurrent 模式，还是 legacy 模式
     var mode = fiber.mode;
 
     if ((mode & BlockingMode) === NoMode) {
+      // 如果是 legacy 模式，返回 SyncLane： 1
       return SyncLane;
     } else if ((mode & ConcurrentMode) === NoMode) {
+      // Block 模式，返回 SyncLane 或者 SyncBatchedLane
       return getCurrentPriorityLevel() === ImmediatePriority$1 ? SyncLane : SyncBatchedLane;
     } // See `requestUpdateLane` for explanation of `currentEventWipLanes`
 
-
+    // 
     if (currentEventWipLanes === NoLanes) {
       currentEventWipLanes = workInProgressRootIncludedLanes;
     }
-
+    // 从 currentEventWipLanes 中找到 retryLane
     return findRetryLane(currentEventWipLanes);
   }
 
@@ -27199,6 +27204,7 @@
    * @param pingedLanes 已经畅通的更新(异步请求的数据/组件已经获取到，对应的 promise 对象的状态为 resolved)
    */
   function pingSuspendedRoot(root, wakeable, pingedLanes) {
+    debugger
     // 是一个 weakMap(或者是 map)，收集异常的类 promise 对象
     var pingCache = root.pingCache;
 
@@ -27245,42 +27251,51 @@
    * @param retryLane 本次渲染的更新
    */
   function retryTimedOutBoundary(boundaryFiber, retryLane) {
+    debugger
     // The boundary fiber (a Suspense component or SuspenseList component)
     // previously was rendered in its fallback state. One of the promises that
     // suspended it has resolved, which means at least part of the tree was
     // likely unblocked. Try rendering again, at a new expiration time.
+    // 边界 fiber node 之间渲染了 fallback。导致暂停的 promise 的状态变为 resolved，意味着部分树会解锁，在新的过期时间到来之前重新渲染
     if (retryLane === NoLane) {
+      // 为重新渲染的边界 fiber node 计算 lane
       retryLane = requestRetryLane(boundaryFiber);
     } // TODO: Special case idle priority?
 
-
+    // 
     var eventTime = requestEventTime();
+    // 将为 retry 分配的 lane 合并到边界 fiber node 的 lanes 以及 parent fiber node 的 childLanes 中
     var root = markUpdateLaneFromFiberToRoot(boundaryFiber, retryLane);
 
     if (root !== null) {
+      // 将为 retry 分配的 lane 合并到 fiber root node 的 pendingLanes 中
       markRootUpdated(root, retryLane, eventTime);
+      // 异步任务调度，处理更新
       ensureRootIsScheduled(root, eventTime);
       schedulePendingInteractions(root, retryLane);
     }
   }
 
   /**
-   * 
-   * @param boundaryFiber
-   * @param wakeable
+   * 边界 fiber node 收集的类 promise 对象的状态变为 resolved
+   * @param boundaryFiber 边界 fiber node (一般是 Suspense、SuspenseList 等)
+   * @param wakeable 类 promise 对象
    */
   function resolveRetryWakeable(boundaryFiber, wakeable) {
+    debugger
     var retryLane = NoLane; // Default
 
     var retryCache;
 
     {
+      // 边界 fiber node 收集的类 promise 对象
       retryCache = boundaryFiber.stateNode;
     }
 
     if (retryCache !== null) {
       // The wakeable resolved, so we no longer need to memoize, because it will
       // never be thrown again.
+      // wakeable 的状态已经变为 resolved，要从 retryCache 中移除
       retryCache.delete(wakeable);
     }
     // 重新处理延时的边界问题
