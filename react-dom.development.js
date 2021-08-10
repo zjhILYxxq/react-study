@@ -5951,7 +5951,7 @@
   }
 
   /**
-   * 检查 lanes 中是否包含 RetryLanes 类型的更新
+   * 检查 lanes 中是否仅仅包含 RetryLanes 类型的更新
    * @params lanes
    */
   function includesOnlyRetries(lanes) {
@@ -5959,7 +5959,7 @@
   }
 
   /**
-   * 检查 lanes 中是否包含 TransitionLanes 类型的更新
+   * 检查 lanes 中是否仅仅包含 TransitionLanes 类型的更新
    * @param lanes
    */
   function includesOnlyTransitions(lanes) {
@@ -24590,6 +24590,7 @@
   // model where we don't commit new loading states in too quick succession.
 
   var globalMostRecentFallbackTime = 0;
+  
   var FALLBACK_THROTTLE_MS = 500; // The absolute time for when we should start giving up on rendering
   // more and prefer CPU suspense heuristics instead.
 
@@ -25209,6 +25210,7 @@
    * @param lanes 
    */
   function finishConcurrentRender(root, exitStatus, lanes) {
+    debugger
     // 退出渲染阶段的状态码
     switch (exitStatus) {
       case RootIncomplete:  // 渲染未完成
@@ -26031,6 +26033,7 @@
       popInteractions(prevInteractions);
     }
 
+    debugger
     popDispatcher(prevDispatcher);
     // 退出渲染，恢复之前的执行上下文
     executionContext = prevExecutionContext;
@@ -27229,14 +27232,20 @@
       // we should probably never restart.
       // If we're suspended with delay, or if it's a retry, we'll always suspend
       // so we can always restart.
+      // pingedLanes 的优先级和我们当前更新时的优先级一样
+      // 如果由于同步、批处理或者过期导致同步渲染，永远不应该重新启动；
+      // 如果被延迟暂停，或者是重试，我们将始终挂起，以便可以始终重新启动；
       if (workInProgressRootExitStatus === RootSuspendedWithDelay || workInProgressRootExitStatus === RootSuspended && includesOnlyRetries(workInProgressRootRenderLanes) && now() - globalMostRecentFallbackTime < FALLBACK_THROTTLE_MS) {
         // Restart from the root.
         // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
+        // workInProgress fiber tree 重置的条件：
+        // 1. 上一次渲染以 suspense 结束
         prepareFreshStack(root, NoLanes);
       } else {
         // Even though we can't restart right now, we might get an
         // opportunity later. So we mark this render as having a ping.
-        // 本次渲染是畅通的赛道
+        // 将 pingedLanes 合并到 workInProgressRootPingedLanes 中
+        // 尽管此时我们不可以重新启动，但是可能在之后会有重启启动的机会。所以给这次渲染标记有一个 lane 已经 pinged
         workInProgressRootPingedLanes = mergeLanes(workInProgressRootPingedLanes, pingedLanes);
       }
     }
@@ -27258,7 +27267,7 @@
     // likely unblocked. Try rendering again, at a new expiration time.
     // 边界 fiber node 之间渲染了 fallback。导致暂停的 promise 的状态变为 resolved，意味着部分树会解锁，在新的过期时间到来之前重新渲染
     if (retryLane === NoLane) {
-      // 为重新渲染的边界 fiber node 计算 lane
+      // 为重新渲染的边界 fiber node 计算 retry lane
       retryLane = requestRetryLane(boundaryFiber);
     } // TODO: Special case idle priority?
 
@@ -27283,6 +27292,7 @@
    */
   function resolveRetryWakeable(boundaryFiber, wakeable) {
     debugger
+    // retryLane 默认为 0
     var retryLane = NoLane; // Default
 
     var retryCache;

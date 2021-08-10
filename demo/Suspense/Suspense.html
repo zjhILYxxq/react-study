@@ -22,7 +22,7 @@
                     resolve({
                         name: "zjh"
                     });
-                }, 2000)
+                }, 50)
             });
         }
 
@@ -35,7 +35,7 @@
                     resolve({
                         name: "zjh1"
                     });
-                }, 1000)
+                }, 10)
             });
         }
 
@@ -48,7 +48,7 @@
                     resolve({
                         name: "zjh2"
                     });
-                }, 4000)
+                }, 70)
             });
         }
 
@@ -79,18 +79,18 @@
 
         function fetchProfileData() {
             let userPromise = fetchUser();
-            // let userPromise1 = fetchUser1();
-            // let userPromise2 = fetchUser2();
+            let userPromise1 = fetchUser1();
+            let userPromise2 = fetchUser2();
             // let postsPromise = fetchPosts();
             return {
                 user: wrapPromise(userPromise),
-                // user1: wrapPromise(userPromise1),
-                // user2: wrapPromise(userPromise2)
+                user1: wrapPromise(userPromise1),
+                user2: wrapPromise(userPromise2)
                 // posts: wrapPromise(postsPromise)
             };
         }
 
-        const resource = fetchProfileData();
+        let resource;
 
         function ProfilePageList() {
             return (
@@ -111,11 +111,31 @@
         }
 
         function ProfilePage() {
+            const [visible, setVisible] = React.useState(false);
+
+            const show = () => {
+                resource = fetchProfileData();
+                setVisible(true);
+            }
             return (
                 <div>
-                    <React.Suspense fallback={<h1>Loading profile...</h1>}>
-                        <ProfileDetails />
-                    </React.Suspense>                 
+                    <button onClick={show}>显示</button>
+                    <button onClick={() => setVisible(false)}>隐藏</button>
+                    {
+                        visible && (
+                            <React.Fragment>
+                                <React.Suspense fallback={<h1>Loading profile1...</h1>}>
+                                    <ProfileDetails />
+                                </React.Suspense>
+                                <React.Suspense fallback={<h1>Loading profile2...</h1>}>
+                                    <ProfileDetails1 />
+                                </React.Suspense> 
+                                <React.Suspense fallback={<h1>Loading profile3...</h1>}>
+                                    <ProfileDetails2 />
+                                </React.Suspense> 
+                            </React.Fragment> 
+                        )
+                    }               
                 </div>
                 
             );
@@ -124,12 +144,12 @@
         function ProfileDetails() {
             // Try to read user info, although it might not have loaded yet
             const user = resource.user.read();
-            return <h1>{user.name}</h1>;
+            return <h1 style={{height: 44, overflow: 'hidden'}}>{Array(1000).fill(user.name + ' ').map(item => <span>{item}</span>)}</h1>;
         }
         function ProfileDetails1() {
             // Try to read user info, although it might not have loaded yet
             const user = resource.user1.read();
-            return <h1>{user.name}</h1>;
+            return <h1 style={{height: 44, overflow: 'hidden'}}>{Array(1000).fill(user.name + ' ').map(item => <span>{item}</span>)}</h1>;
         }
         function ProfileDetails2() {
             // Try to read user info, although it might not have loaded yet
