@@ -6297,7 +6297,7 @@
   function markRootSuspended(root, suspendedLanes) {
     // 把之前暂停的赛道集合，合并到 fiber root node 的 suspendedLanes 集合中
     root.suspendedLanes |= suspendedLanes;
-    // 没有暂停的赛道，就是 pinged 的赛道 ？？
+    // 去除掉 pingedLanes 中又被暂停的 lanes
     root.pingedLanes &= ~suspendedLanes; // The suspended lanes are no longer CPU-bound. Clear their expiration times.
     // 暂停的赛道不在有 cpu 的限制，所以可以清除他们对应的过期时间
     // fiber root node 各个赛道的过期时间
@@ -16911,6 +16911,7 @@
     workInProgress.updateQueue = current.updateQueue;
     // 函数组件实际不需要更新，清理掉 useEffect 副作用
     workInProgress.flags &= ~(Passive | Update);
+    // 将 lanes 从 current.lanes 中移除
     current.lanes = removeLanes(current.lanes, lanes);
   }
 
@@ -20254,6 +20255,7 @@
    */
   function getRemainingWorkInPrimaryTree(current, renderLanes) {
     // TODO: Should not remove render lanes that were pinged during this render
+    // 将 renderLanes 从 current.childLanes 中移除
     return removeLanes(current.childLanes, renderLanes);
   }
 
@@ -20921,7 +20923,7 @@
    * @param renderLanes 本次渲染对应的优先级
    */
   function updateSuspenseListComponent(current, workInProgress, renderLanes) {
-    debugger
+    // debugger
     var nextProps = workInProgress.pendingProps;
     // revealOrder 属性: forwards, backwards, together
     var revealOrder = nextProps.revealOrder;
@@ -22094,7 +22096,7 @@
          * 3. child fiber node 协调成成， Suspense complete；
          */
         {
-          debugger
+          // debugger
           popSuspenseContext(workInProgress);
           // nextState 为 { dehydrated: null, retryLane: 0 }
           var nextState = workInProgress.memoizedState;
@@ -24361,7 +24363,7 @@
    * @param finishedWork workInProgress fiber node
    */
   function commitSuspenseComponent(finishedWork) {
-    debugger
+    // debugger
     var newState = finishedWork.memoizedState;
 
     if (newState !== null) {
@@ -25135,6 +25137,7 @@
     }
     // 状态， RootIncomplete: 0, 渲染未完成； RootCompleted: 5, 渲染完成；
     // 非阻塞渲染，如果分配的时间片用完，那么就会返回 RootIncomplete
+    // 非阻塞渲染，如果有Suspense 暂停，则 exitStatus 为 RootSuspended
     var exitStatus = renderRootConcurrent(root, lanes);
 
     // 
@@ -25207,7 +25210,7 @@
    * 非阻塞渲染阶段结束
    * @param root  fiber root node
    * @param exitStatus 退出渲染阶段的状态码
-   * @param lanes 
+   * @param lanes 暂停时渲染的更新赛道
    */
   function finishConcurrentRender(root, exitStatus, lanes) {
     debugger
@@ -25241,18 +25244,22 @@
 
           if (includesOnlyRetries(lanes) && // do not delay if we're inside an act() scope
           !shouldForceFlushFallbacksInDEV()) {
+            // retry lanes 又被暂停了
             // This render only included retries, no updates. Throttle committing
             // retries so that we don't show too many loading states too quickly.
+            // 限制提交重试，以便我们不会太快显示太多加载状态
+            // globalMostRecentFallbackTime 可以理解为最近一次显示加载状态，即 fallback 的时间
+            // retry 中如果又被暂停，意味着又需要展示新的加载状态
             var msUntilTimeout = globalMostRecentFallbackTime + FALLBACK_THROTTLE_MS - now(); // Don't bother with a very short suspense time.
 
-            if (msUntilTimeout > 10) {
+            if (msUntilTimeout > 10) { // 即 now() - globalMostRecentFallbackTime < 510
               var nextLanes = getNextLanes(root, NoLanes);
 
               if (nextLanes !== NoLanes) {
                 // There's additional work on this root.
                 break;
               }
-
+              //已经暂停的 lanes
               var suspendedLanes = root.suspendedLanes;
 
               if (!isSubsetOfLanes(suspendedLanes, lanes)) {
@@ -25268,13 +25275,14 @@
               // lower priority work to do. Instead of committing the fallback
               // immediately, wait for more data to arrive.
 
-
+              // 渲染被暂停，还没有超时，也没有低优先级的工作去做。延迟 msUntilTimeout，等待更多的数据，再去提交
+              // 离上一显示加载状态的时间还没有超过 510 s，此时可以延迟 commit 操作，等待更多的数据到来
               root.timeoutHandle = scheduleTimeout(commitRoot.bind(null, root), msUntilTimeout);
               break;
             }
           } // The work expired. Commit immediately.
 
-
+          // 本次暂停已经离上次显示中间状态超过了 510 ms，直接显示新的暂停状态
           commitRoot(root);
           break;
         }
@@ -25672,14 +25680,14 @@
     root.finishedWork = null;
     // 本次渲染要处理的更新对应的 lane
     root.finishedLanes = NoLanes;
-    // 超时处理
+    // 延时的 commit 操作
     var timeoutHandle = root.timeoutHandle;
 
     if (timeoutHandle !== noTimeout) {
+      // 开始 render 阶段时，如果有延时的 commit 操作，先把延时的 commit 操作清理掉
       // The root previous suspended and scheduled a timeout to commit a fallback
       // state. Now that we have additional work, cancel the timeout.
       root.timeoutHandle = noTimeout; // $FlowFixMe Complains noTimeout is not a TimeoutID, despite the check above
-
       cancelTimeout(timeoutHandle);
     }
 
@@ -25837,9 +25845,10 @@
   }
 
   /**
-   * 
+   * commit 阶段 fallback commit 的时间
    */
   function markCommitTimeOfFallback() {
+    // 最近一次 fallback commit 的时间
     globalMostRecentFallbackTime = now();
   }
 
@@ -27240,6 +27249,7 @@
         // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
         // workInProgress fiber tree 重置的条件：
         // 1. 上一次渲染以 suspense 结束
+        console.log('wokrInProgress fiber tree 重置');
         prepareFreshStack(root, NoLanes);
       } else {
         // Even though we can't restart right now, we might get an
@@ -27260,7 +27270,7 @@
    * @param retryLane 本次渲染的更新
    */
   function retryTimedOutBoundary(boundaryFiber, retryLane) {
-    debugger
+    // debugger
     // The boundary fiber (a Suspense component or SuspenseList component)
     // previously was rendered in its fallback state. One of the promises that
     // suspended it has resolved, which means at least part of the tree was
@@ -27291,7 +27301,7 @@
    * @param wakeable 类 promise 对象
    */
   function resolveRetryWakeable(boundaryFiber, wakeable) {
-    debugger
+    // debugger
     // retryLane 默认为 0
     var retryLane = NoLane; // Default
 
