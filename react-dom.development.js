@@ -12815,6 +12815,7 @@
       var alternate = node.alternate;
 
       if (!isSubsetOfLanes(node.childLanes, renderLanes)) {
+        // 如果 node.childLanes 中包含 renderLanes
         node.childLanes = mergeLanes(node.childLanes, renderLanes);
 
         if (alternate !== null) {
@@ -24591,6 +24592,7 @@
   var mostRecentlyUpdatedRoot = null; // The most recent time we committed a fallback. This lets us ensure a train
   // model where we don't commit new loading states in too quick succession.
 
+  // 最近一次显示加载状态的时间。用于确保我们不会太快的连续提交加载状态
   var globalMostRecentFallbackTime = 0;
   
   var FALLBACK_THROTTLE_MS = 500; // The absolute time for when we should start giving up on rendering
@@ -25190,10 +25192,10 @@
       root.finishedWork = finishedWork;
       // 结束的本次渲染要处理的更新的赛道
       root.finishedLanes = lanes;
-      // 非阻塞渲染完成
+      // 结束本次非阻塞渲染完成
       finishConcurrentRender(root, exitStatus, lanes);
     }
-    // 为更新分配一个调度任务
+    // 为更新分配一个调度任务，如果还有更新未处理完，继续安排异步调度任务进行更新
     ensureRootIsScheduled(root, now());
 
     if (root.callbackNode === originalCallbackNode) {
@@ -25213,7 +25215,7 @@
    * @param lanes 暂停时渲染的更新赛道
    */
   function finishConcurrentRender(root, exitStatus, lanes) {
-    debugger
+    // debugger
     // 退出渲染阶段的状态码
     switch (exitStatus) {
       case RootIncomplete:  // 渲染未完成
@@ -25239,12 +25241,14 @@
 
       case RootSuspended: // 渲染被暂停
         {
+          // 移除已经 pinged 的 lanes，将新的被暂停的 lanes 合并到 fiber root node 的 suspensedLanes 中
           markRootSuspended$1(root, lanes); // We have an acceptable loading state. We need to figure out if we
           // should immediately commit it or wait a bit.
 
+          // 我们有一个可接受的加载状态。我们要弄清楚我们是否是立刻提交加载状态还是要稍等片刻
           if (includesOnlyRetries(lanes) && // do not delay if we're inside an act() scope
           !shouldForceFlushFallbacksInDEV()) {
-            // retry lanes 又被暂停了
+            // retry lanes 处理的时候，又被暂停了
             // This render only included retries, no updates. Throttle committing
             // retries so that we don't show too many loading states too quickly.
             // 限制提交重试，以便我们不会太快显示太多加载状态
@@ -25253,8 +25257,13 @@
             var msUntilTimeout = globalMostRecentFallbackTime + FALLBACK_THROTTLE_MS - now(); // Don't bother with a very short suspense time.
 
             if (msUntilTimeout > 10) { // 即 now() - globalMostRecentFallbackTime < 510
+              // 显示加载状态的节流操作
+              
+              // 下一次渲染时要处理的 lanes 
+              // 如果没有 fiber root node 没有 pendingLanes， 那么 nextLanes 为 0
               var nextLanes = getNextLanes(root, NoLanes);
 
+              // nextLanes 不为 0， 说明还有更新要处理，不能进入 commit 阶段
               if (nextLanes !== NoLanes) {
                 // There's additional work on this root.
                 break;
@@ -25263,12 +25272,14 @@
               var suspendedLanes = root.suspendedLanes;
 
               if (!isSubsetOfLanes(suspendedLanes, lanes)) {
+                // lanes 被暂停，却不是 suspenedLanes 的一个子集，说明 suspendedLanes 中已经有 lanes 被 pinged
                 // We should prefer to render the fallback of at the last
                 // suspended level. Ping the last suspended level to try
                 // rendering it again.
                 // FIXME: What if the suspended lanes are Idle? Should not restart.
+                // 我们应该更喜欢在最后一个 suspense 渲染 fallback。所以 ping 最后一个级别的 suspense 来尝试重新渲染它
                 var eventTime = requestEventTime();
-                // 
+                // 把 suspendedLanes 中已经 pinged 的 lanes 合并到 fiber root node 的 pingedLanes 中
                 markRootPinged(root, suspendedLanes);
                 break;
               } // The render is suspended, it hasn't timed out, and there's no
@@ -25282,7 +25293,7 @@
             }
           } // The work expired. Commit immediately.
 
-          // 本次暂停已经离上次显示中间状态超过了 510 ms，直接显示新的暂停状态
+          // 立刻提交加载状态，显示 Suspense 的 fallback
           commitRoot(root);
           break;
         }
@@ -25351,13 +25362,14 @@
   function markRootSuspended$1(root, suspendedLanes) {
     // When suspending, we should always exclude lanes that were pinged or (more
     // rarely, since we try to avoid it) updated during the render phase.
+    // 暂停的时候，我们要排除已经 pinged 或者在渲染阶段更新的 lane
     // TODO: Lol maybe there's a better way to factor this besides this
     // obnoxiously named function :)
     // 从暂停的赛道集合 suspendedLanes 中移除 pinged 的赛道
     suspendedLanes = removeLanes(suspendedLanes, workInProgressRootPingedLanes);
     // 从暂停的赛道集合 suspendedLanes 中移除更新赛道 ？？
     suspendedLanes = removeLanes(suspendedLanes, workInProgressRootUpdatedLanes);
-    // 
+    // 重新标记 fiber root node 暂停的 lanes
     markRootSuspended(root, suspendedLanes);
   } // This is the entry point for synchronous tasks that don't go
   // through Scheduler
@@ -25845,7 +25857,7 @@
   }
 
   /**
-   * commit 阶段 fallback commit 的时间
+   * 记录 commit 阶段 fallback commit 的时间，用于确保不会太快的连续提交加载中间状态
    */
   function markCommitTimeOfFallback() {
     // 最近一次 fallback commit 的时间
@@ -25931,6 +25943,7 @@
       // workInProgressRoot 可以理解为上一次渲染时对应的 fiber root node。如果 workInProgressRoot 和 root 不一样，
       // 我们需要把 workInProgressRoot、workInProgress 重置
       // 重置渲染过程中的全局变量：workInProgressRoot、workInProgress 等
+      console.log('wokrInProgress fiber tree 重置');
       prepareFreshStack(root, lanes);
       // 开始处理待定交互 ？？
       startWorkOnPendingInteractions(root, lanes);
@@ -26042,7 +26055,7 @@
       popInteractions(prevInteractions);
     }
 
-    debugger
+    // debugger
     popDispatcher(prevDispatcher);
     // 退出渲染，恢复之前的执行上下文
     executionContext = prevExecutionContext;
@@ -27216,7 +27229,7 @@
    * @param pingedLanes 已经畅通的更新(异步请求的数据/组件已经获取到，对应的 promise 对象的状态为 resolved)
    */
   function pingSuspendedRoot(root, wakeable, pingedLanes) {
-    debugger
+    // debugger
     // 是一个 weakMap(或者是 map)，收集异常的类 promise 对象
     var pingCache = root.pingCache;
 
