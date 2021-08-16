@@ -127,12 +127,9 @@
                                 <React.Suspense fallback={<h1>Loading profile1...</h1>}>
                                     <ProfileDetails />
                                 </React.Suspense>
-                                <React.Suspense fallback={<h1>Loading profile2...</h1>}>
-                                    <ProfileDetails1 />
-                                </React.Suspense> 
-                                <React.Suspense fallback={<h1>Loading profile3...</h1>}>
-                                    <ProfileDetails2 />
-                                </React.Suspense> 
+                                <div style={{height: 44, overflow: 'hidden'}}>
+                                    {Array(50000).fill(1).map(item => <span>{item}</span>)}
+                                </div>
                             </React.Fragment> 
                         )
                     }               
