@@ -22871,7 +22871,7 @@
       var wakeable = value;
 
       if ((sourceFiber.mode & BlockingMode) === NoMode) {
-        // 同步非阻塞渲染
+        // 同步阻塞渲染
         // Reset the memoizedState to what it was before we attempted
         // to render it.
         // current fiber node
@@ -22906,6 +22906,7 @@
           var wakeables = _workInProgress.updateQueue;
 
           // 将 promise 对象收集到 fiber node 的 updateQueue 队列中
+          // 不管是 concurrent 模式还是 legacy 模式， 类 promise 对象都会被收集到 updateQueue 中
           if (wakeables === null) {
             var updateQueue = new Set();
             // updateQueue 收集类 promise 对象
@@ -23051,7 +23052,7 @@
     // over and traverse parent path again, this time treating the exception
     // as an error.
 
-
+    // 没有边界可以处理异常
     renderDidError();
     value = createCapturedValue(value, sourceFiber);
     var workInProgress = returnFiber;
@@ -23103,6 +23104,7 @@
     didWarnAboutUndefinedSnapshotBeforeUpdate = new Set();
   }
 
+  // week set
   var PossiblyWeakSet = typeof WeakSet === 'function' ? WeakSet : Set;
 
   var callComponentWillUnmountWithTimer = function (current, instance) {
@@ -27223,7 +27225,7 @@
   }
 
   /**
-   * 处理 Suspense 的更新
+   * concurrent 模式下处理 Suspense 的更新
    * @param root  fiber root node
    * @param wakeable 类 promise 对象
    * @param pingedLanes 已经畅通的更新(异步请求的数据/组件已经获取到，对应的 promise 对象的状态为 resolved)
@@ -27247,6 +27249,7 @@
     // 
     if (workInProgressRoot === root && isSubsetOfLanes(workInProgressRootRenderLanes, pingedLanes)) {
       // pingedLanes 是 workInProgressRootRenderLanes 的子集
+      // 即 workInProgressRootRenderLanes 完全包含 pingedLanes
       // Received a ping at the same priority level at which we're currently
       // rendering. We might want to restart this render. This should mirror
       // the logic of whether or not a root suspends once it completes.
@@ -27262,17 +27265,18 @@
         // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
         // workInProgress fiber tree 重置的条件：
         // 1. 上一次渲染以 suspense 结束
-        console.log('wokrInProgress fiber tree 重置');
+        // 2. 上一次更新以 suspense 结束，并且本次更新的 lane 是 retry lane, 而且距离上一次 fallback 显示的时间不超过 500 ms
         prepareFreshStack(root, NoLanes);
       } else {
         // Even though we can't restart right now, we might get an
         // opportunity later. So we mark this render as having a ping.
         // 将 pingedLanes 合并到 workInProgressRootPingedLanes 中
         // 尽管此时我们不可以重新启动，但是可能在之后会有重启启动的机会。所以给这次渲染标记有一个 lane 已经 pinged
+        // 如果在渲染过程中，挂起的 lane 被 pinged，那么将 pinged 的 lane 合并到 workInProgressRootPingedLanes 中
         workInProgressRootPingedLanes = mergeLanes(workInProgressRootPingedLanes, pingedLanes);
       }
     }
-    // 任务调度，
+    // 任务调度，在下一步异步任务中处理更新
     ensureRootIsScheduled(root, eventTime);
     schedulePendingInteractions(root, pingedLanes);
   }
