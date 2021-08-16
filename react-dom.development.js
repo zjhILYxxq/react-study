@@ -25217,6 +25217,7 @@
    * @param lanes 暂停时渲染的更新赛道
    */
   function finishConcurrentRender(root, exitStatus, lanes) {
+    console.log('finishConcurrentRender', exitStatus);
     // debugger
     // 退出渲染阶段的状态码
     switch (exitStatus) {
@@ -26015,6 +26016,7 @@
    * @param lanes 本次非阻塞渲染对应的 lanes(更新)
    */
   function renderRootConcurrent(root, lanes) {
+    console.log('concurrent render');
     // 先缓存当前执行上下文
     var prevExecutionContext = executionContext;
     // 当前执行上下文为 RenderContext，渲染上下文
@@ -26373,6 +26375,8 @@
    * @param root  fiber root node
    */
   function commitRoot(root) {
+    console.log('commit root');
+    debugger
     
     // 获取当前的优先级
     var renderPriorityLevel = getCurrentPriorityLevel();
@@ -27231,9 +27235,11 @@
    * @param pingedLanes 已经畅通的更新(异步请求的数据/组件已经获取到，对应的 promise 对象的状态为 resolved)
    */
   function pingSuspendedRoot(root, wakeable, pingedLanes) {
-    // debugger
+    debugger
     // 是一个 weakMap(或者是 map)，收集异常的类 promise 对象
     var pingCache = root.pingCache;
+    console.log('pingSuspended');
+    console.log('workInProgressRoot', workInProgressRoot);
 
     // wakeable 的状态已经是 resolved， 删除 wakeable
     if (pingCache !== null) {
