@@ -22,7 +22,7 @@
                     resolve({
                         name: "zjh"
                     });
-                }, 1000)
+                }, 0)
             });
         }
 
@@ -143,9 +143,6 @@
             const user = resource.user.read();
             return <React.Fragment>
                     <h1 style={{height: 44, overflow: 'hidden'}}>{Array(1000).fill(user.name + ' ').map(item => <span>{item}</span>)}</h1>
-                    <React.Suspense fallback={<h1>Loading profile2...</h1>}>
-                        <ProfileDetails2 />
-                    </React.Suspense>
                 </React.Fragment>
             
             
