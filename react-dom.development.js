@@ -13725,7 +13725,6 @@
      * @param callback setState 方法传入的 callback
      */
     enqueueSetState: function (inst, payload, callback) {
-      console.log('workInProgress', workInProgress);
       // 类组件实例对应的 current fiber node
       var fiber = get(inst);
       // 执行 setState 方法触发更新时，需要基于当前时间创建一个新的时间戳
@@ -17104,9 +17103,6 @@
 
     var hook = updateWorkInProgressHook();
     var queue = hook.queue;
-    // if (workInProgress.type === Parent) {
-    //   console.log('queue', queue);
-    // }
     if (!(queue !== null)) {
       {
         throw Error( "Should have a queue. This is likely a bug in React. Please file an issue." );
@@ -22152,6 +22148,7 @@
               // 在我们得到这个标记之前，我们不知道是否应该重新启动渲染，这时候已经太晚了 ？？
               // 如果此时这个渲染已经有一个 ping 或者低优先级的更新，这是我们第一次知道我们将要暂停，我们应该能够立即从
               // throwException 中启动？？
+              debugger
               var hasInvisibleChildContext = current === null && workInProgress.memoizedProps.unstable_avoidThisFallback !== true;
 
               if (hasInvisibleChildContext || hasSuspenseContext(suspenseStackCursor.current, InvisibleParentSuspenseContext)) {
@@ -24388,6 +24385,10 @@
     }
   }
 
+  /**
+   * @param finishedRoot
+   * @param finishedWork
+   */
   function commitSuspenseHydrationCallbacks(finishedRoot, finishedWork) {
 
     var newState = finishedWork.memoizedState;
@@ -24414,6 +24415,7 @@
    * @param finishedWork  Suspense fiber node
    */
   function attachSuspenseRetryListeners(finishedWork) {
+    // debugger
     // If this boundary just timed out, then it will have a set of wakeables.
     // For each wakeable, attach a listener so that when it resolves, React
     // attempts to re-render the boundary in the primary (pre-timeout) state.
@@ -24441,6 +24443,7 @@
 
           retryCache.add(wakeable);
           // 类 promise 对象注册 fullfilled、rejected
+          // wakeable 对象可能在 render 阶段就已经变成 fullfilled 了，此时注册的 onFullfilled，onRejected 还是可以触发的
           wakeable.then(retry, retry);
         }
       });
@@ -25946,7 +25949,6 @@
       // workInProgressRoot 可以理解为上一次渲染时对应的 fiber root node。如果 workInProgressRoot 和 root 不一样，
       // 我们需要把 workInProgressRoot、workInProgress 重置
       // 重置渲染过程中的全局变量：workInProgressRoot、workInProgress 等
-      console.log('wokrInProgress fiber tree 重置');
       prepareFreshStack(root, lanes);
       // 开始处理待定交互 ？？
       startWorkOnPendingInteractions(root, lanes);
@@ -26028,9 +26030,9 @@
     // workInProgressRoot 和 root 不相等，意味着上一次渲染时的 fiber tree 和这一次不是同一颗 fiber tree
     // 
     // 那么 workInProgressRoot 、workInProgress 都要重置
+
     if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
 
-      console.log('重置 workInProgress tree', workInProgressRootRenderLanes, lanes);
       // 重置渲染终止时间，即当前时间 + 500 ms()
       resetRenderTimer();
       // 预处理工作，设置当前要处理的 fiber root node 以及对应的 fiber node (阻塞渲染和非阻塞渲染都有这一步)
@@ -26376,7 +26378,6 @@
    */
   function commitRoot(root) {
     console.log('commit root');
-    debugger
     
     // 获取当前的优先级
     var renderPriorityLevel = getCurrentPriorityLevel();
@@ -27230,17 +27231,16 @@
 
   /**
    * concurrent 模式下处理 Suspense 的更新
+   * 在构建 workInProgress tree 的过程中，如果遇到之前暂停的 lanes 变为 pinged，要分两种情况处理
+   * 1. 重置当前 workInProgress tree，在本次渲染过程中一并处理 pinged 的更新()
+   * 2. 继续当前 workInProgress tree 的构建，pinged 的 lanes 在下一次 workInProgress tree 的过程中处理
    * @param root  fiber root node
    * @param wakeable 类 promise 对象
    * @param pingedLanes 已经畅通的更新(异步请求的数据/组件已经获取到，对应的 promise 对象的状态为 resolved)
    */
   function pingSuspendedRoot(root, wakeable, pingedLanes) {
-    debugger
     // 是一个 weakMap(或者是 map)，收集异常的类 promise 对象
     var pingCache = root.pingCache;
-    console.log('pingSuspended');
-    console.log('workInProgressRoot', workInProgressRoot);
-
     // wakeable 的状态已经是 resolved， 删除 wakeable
     if (pingCache !== null) {
       // The wakeable resolved, so we no longer need to memoize, because it will
@@ -27254,6 +27254,13 @@
     markRootPinged(root, pingedLanes);
     // 
     if (workInProgressRoot === root && isSubsetOfLanes(workInProgressRootRenderLanes, pingedLanes)) {
+      /**
+       * pingedLanes 是 workInProgressRootRenderLanes 的子集的情况如下：
+       * 1. 某次更新中有暂停，但是由于渲染过程耗时比较长，已经暂停的更新 pinged 以后，渲染还没有结束；
+       * 2. 某次更新中有暂停，然后在之后的某个更新过程中 pinged；
+       */
+
+
       // pingedLanes 是 workInProgressRootRenderLanes 的子集
       // 即 workInProgressRootRenderLanes 完全包含 pingedLanes
       // Received a ping at the same priority level at which we're currently
@@ -27263,6 +27270,8 @@
       // we should probably never restart.
       // If we're suspended with delay, or if it's a retry, we'll always suspend
       // so we can always restart.
+
+
       // pingedLanes 的优先级和我们当前更新时的优先级一样
       // 如果由于同步、批处理或者过期导致同步渲染，永远不应该重新启动；
       // 如果被延迟暂停，或者是重试，我们将始终挂起，以便可以始终重新启动；
@@ -27271,14 +27280,14 @@
         // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
         // workInProgress fiber tree 重置的条件：
         // 1. 上一次渲染以 suspense 结束
-        // 2. 上一次更新以 suspense 结束，并且本次更新的 lane 是 retry lane, 而且距离上一次 fallback 显示的时间不超过 500 ms
+        // 2. 上一次更新以 suspense 结束且暂停的 lane 是 retry lane，并且本次更新的 lane 是 retry lane, 而且距离上一次 fallback 显示的时间不超过 500 ms
         prepareFreshStack(root, NoLanes);
       } else {
         // Even though we can't restart right now, we might get an
         // opportunity later. So we mark this render as having a ping.
         // 将 pingedLanes 合并到 workInProgressRootPingedLanes 中
         // 尽管此时我们不可以重新启动，但是可能在之后会有重启启动的机会。所以给这次渲染标记有一个 lane 已经 pinged
-        // 如果在渲染过程中，挂起的 lane 被 pinged，那么将 pinged 的 lane 合并到 workInProgressRootPingedLanes 中
+        // 如果在渲染过程中，挂起的 lane 被 pinged，那么将 pinged 的 lane 合并到 workInProgressRootPingedLanes 中, 等待下一个渲染过程处理
         workInProgressRootPingedLanes = mergeLanes(workInProgressRootPingedLanes, pingedLanes);
       }
     }

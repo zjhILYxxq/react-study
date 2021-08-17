@@ -22,7 +22,7 @@
                     resolve({
                         name: "zjh"
                     });
-                }, 0)
+                }, 1000)
             });
         }
 
@@ -31,7 +31,7 @@
             return new Promise((resolve) => {
                 setTimeout(() => {
                     // debugger
-                    console.log("fetched user");
+                    console.log("fetched user1");
                     resolve({
                         name: "zjh1"
                     });
@@ -44,11 +44,11 @@
             return new Promise((resolve) => {
                 setTimeout(() => {
                     // debugger
-                    console.log("fetched user");
+                    console.log("fetched user2");
                     resolve({
                         name: "zjh2"
                     });
-                }, 3000)
+                }, 1100)
             });
         }
 
@@ -124,12 +124,12 @@
                     {
                         visible && (
                             <React.Fragment>
-                                <React.Suspense fallback={<h1>Loading profile1...</h1>}>
-                                    <ProfileDetails />
-                                </React.Suspense>
-                                <div style={{height: 44, overflow: 'hidden'}}>
-                                    {Array(200000).fill(1).map(item => <span>{item}</span>)}
-                                </div>
+                                    <React.Suspense fallback={<h1>Loading profile...</h1>} unstable_avoidThisFallback={true}>
+                                        <ProfileDetails />
+                                    </React.Suspense>
+                                    <div>
+                                        {Array(50000).fill(1).map(item => <span>{item}</span>)}
+                                    </div>
                             </React.Fragment> 
                         )
                     }               
@@ -141,12 +141,26 @@
         function ProfileDetails() {
             // Try to read user info, although it might not have loaded yet
             const user = resource.user.read();
-            return <h1 style={{height: 44, overflow: 'hidden'}}>{Array(1000).fill(user.name + ' ').map(item => <span>{item}</span>)}</h1>;
+            return <React.Fragment>
+                    <h1 style={{height: 44, overflow: 'hidden'}}>{Array(1000).fill(user.name + ' ').map(item => <span>{item}</span>)}</h1>
+                    <React.Suspense fallback={<h1>Loading profile2...</h1>}>
+                        <ProfileDetails2 />
+                    </React.Suspense>
+                </React.Fragment>
+            
+            
         }
         function ProfileDetails1() {
             // Try to read user info, although it might not have loaded yet
             const user = resource.user1.read();
-            return <h1 style={{height: 44, overflow: 'hidden'}}>{Array(1000).fill(user.name + ' ').map(item => <span>{item}</span>)}</h1>;
+            return <React.Fragment>
+                    <h1 style={{height: 44, overflow: 'hidden'}}>{Array(1000).fill(user.name + ' ').map(item => <span>{item}</span>)}</h1>
+                    <div>
+                        {Array(50000).fill(1).map(item => <span>{item}</span>)}
+                    </div>
+                </React.Fragment>
+            
+            
         }
         function ProfileDetails2() {
             // Try to read user info, although it might not have loaded yet
