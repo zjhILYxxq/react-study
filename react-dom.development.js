@@ -20873,12 +20873,12 @@
 
   /**
    * 
-   * @param workInProgress
-   * @param isBackwards
+   * @param workInProgress  workInProgress fiber node
+   * @param isBackwards  revealOrder 的值是否是 backwards，如果是 forward、together，那么 isBackwards 的值为 false
    * @param tail
    * @param lastContentRow
    * @param tailMode
-   * @param lastEffectBeforeRendering
+   * @param lastEffectBeforeRendering workInProgress fiber node 的最后一个副作用 ？？
    */
   function initSuspenseListRenderState(workInProgress, isBackwards, tail, lastContentRow, tailMode, lastEffectBeforeRendering) {
     var renderState = workInProgress.memoizedState;
@@ -20924,8 +20924,13 @@
     var nextProps = workInProgress.pendingProps;
     // revealOrder 属性: forwards, backwards, together
     // reveal order， fallback 显示的顺序
+    // 如果是 forwards，按正序处理 fallback；
+    // 如果是 backwards， 按逆序处理 fallback；
+    // 如果是 together，会最后一起处理 fallback；
     var revealOrder = nextProps.revealOrder;
-    // tailMode 属性: collapsed, hidden
+    // tail 属性: collapsed, hidden
+    // 如果是 hide，fallback 会隐藏，不显示；
+    // 如果是 collapsed，fallback 会先缩起来( revealOrder 为 forwards、backwards 时， tail 才会起作用)
     var tailMode = nextProps.tail;
     // 子元素，是 Suspense 类型的 react element
     var newChildren = nextProps.children;
