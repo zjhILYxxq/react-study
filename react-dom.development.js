@@ -20920,9 +20920,10 @@
    * @param renderLanes 本次渲染对应的优先级
    */
   function updateSuspenseListComponent(current, workInProgress, renderLanes) {
-    // debugger
+    debugger
     var nextProps = workInProgress.pendingProps;
     // revealOrder 属性: forwards, backwards, together
+    // reveal order， fallback 显示的顺序
     var revealOrder = nextProps.revealOrder;
     // tailMode 属性: collapsed, hidden
     var tailMode = nextProps.tail;
@@ -27279,8 +27280,10 @@
         // Restart from the root.
         // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
         // workInProgress fiber tree 重置的条件：
-        // 1. 上一次渲染以 suspense 结束
+        // 1. 有 RootSuspendedWithDelay 阻塞，即不用显示 fallback
         // 2. 上一次更新以 suspense 结束且暂停的 lane 是 retry lane，并且本次更新的 lane 是 retry lane, 而且距离上一次 fallback 显示的时间不超过 500 ms
+
+        // 如果发生上面的两种情况，pinged 的更新可以在本次更新中一并处理掉，不用等到下次更新
         prepareFreshStack(root, NoLanes);
       } else {
         // Even though we can't restart right now, we might get an

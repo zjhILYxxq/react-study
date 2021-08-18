@@ -90,22 +90,35 @@
             };
         }
 
-        const resource = fetchProfileData();
+        let resource;
 
         function ProfilePageList() {
+            const [visible, setVisible] = React.useState(false);
+
+            const show = () => {
+                resource = fetchProfileData();
+                setVisible(true);
+            }
             return (
-                <React.SuspenseList revealOrder="backwards">
-                    <React.Suspense fallback={<h1>Loading profile...1</h1>}>
-                        <ProfileDetails2 />
-                    </React.Suspense>
-                    <React.Suspense fallback={<h1>Loading profile...3</h1>}>
-                        <ProfileDetails />
-                    </React.Suspense>
-                    <React.Suspense fallback={<h1>Loading profile...2</h1>}>
-                        <ProfileDetails1 />
-                    </React.Suspense>                    
-                    
-                </React.SuspenseList>
+                <div>
+                    <button onClick={show}>显示</button>
+                    <button onClick={() => setVisible(false)}>隐藏</button>
+                    { visible && (
+                        <React.SuspenseList revealOrder="together">
+                            <React.Suspense fallback={<h1>Loading profile...1</h1>}>
+                                <ProfileDetails2 />
+                            </React.Suspense>
+                            <React.Suspense fallback={<h1>Loading profile...3</h1>}>
+                                <ProfileDetails />
+                            </React.Suspense>
+                            <React.Suspense fallback={<h1>Loading profile...2</h1>}>
+                                <ProfileDetails1 />
+                            </React.Suspense>                    
+                            
+                        </React.SuspenseList>
+                    )}
+                </div>
+                
                 
             );
         }
@@ -139,9 +152,9 @@
             return <h1>{user.name}</h1>;
         }
 
-        // new ReactDOM.createRoot(document.getElementById('app')).render(<ProfilePageList />);
+        new ReactDOM.createRoot(document.getElementById('app')).render(<ProfilePageList />);
 
-        ReactDOM.render(<ProfilePageList/>, document.getElementById('app'));
+        // ReactDOM.render(<ProfilePageList/>, document.getElementById('app'));
 
 
     </script>
