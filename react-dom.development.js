@@ -16129,6 +16129,7 @@
   }
 
   /**
+   * 找到 SuspenseList 中的第一个 Suspense
    * @param row
    */
   function findFirstSuspended(row) {
@@ -20721,8 +20722,8 @@
   }
 
   /**
-   * 
-   * @param firstChild
+   * 找到 SuspenseList 中最后一个 suspense
+   * @param firstChild SuspenseList 中的第一个 suspense
    */
   function findLastContentRow(firstChild) {
     // This is going to find the last row among these children that is already
@@ -20741,10 +20742,10 @@
       if (currentRow !== null && findFirstSuspended(currentRow) === null) {
         lastContentRow = row;
       }
-
       row = row.sibling;
     }
 
+    // 找到最后一个 suspense
     return lastContentRow;
   }
   
@@ -20872,12 +20873,15 @@
   }
 
   /**
-   * 
+   * 初始化 SuspenseList 的 render state
    * @param workInProgress  workInProgress fiber node
    * @param isBackwards  revealOrder 的值是否是 backwards，如果是 forward、together，那么 isBackwards 的值为 false
-   * @param tail
-   * @param lastContentRow
-   * @param tailMode
+   * @param tail 尾指针，如果 revealOrder 为 forward，指向 SuspenseList 的第一个 child fiber node；
+   *                    如果 revealOrder 为 backwards，指向 SuspenseList 的最后一个 child fiber node；
+   *                    如果 revealOrder 为 together， 指向 null
+   *              
+   * @param lastContentRow  ？？
+   * @param tailMode SuspenseList 的 tail 属性： hidden、collapsed 属性
    * @param lastEffectBeforeRendering workInProgress fiber node 的最后一个副作用 ？？
    */
   function initSuspenseListRenderState(workInProgress, isBackwards, tail, lastContentRow, tailMode, lastEffectBeforeRendering) {
@@ -20885,13 +20889,13 @@
 
     if (renderState === null) {
       workInProgress.memoizedState = {
-        isBackwards: isBackwards,
-        rendering: null,
-        renderingStartTime: 0,
-        last: lastContentRow,
-        tail: tail,
-        tailMode: tailMode,
-        lastEffect: lastEffectBeforeRendering
+        isBackwards: isBackwards,   // SuspenseList 的 revealOrder 属性是否是 backwards
+        rendering: null,  // ？？
+        renderingStartTime: 0,  // ??
+        last: lastContentRow, // ??
+        tail: tail,  // 尾指针
+        tailMode: tailMode,  // SuspenseList 的 tail 的属性： hidden、collapsed 属性
+        lastEffect: lastEffectBeforeRendering // ??
       };
     } else {
       // We can reuse the existing object from previous renders.
@@ -20930,7 +20934,7 @@
     var revealOrder = nextProps.revealOrder;
     // tail 属性: collapsed, hidden
     // 如果是 hide，fallback 会隐藏，不显示；
-    // 如果是 collapsed，fallback 会先缩起来( revealOrder 为 forwards、backwards 时， tail 才会起作用)
+    // 如果是 collapsed，暂停对应的 fallback 会先缩起来( revealOrder 为 forwards、backwards 时， tail 才会起作用)
     var tailMode = nextProps.tail;
     // 子元素，是 Suspense 类型的 react element
     var newChildren = nextProps.children;
@@ -20967,7 +20971,7 @@
       suspenseContext = setDefaultShallowSuspenseContext(suspenseContext);
     }
 
-    // 
+    // 将 suspense 上下文入栈
     pushSuspenseContext(workInProgress, suspenseContext);
 
     if ((workInProgress.mode & BlockingMode) === NoMode) {
@@ -20976,36 +20980,44 @@
       // 同步阻塞渲染模式下， SuspenseList 不起作用
       workInProgress.memoizedState = null;
     } else {
+      // 异步更新模式
       switch (revealOrder) {
-        case 'forwards':
+        case 'forwards':  // revealOrder = "forwards", 正序处理 suspense 暂停
           {
+            // 先找到 SuspenseList 中最后一个 Suspense
+            // suspenseList 是在挂载阶段的话， lastContentRow 是 null
             var lastContentRow = findLastContentRow(workInProgress.child);
+            // 尾指针
             var tail;
 
             if (lastContentRow === null) {
               // The whole list is part of the tail.
               // TODO: We could fast path by just rendering the tail now.
+              // 挂载阶段， 尾指针指向第一个 SuspenseList 的第一个 child fiber node
               tail = workInProgress.child;
               workInProgress.child = null;
             } else {
               // Disconnect the tail rows after the content row.
               // We're going to render them separately later.
+              // 更新阶段，尾指针指向上一次最后一个 suspense？？
               tail = lastContentRow.sibling;
               lastContentRow.sibling = null;
             }
 
+            // 初始化 SuspenseList 的 render state
             initSuspenseListRenderState(workInProgress, false, // isBackwards
             tail, lastContentRow, tailMode, workInProgress.lastEffect);
             break;
           }
 
-        case 'backwards':
+        case 'backwards':  // revealOrder = "backwards"， 逆序处理 suspense 暂停
           {
             // We're going to find the first row that has existing content.
             // At the same time we're going to reverse the list of everything
             // we pass in the meantime. That's going to be our tail in reverse
             // order.
-            var _tail = null;
+            var _tail = null;  // 尾指针，会指向最后一个 suspense
+            // SuspenseList 中的所有 Suspense
             var row = workInProgress.child;
             workInProgress.child = null;
 
@@ -21018,20 +21030,22 @@
                 break;
               }
 
+              // 更新 sibling 关系，即 a.sibling = b, 改为 b.sibling = a
+              // 更新结束以后，a -> b -> c， 会变为 c -> b -> a
               var nextRow = row.sibling;
               row.sibling = _tail;
               _tail = row;
               row = nextRow;
             } // TODO: If workInProgress.child is null, we can continue on the tail immediately.
-
-
+            
+            // tail 指向 SuspenseList 的最后一个 child fiber node
             initSuspenseListRenderState(workInProgress, true, // isBackwards
             _tail, null, // last
             tailMode, workInProgress.lastEffect);
             break;
           }
 
-        case 'together':
+        case 'together':  // revealOrder: "together"， 统一处理 suspense 暂停
           {
             initSuspenseListRenderState(workInProgress, false, // isBackwards
             null, // tail
@@ -21048,7 +21062,9 @@
           }
       }
     }
-
+    // 返回待处理的 child fiber node
+    // forwards、backwards 模式下， workInProgress.child 都是 null, 然后进入 SuspenseList fiber node 的 complete 阶段
+    // together 模式下，workInProgress.child 是 SuspenseList fiber node 的第一个 child fiber node
     return workInProgress.child;
   }
 
@@ -21832,6 +21848,11 @@
     };
   }
 
+  /**
+   * 是否需要在必要的时候去掉 xxx ？？
+   * @param renderState   SuspenseList fiber node 的 render state
+   * @param hasRenderedATailFallback 是否渲染一个 tail fallback
+   */
   function cutOffTailIfNeeded(renderState, hasRenderedATailFallback) {
     if (getIsHydrating()) {
       // If we're hydrating, we should consume as many items as we can
@@ -21840,7 +21861,7 @@
     }
 
     switch (renderState.tailMode) {
-      case 'hidden':
+      case 'hidden':  // SuspenseList 的 tail 属性为 hidden
         {
           // Any insertions at the end of the tail list after this point
           // should be invisible. If there are already mounted boundaries
@@ -21872,21 +21893,25 @@
           break;
         }
 
-      case 'collapsed':
+      case 'collapsed':  // SuspenseList 的 tail 属性为 collapsed
         {
           // Any insertions at the end of the tail list after this point
           // should be invisible. If there are already mounted boundaries
           // anything before them are not considered for collapsing.
           // Therefore we need to go through the whole tail to find if
           // there are any.
+
+          // collapsed 模式下，被暂停的 fiber node 之后的 fiber node 是收起来不处理的，即 fallback 也不显示
           var _tailNode = renderState.tail;
           var _lastTailNode = null;
 
+          // 遍历 SuspenseList 的所有 child fiber node， 找到 ？？
           while (_tailNode !== null) {
             if (_tailNode.alternate !== null) {
               _lastTailNode = _tailNode;
             }
 
+            // 兄弟 fiber node
             _tailNode = _tailNode.sibling;
           } // Next we're simply going to delete all insertions after the
           // last rendered item.
@@ -21897,6 +21922,7 @@
             if (!hasRenderedATailFallback && renderState.tail !== null) {
               // We suspended during the head. We want to show at least one
               // row at the tail. So we'll keep on and cut off the rest.
+              // 
               renderState.tail.sibling = null;
             } else {
               renderState.tail = null;
@@ -22219,9 +22245,11 @@
           return null;
         }
 
-      case SuspenseListComponent:  // ??
+      case SuspenseListComponent:  // SuspenseList fiber node 的 complete 操作
         {
-          popSuspenseContext(workInProgress);
+          // SuspenseList context 出栈
+          popSuspenseContext(workInProgress); 
+          // SuspenseList fiber node 的 render state
           var renderState = workInProgress.memoizedState;
 
           if (renderState === null) {
@@ -22230,12 +22258,14 @@
             return null;
           }
 
+          // SuspenseList fiber node 是否已经是挂起暂停的。如果 SuspenseList 已经打上了 DidCapture 标记，那么 didSuspendAlready 就是 true
           var didSuspendAlready = (workInProgress.flags & DidCapture) !== NoFlags;
+          // ？？
           var renderedTail = renderState.rendering;
 
           if (renderedTail === null) {
-            // We just rendered the head.
-            if (!didSuspendAlready) {
+            // We just rendered the head. 我们只是渲染了头部 ？？
+            if (!didSuspendAlready) {  // 捕获异常 ？？
               // This is the first pass. We need to figure out if anything is still
               // suspended in the rendered set.
               // If new content unsuspended, but there's still some content that
@@ -22245,6 +22275,16 @@
               // something in the previous committed pass suspended. Otherwise,
               // there's no chance so we can skip the expensive call to
               // findFirstSuspended.
+
+              /**
+               * 这里只是第一关。我们需要弄清楚渲染集中是否仍然有被暂停的。如果新内容未暂停，但仍然有一些内容没有暂停 ？？
+               * 此时我们需要开始第二步，迫使所有 Suspense 显示他们的 fallback。
+               * 如果在 render 阶段暂停，或者在 commit 阶段之前暂停，我们可能会被暂停 ？？
+               * 否则我们就没有机会跳过对 findFirstSuspended 的昂贵调用。
+               */
+
+              // 不能被暂停
+              // 如果 workInProgressRootExitStatus 的值为 Incomplete，且 suspenseList 为挂载阶段，则 cannotBeSuspended 为 ture， 不能被暂停
               var cannotBeSuspended = renderHasNotSuspendedYet() && (current === null || (current.flags & DidCapture) === NoFlags);
 
               if (!cannotBeSuspended) {
@@ -22296,12 +22336,17 @@
                 }
               }
 
+              // 如果 revealOrder 为 forwards， tail 指向 SuspenseList 的第一个 child fiber node；
+              // 如果 revealOrder 为 backwards， tail 指向 SuspenseList 的最后一个 child fiber node；
+              // 如果 revealOrder 为 together， tail 为 null
               if (renderState.tail !== null && now() > getRenderTargetTime()) {
                 // We have already passed our CPU deadline but we still have rows
                 // left in the tail. We'll just give up further attempts to render
                 // the main content and only render fallbacks.
-                workInProgress.flags |= DidCapture;
-                didSuspendAlready = true;
+                // 我们已经过了 CPU 的最后期限，但是依旧有xxx 未处理 ？ 我们将放弃进一步尝试渲染主要内容，仅仅渲染 fallback
+                workInProgress.flags |= DidCapture;  // 打上 DidCapture 标记
+                didSuspendAlready = true;  // 已经暂停了
+                // 
                 cutOffTailIfNeeded(renderState, false); // Since nothing actually suspended, there will nothing to ping this
                 // to get it started back up to attempt the next item. While in terms
                 // of priority this work has the same priority as this current render,
@@ -22311,6 +22356,14 @@
                 // We can use any RetryLane even if it's the one currently rendering
                 // since we're leaving it behind on this node.
 
+                /**
+                 * 由于实际上没有任何暂停，因此不需要 ping 它然后重启。虽然就优先级而言，它与当前渲染具有相同的优先级，可一旦转换完成，他就不是
+                 * 同一转换的一部分。如果它是同步的，我们仍然希望可以暂停，这样它就可以绘制 ？？
+                 * 从概念上讲，这实际上与 ping 相同。我们可以使用任何 retryLane，尽管它是当前渲染的 ？？
+                 * 因为我们将它留在当前这个节点上 ？？ 
+                 */
+
+                // SomeRetryLane ？？ SuspenseList 对应的 lane ？？
                 workInProgress.lanes = SomeRetryLane;
 
                 {
@@ -22401,14 +22454,14 @@
             }
           }
 
-          if (renderState.tail !== null) {
-            // We still have tail rows to render.
+          if (renderState.tail !== null) { 
+            // We still have tail rows to render. 渲染 tail 指向的 fiber node
             // Pop a row.
             var next = renderState.tail;
-            renderState.rendering = next;
-            renderState.tail = next.sibling;
+            renderState.rendering = next;  // SuspenseList 要渲染的 child fiber node
+            renderState.tail = next.sibling; // tail 指向 next 的兄弟 fiber node
             renderState.lastEffect = workInProgress.lastEffect;
-            renderState.renderingStartTime = now();
+            renderState.renderingStartTime = now(); // SuspenseList 的 child fiber node 开始渲染的时间
             next.sibling = null; // Restore the context.
             // TODO: We can probably just avoid popping it instead and only
             // setting it the first time we go from not suspended to suspended.
@@ -22423,6 +22476,7 @@
 
             pushSuspenseContext(workInProgress, suspenseContext); // Do a pass over the next row.
 
+            // 返回要协调的 child fiber node
             return next;
           }
 
@@ -24659,6 +24713,7 @@
   // hydration or SuspenseList.
   // TODO: Can use a bitmask instead of an array
 
+  // 标记需要在 commit 阶段重新安排这些 lanes 的待处理交互。这使得可以跨组件追踪渲染过程中昌盛的新的工作，如隐藏边界、暂停 SSR 或者 SuspenseList ？？
   var spawnedWorkDuringRender = null; // If two updates are scheduled within the same event, we should treat their
   // event times as simultaneous, even if the actual clock time has advanced
   // between the first and second call.
@@ -25927,11 +25982,14 @@
   // Returns false if we're not sure.
 
   /**
-   * 
+   * 判断 render 是否已经暂停
+   * workInProgressRootExitStatus 为 RootIncomplete，表示 render 还没有暂停
+   * 如果 workInProgressRootExitStatus 为 errored 或者 completed， render 也可能是暂停的
    */
   function renderHasNotSuspendedYet() {
     // If something errored or completed, we can't really be sure,
     // so those are false.
+    // 
     return workInProgressRootExitStatus === RootIncomplete;
   }
 
@@ -27694,6 +27752,11 @@
     }
   }
 
+  /**
+   * 
+   * @param root
+   * @pparam lane
+   */
   function computeThreadID(root, lane) {
     // Interaction threads are unique per root and expiration time.
     // NOTE: Intentionally unsound cast. All that matters is that it's a number
@@ -27702,6 +27765,10 @@
     return lane * 1000 + root.interactionThreadID;
   }
 
+  /**
+   * 标记新生成的工作
+   * @param lane  
+   */
   function markSpawnedWork(lane) {
 
     if (spawnedWorkDuringRender === null) {
@@ -30183,6 +30250,7 @@
   }
 
   /**
+   * 
    * @param children
    * @param container
    */
