@@ -21922,7 +21922,7 @@
             if (!hasRenderedATailFallback && renderState.tail !== null) {
               // We suspended during the head. We want to show at least one
               // row at the tail. So we'll keep on and cut off the rest.
-              // 
+              // 将 tail 的兄弟节点置为 null
               renderState.tail.sibling = null;
             } else {
               renderState.tail = null;
@@ -22250,7 +22250,7 @@
           /**
            * SuspenseList fiber node 进入 complete 阶段的情形：
            * 1. SuspenseList fiber node 初次挂载时，协调完毕以后，直接进入 complete 阶段，然后返回待处理的 child fiber node
-           * 2. 
+           * 2. 步骤 1 返回的 child fiber node 的 sibling 为 null，协调、complete 阶段结束以后，再次进入 SuspenseList fiber node 的 complete 阶段，
            */
           debugger
           // SuspenseList context 出栈
@@ -22265,11 +22265,13 @@
           }
 
           // SuspenseList fiber node 是否已经是挂起暂停的。如果 SuspenseList 已经打上了 DidCapture 标记，那么 didSuspendAlready 就是 true
+          // 
           var didSuspendAlready = (workInProgress.flags & DidCapture) !== NoFlags;
-          // ？？
+          // SuspenseList fiber node 已渲染的 child fiber node (不同的模式下，值可能有不同)
           var renderedTail = renderState.rendering;
 
           if (renderedTail === null) {
+            // SuspenseList fiber node 没有 child fiber node 要协调
             // We just rendered the head. 我们只是渲染了头部 ？？
             if (!didSuspendAlready) {  // 捕获异常 ？？
               // This is the first pass. We need to figure out if anything is still
@@ -22383,7 +22385,9 @@
 
           } else {
             // Append the rendered row to the child list.
+            // SuspenseList fiber node 已经有 child fiber node 渲染完成
             if (!didSuspendAlready) {
+              // ？？
               var _suspended = findFirstSuspended(renderedTail);
 
               if (_suspended !== null) {
@@ -22440,15 +22444,17 @@
               }
             }
 
-            if (renderState.isBackwards) {
+            if (renderState.isBackwards) {  // revealOrder 属性的值不是 backwards
               // The effect list of the backwards tail will have been added
               // to the end. This breaks the guarantee that life-cycles fire in
               // sibling order but that isn't a strong guarantee promised by React.
               // Especially since these might also just pop in during future commits.
               // Append to the beginning of the list.
+              // ？？
               renderedTail.sibling = workInProgress.child;
               workInProgress.child = renderedTail;
             } else {
+              
               var previousSibling = renderState.last;
 
               if (previousSibling !== null) {
@@ -22466,6 +22472,7 @@
             // Pop a row.
             var next = renderState.tail;
             renderState.rendering = next;  // SuspenseList 要渲染的 child fiber node
+            // revealOrder 的值不同， renderState.tail 的值也可能不同
             renderState.tail = next.sibling; // tail 指向 next 的兄弟 fiber node
             renderState.lastEffect = workInProgress.lastEffect;
             renderState.renderingStartTime = now(); // SuspenseList 的 child fiber node 开始渲染的时间
