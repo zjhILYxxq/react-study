@@ -16130,13 +16130,13 @@
 
   /**
    * 找到 SuspenseList 中的第一个 Suspense
-   * @param row
+   * @param row  SuspenseList 中渲染的非 Suspense 的 fiber node
    */
   function findFirstSuspended(row) {
     var node = row;
 
     while (node !== null) {
-      if (node.tag === SuspenseComponent) {
+      if (node.tag === SuspenseComponent) {  // fiber node 的类型为 Suspense
         var state = node.memoizedState;
 
         if (state !== null) {
@@ -16148,13 +16148,13 @@
         }
       } else if (node.tag === SuspenseListComponent && // revealOrder undefined can't be trusted because it don't
       // keep track of whether it suspended or not.
-      node.memoizedProps.revealOrder !== undefined) {
+      node.memoizedProps.revealOrder !== undefined) {  // fiber node 的类型为 SuspenseList
         var didSuspend = (node.flags & DidCapture) !== NoFlags;
 
         if (didSuspend) {
           return node;
         }
-      } else if (node.child !== null) {
+      } else if (node.child !== null) {  // row 有 child fiber node
         node.child.return = node;
         node = node.child;
         continue;
@@ -20264,6 +20264,7 @@
    * @param renderLanes 本次渲染的优先级
    */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
+    console.log('updateSuspenseComponent');
     // workInProgress 是正在处理 React.Suspense 类型的 fiber node
     // nexProps 中包含 fallback、children
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
@@ -20924,7 +20925,8 @@
    * @param renderLanes 本次渲染对应的优先级
    */
   function updateSuspenseListComponent(current, workInProgress, renderLanes) {
-    debugger
+    console.log('updateSuspenseListComponent');
+    // debugger
     var nextProps = workInProgress.pendingProps;
     // revealOrder 属性: forwards, backwards, together
     // reveal order， fallback 显示的顺序
@@ -21850,6 +21852,7 @@
 
   /**
    * 是否需要在必要的时候去掉 xxx ？？
+   * 如果 SuspenseList fiber node 已经暂停了
    * @param renderState   SuspenseList fiber node 的 render state
    * @param hasRenderedATailFallback 是否渲染一个 tail fallback
    */
@@ -22253,6 +22256,7 @@
            * 2. 步骤 1 返回的 child fiber node 的 sibling 为 null，协调、complete 阶段结束以后，再次进入 SuspenseList fiber node 的 complete 阶段，
            */
           debugger
+          console.log(' complete SuspenseListComponent');
           // SuspenseList context 出栈
           popSuspenseContext(workInProgress); 
           // SuspenseList fiber node 的 render state
@@ -22265,7 +22269,7 @@
           }
 
           // SuspenseList fiber node 是否已经是挂起暂停的。如果 SuspenseList 已经打上了 DidCapture 标记，那么 didSuspendAlready 就是 true
-          // 
+          // SuspenseList fiber node 暂停，意味着 renderState.tail 对应的 fiber node 渲染
           var didSuspendAlready = (workInProgress.flags & DidCapture) !== NoFlags;
           // SuspenseList fiber node 已渲染的 child fiber node (不同的模式下，值可能有不同)
           var renderedTail = renderState.rendering;
@@ -22387,7 +22391,9 @@
             // Append the rendered row to the child list.
             // SuspenseList fiber node 已经有 child fiber node 渲染完成
             if (!didSuspendAlready) {
-              // ？？
+              // SuspenseList 已经有 child fiber node 渲染完毕，但是还没有挂起，说明之前渲染的没有暂停的 fiber node
+              
+              // 找到第一个暂停的 fiber node ？？
               var _suspended = findFirstSuspended(renderedTail);
 
               if (_suspended !== null) {
@@ -22421,10 +22427,12 @@
               } else if ( // The time it took to render last row is greater than the remaining
               // time we have to render. So rendering one more row would likely
               // exceed it.
+              // 渲染最后一行所需的时间大于我们本次渲染的剩余时间。因此渲染最后一行可能会导致时间超时。
               now() * 2 - renderState.renderingStartTime > getRenderTargetTime() && renderLanes !== OffscreenLane) {
                 // We have now passed our CPU deadline and we'll just give up further
                 // attempts to render the main content and only render fallbacks.
                 // The assumption is that this is usually faster.
+                // 此时，我们已经超过了我们的 CPU 限制，我们将放弃进一步渲染主要内容的尝试，只渲染 fallback
                 workInProgress.flags |= DidCapture;
                 didSuspendAlready = true;
                 cutOffTailIfNeeded(renderState, false); // Since nothing actually suspended, there will nothing to ping this
@@ -22454,7 +22462,7 @@
               renderedTail.sibling = workInProgress.child;
               workInProgress.child = renderedTail;
             } else {
-              
+
               var previousSibling = renderState.last;
 
               if (previousSibling !== null) {
@@ -22462,7 +22470,7 @@
               } else {
                 workInProgress.child = renderedTail;
               }
-
+              // suspenseList 上一个处理的 child fiber node
               renderState.last = renderedTail;
             }
           }
@@ -22470,9 +22478,11 @@
           if (renderState.tail !== null) { 
             // We still have tail rows to render. 渲染 tail 指向的 fiber node
             // Pop a row.
+            // complete 阶段结束以后要协调的 fiber node
             var next = renderState.tail;
             renderState.rendering = next;  // SuspenseList 要渲染的 child fiber node
             // revealOrder 的值不同， renderState.tail 的值也可能不同
+            // 下一个要协调的 fiber node
             renderState.tail = next.sibling; // tail 指向 next 的兄弟 fiber node
             renderState.lastEffect = workInProgress.lastEffect;
             renderState.renderingStartTime = now(); // SuspenseList 的 child fiber node 开始渲染的时间
@@ -22490,7 +22500,7 @@
 
             pushSuspenseContext(workInProgress, suspenseContext); // Do a pass over the next row.
 
-            // 返回要协调的 child fiber node
+            // 返回要协调的 child fiber node( next 是没有 sibling fiber node 的)
             return next;
           }
 
@@ -24681,10 +24691,10 @@
   var workInProgressRootRenderTargetTime = Infinity; // How long a render is supposed to take before we start following CPU
   // suspense heuristics and opt out of rendering more content.
 
-  var RENDER_TIMEOUT_MS = 500;  // render 超时时间 500ms, 即渲染应该花多少时间
+  var RENDER_TIMEOUT_MS = 50000;  // render 超时时间 500ms, 即渲染应该花多少时间
 
   /**
-   * 重置渲染的终止时间
+   * 设置渲染的终止时间
    */
   function resetRenderTimer() {
     
@@ -25321,6 +25331,7 @@
         }
 
       case RootSuspended: // 渲染被暂停
+        console.log('RootSuspended');
         {
           // 移除已经 pinged 的 lanes，将新的被暂停的 lanes 合并到 fiber root node 的 suspensedLanes 中
           markRootSuspended$1(root, lanes); // We have an acceptable loading state. We need to figure out if we
@@ -26112,6 +26123,7 @@
     if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
 
       // 重置渲染终止时间，即当前时间 + 500 ms()
+      // 这里为什么要设置一个渲染终止时间 ？？
       resetRenderTimer();
       // 预处理工作，设置当前要处理的 fiber root node 以及对应的 fiber node (阻塞渲染和非阻塞渲染都有这一步)
       // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
@@ -26455,6 +26467,7 @@
    * @param root  fiber root node
    */
   function commitRoot(root) {
+    debugger
     console.log('commit root');
     
     // 获取当前的优先级
