@@ -20742,7 +20742,7 @@
       if (currentRow !== null && findFirstSuspended(currentRow) === null) {
         lastContentRow = row;
       }
-      row = row.sibling;
+      row = row.sibling; 
     }
 
     // 找到最后一个 suspense
@@ -22247,6 +22247,12 @@
 
       case SuspenseListComponent:  // SuspenseList fiber node 的 complete 操作
         {
+          /**
+           * SuspenseList fiber node 进入 complete 阶段的情形：
+           * 1. SuspenseList fiber node 初次挂载时，协调完毕以后，直接进入 complete 阶段，然后返回待处理的 child fiber node
+           * 2. 
+           */
+          debugger
           // SuspenseList context 出栈
           popSuspenseContext(workInProgress); 
           // SuspenseList fiber node 的 render state
@@ -22371,6 +22377,7 @@
                 }
               }
             } else {
+              // 
               cutOffTailIfNeeded(renderState, false);
             } // Next we're going to render the tail.
 
@@ -29515,6 +29522,12 @@
   var setSuspenseHandler = null;
 
   {
+    /**
+     * 
+     * @param obj
+     * @param path
+     * @param index
+     */
     var copyWithDeleteImpl = function (obj, path, index) {
       var key = path[index];
       var updated = Array.isArray(obj) ? obj.slice() : _assign({}, obj);
@@ -29534,10 +29547,22 @@
       return updated;
     };
 
+    /**
+     * 
+     * @param obj
+     * @param path
+     */
     var copyWithDelete = function (obj, path) {
       return copyWithDeleteImpl(obj, path, 0);
     };
 
+    /**
+     * 
+     * @param obj
+     * @param oldPath
+     * @param newPath
+     * @param index
+     */
     var copyWithRenameImpl = function (obj, oldPath, newPath, index) {
       var oldKey = oldPath[index];
       var updated = Array.isArray(obj) ? obj.slice() : _assign({}, obj);
@@ -29561,6 +29586,12 @@
       return updated;
     };
 
+    /**
+     * 
+     * @param obj
+     * @param oldPath
+     * @param newPath
+     */
     var copyWithRename = function (obj, oldPath, newPath) {
       if (oldPath.length !== newPath.length) {
         warn('copyWithRename() expects paths of the same length');
@@ -29579,6 +29610,13 @@
       return copyWithRenameImpl(obj, oldPath, newPath, 0);
     };
 
+    /**
+     * 
+     * @param obj
+     * @param path
+     * @param index
+     * @param value
+     */
     var copyWithSetImpl = function (obj, path, index, value) {
       if (index >= path.length) {
         return value;
@@ -29591,10 +29629,21 @@
       return updated;
     };
 
+    /**
+     * 
+     * @param obj
+     * @param path
+     * @param value
+     */
     var copyWithSet = function (obj, path, value) {
       return copyWithSetImpl(obj, path, 0, value);
     };
 
+    /**
+     * 
+     * @param fiber
+     * @param id
+     */
     var findHook = function (fiber, id) {
       // For now, the "id" of stateful hooks is just the stateful hook index.
       // This may change in the future with e.g. nested hooks.
@@ -29609,6 +29658,13 @@
     }; // Support DevTools editable values for useState and useReducer.
 
 
+    /**
+     * 
+     * @param fiber
+     * @param id
+     * @param path
+     * @param value
+     */
     overrideHookState = function (fiber, id, path, value) {
       var hook = findHook(fiber, id);
 
@@ -29627,6 +29683,12 @@
       }
     };
 
+    /**
+     * 
+     * @param fiber
+     * @param id
+     * @param path
+     */
     overrideHookStateDeletePath = function (fiber, id, path) {
       var hook = findHook(fiber, id);
 
@@ -29645,6 +29707,13 @@
       }
     };
 
+    /**
+     * 
+     * @param fiber
+     * @param id
+     * @param oldPath
+     * @param newPath
+     */
     overrideHookStateRenamePath = function (fiber, id, oldPath, newPath) {
       var hook = findHook(fiber, id);
 
@@ -29705,6 +29774,10 @@
     };
   }
 
+  /**
+   * 
+   * @param fiber
+   */
   function findHostInstanceByFiber(fiber) {
     var hostFiber = findCurrentHostFiber(fiber);
 
@@ -29715,14 +29788,24 @@
     return hostFiber.stateNode;
   }
 
+  /**
+   * 
+   * @param instance
+   */
   function emptyFindFiberByHostInstance(instance) {
     return null;
   }
 
+  /**
+   * 
+   */
   function getCurrentFiberForDevTools() {
     return current;
   }
 
+  /**
+   * 
+   */
   function injectIntoDevTools(devToolsConfig) {
     var findFiberByHostInstance = devToolsConfig.findFiberByHostInstance;
     var ReactCurrentDispatcher = ReactSharedInternals.ReactCurrentDispatcher;
