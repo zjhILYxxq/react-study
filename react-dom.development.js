@@ -16129,7 +16129,7 @@
   }
 
   /**
-   * 找到 SuspenseList 中的第一个 Suspense
+   * 找到 SuspenseList 中的第一个暂停的 fiber node
    * @param row  SuspenseList 中渲染的非 Suspense 的 fiber node
    */
   function findFirstSuspended(row) {
@@ -21921,7 +21921,7 @@
 
 
           if (_lastTailNode === null) {
-            // All remaining items in the tail are insertions.
+            // All remaining items in the tail are insertions. ( 尾部的所有剩余项都是插入项)
             if (!hasRenderedATailFallback && renderState.tail !== null) {
               // We suspended during the head. We want to show at least one
               // row at the tail. So we'll keep on and cut off the rest.
@@ -22252,8 +22252,8 @@
         {
           /**
            * SuspenseList fiber node 进入 complete 阶段的情形：
-           * 1. SuspenseList fiber node 初次挂载时，协调完毕以后，直接进入 complete 阶段，然后返回待处理的 child fiber node
-           * 2. 步骤 1 返回的 child fiber node 的 sibling 为 null，协调、complete 阶段结束以后，再次进入 SuspenseList fiber node 的 complete 阶段，
+           * 1. SuspenseList fiber node 初次挂载时，协调完毕以后，直接进入 complete 阶段，然后返回待处理的 child fiber node;
+           * 2. 
            */
           debugger
           console.log(' complete SuspenseListComponent');
@@ -22268,16 +22268,19 @@
             return null;
           }
 
-          // SuspenseList fiber node 是否已经是挂起暂停的。如果 SuspenseList 已经打上了 DidCapture 标记，那么 didSuspendAlready 就是 true
-          // SuspenseList fiber node 暂停，意味着 renderState.tail 对应的 fiber node 渲染
+          /**
+           * SuspenseList fiber node 是否已经是挂起暂停的。
+           * 如果 SuspenseList 已经打上了 DidCapture 标记，那么 didSuspendAlready 就是 true, 说明 SuspenseList fiber node 已经是暂停的。
+           * SuspenseList fiber node 暂停，意味着 renderState.tail 为 null， render 阶段结束，接下来要进入 commit 阶段了
+           */
           var didSuspendAlready = (workInProgress.flags & DidCapture) !== NoFlags;
-          // SuspenseList fiber node 已渲染的 child fiber node (不同的模式下，值可能有不同)
+          // SuspenseList 最近完成 complete 的 child fiber node (可能是 suspense fiber node， 也有可能是其他类型的 fiber node)
           var renderedTail = renderState.rendering;
 
           if (renderedTail === null) {
-            // SuspenseList fiber node 没有 child fiber node 要协调
+            // SuspenseList 第一次 complete，这个时候还没有开始渲染 child fiber node，还没有被暂停
             // We just rendered the head. 我们只是渲染了头部 ？？
-            if (!didSuspendAlready) {  // 捕获异常 ？？
+            if (!didSuspendAlready) {
               // This is the first pass. We need to figure out if anything is still
               // suspended in the rendered set.
               // If new content unsuspended, but there's still some content that
@@ -22295,11 +22298,18 @@
                * 否则我们就没有机会跳过对 findFirstSuspended 的昂贵调用。
                */
 
-              // 不能被暂停
+              // 到这里时， suspenseList 还没有暂停
               // 如果 workInProgressRootExitStatus 的值为 Incomplete，且 suspenseList 为挂载阶段，则 cannotBeSuspended 为 ture， 不能被暂停
+              /**
+               * workInProgressRootExitStatus 的值默认为 Incomplete，如果此时还是 Incomplete，说明 render 过程没有出现异常情况；
+               * 而 suspenseList 也没有暂停，那么此时 suspeneList 是可以被暂停的
+               */
               var cannotBeSuspended = renderHasNotSuspendedYet() && (current === null || (current.flags & DidCapture) === NoFlags);
 
               if (!cannotBeSuspended) {
+                /**
+                 * SuspenseList 不可以被暂停： ？？
+                 */
                 var row = workInProgress.child;
 
                 while (row !== null) {
@@ -22348,9 +22358,10 @@
                 }
               }
 
-              // 如果 revealOrder 为 forwards， tail 指向 SuspenseList 的第一个 child fiber node；
-              // 如果 revealOrder 为 backwards， tail 指向 SuspenseList 的最后一个 child fiber node；
-              // 如果 revealOrder 为 together， tail 为 null
+              /**
+               * SuspenseList fiber node 没有暂停， 在 complete 阶段时，发现还有 child fiber node 没有渲染，但是如果此时分配的 cpu 时间(500ms) 已经到期了，
+               * 那么 SuspenseList 就要被暂停了
+               */
               if (renderState.tail !== null && now() > getRenderTargetTime()) {
                 // We have already passed our CPU deadline but we still have rows
                 // left in the tail. We'll just give up further attempts to render
@@ -22358,7 +22369,7 @@
                 // 我们已经过了 CPU 的最后期限，但是依旧有xxx 未处理 ？ 我们将放弃进一步尝试渲染主要内容，仅仅渲染 fallback
                 workInProgress.flags |= DidCapture;  // 打上 DidCapture 标记
                 didSuspendAlready = true;  // 已经暂停了
-                // 
+                // 只渲染 tail 指向的 fiber node， 剩下的就不渲染了
                 cutOffTailIfNeeded(renderState, false); // Since nothing actually suspended, there will nothing to ping this
                 // to get it started back up to attempt the next item. While in terms
                 // of priority this work has the same priority as this current render,
@@ -22383,7 +22394,7 @@
                 }
               }
             } else {
-              // 
+              // SuspenseList 的 child fiber node 还没有渲染，就已经被暂停了，那么要渲染 tail 指向的 child fiber node
               cutOffTailIfNeeded(renderState, false);
             } // Next we're going to render the tail.
 
@@ -22393,21 +22404,25 @@
             if (!didSuspendAlready) {
               // SuspenseList 已经有 child fiber node 渲染完毕，但是还没有挂起，说明之前渲染的没有暂停的 fiber node
               
-              // 找到第一个暂停的 fiber node ？？
+              // 找到第一个暂停的 fiber node
               var _suspended = findFirstSuspended(renderedTail);
 
               if (_suspended !== null) {
+                // 如果此时有被暂停的 Suspense fiber node，那么就需要挂起 SuspenseList fiber node 了
                 workInProgress.flags |= DidCapture;
                 didSuspendAlready = true; // Ensure we transfer the update queue to the parent so that it doesn't
                 // get lost if this row ends up dropped during a second pass.
 
+                // suspense fiber node 的类 promise 对象列表
                 var _newThennables = _suspended.updateQueue;
 
                 if (_newThennables !== null) {
+                  // 将 suspense fiber node 的类 promise 对象列表复制给 SuspenseList fiber node
                   workInProgress.updateQueue = _newThennables;
                   workInProgress.flags |= Update;
                 }
 
+                // 此时 tail 指向的 fiber node 不需要渲染了，直接进入 commit 阶段了
                 cutOffTailIfNeeded(renderState, true); // This might have been modified.
 
                 if (renderState.tail === null && renderState.tailMode === 'hidden' && !renderedTail.alternate && !getIsHydrating() // We don't cut it if we're hydrating.
@@ -22427,7 +22442,10 @@
               } else if ( // The time it took to render last row is greater than the remaining
               // time we have to render. So rendering one more row would likely
               // exceed it.
-              // 渲染最后一行所需的时间大于我们本次渲染的剩余时间。因此渲染最后一行可能会导致时间超时。
+              /**
+               * 之前 complete 的不是 Suspense fiber node， SuspenseList 还是没有暂停。
+               * 此时，如果渲染最后一行所需的时间大于我们本次渲染的剩余时间，那么我们就需要把 SuspenseList 给暂停，下一个 child fiber node 渲染完成以后，直接进入 commit 阶段
+               */
               now() * 2 - renderState.renderingStartTime > getRenderTargetTime() && renderLanes !== OffscreenLane) {
                 // We have now passed our CPU deadline and we'll just give up further
                 // attempts to render the main content and only render fallbacks.
@@ -22435,6 +22453,7 @@
                 // 此时，我们已经超过了我们的 CPU 限制，我们将放弃进一步渲染主要内容的尝试，只渲染 fallback
                 workInProgress.flags |= DidCapture;
                 didSuspendAlready = true;
+                // 只渲染 tail 指向的 child fiber node， 剩下的不渲染了
                 cutOffTailIfNeeded(renderState, false); // Since nothing actually suspended, there will nothing to ping this
                 // to get it started back up to attempt the next item. While in terms
                 // of priority this work has the same priority as this current render,
@@ -22475,7 +22494,7 @@
             }
           }
 
-          if (renderState.tail !== null) { 
+          if (renderState.tail !== null) {  // 如果在 complete 操作开始之前， SuspenseList 就已经是暂停的，那么 renderState.tail 是 null，进入 commit 阶段
             // We still have tail rows to render. 渲染 tail 指向的 fiber node
             // Pop a row.
             // complete 阶段结束以后要协调的 fiber node
@@ -22490,20 +22509,25 @@
             // TODO: We can probably just avoid popping it instead and only
             // setting it the first time we go from not suspended to suspended.
 
+            // 获取 Suspense 上下文
             var suspenseContext = suspenseStackCursor.current;
 
             if (didSuspendAlready) {
+              // SuspenseList 已经暂停
               suspenseContext = setShallowSuspenseContext(suspenseContext, ForceSuspenseFallback);
             } else {
+              // SuspenseList 没有暂停
               suspenseContext = setDefaultShallowSuspenseContext(suspenseContext);
             }
 
+            // Suspense 上下文入栈
             pushSuspenseContext(workInProgress, suspenseContext); // Do a pass over the next row.
 
             // 返回要协调的 child fiber node( next 是没有 sibling fiber node 的)
             return next;
           }
 
+          // 返回 null， 以为着本次渲染， SuspenseList 已经完成了渲染
           return null;
         }
 
@@ -24691,7 +24715,7 @@
   var workInProgressRootRenderTargetTime = Infinity; // How long a render is supposed to take before we start following CPU
   // suspense heuristics and opt out of rendering more content.
 
-  var RENDER_TIMEOUT_MS = 50000;  // render 超时时间 500ms, 即渲染应该花多少时间
+  var RENDER_TIMEOUT_MS = 500;  // render 超时时间 500ms, 即渲染应该花多少时间
 
   /**
    * 设置渲染的终止时间

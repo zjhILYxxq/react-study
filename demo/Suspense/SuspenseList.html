@@ -104,19 +104,22 @@
                     <button onClick={show}>显示</button>
                     <button onClick={() => setVisible(false)}>隐藏</button>
                     { visible && (
-                        <React.SuspenseList revealOrder="forwards" tail="collapsed" >
-                            <div>123</div>
-                            <React.Suspense fallback={<h1>Loading profile...</h1>}>
-                                <ProfileDetails />
-                            </React.Suspense>
-                            <React.Suspense fallback={<h1>Loading profile2...</h1>}>
-                                <ProfileDetails2 />
-                            </React.Suspense>
-                            <React.Suspense fallback={<h1>Loading profile1...</h1>}>
-                                <ProfileDetails1 />
-                            </React.Suspense>
-                            <div>456</div>                    
-                        </React.SuspenseList>
+                        <div>
+                            <React.SuspenseList revealOrder="forwards" tail="collapsed" >
+                                <div>123</div>
+                                <React.Suspense fallback={<h1>Loading profile...</h1>}>
+                                    <ProfileDetails />
+                                </React.Suspense>
+                                <React.Suspense fallback={<h1>Loading profile2...</h1>}>
+                                    <ProfileDetails2 />
+                                </React.Suspense>
+                                <React.Suspense fallback={<h1>Loading profile1...</h1>}>
+                                    <ProfileDetails1 />
+                                </React.Suspense>
+                                <div>456</div>                    
+                            </React.SuspenseList>
+                            <div>789</div>
+                        </div>
                     )}
                 </div>
             );
