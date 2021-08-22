@@ -22274,7 +22274,8 @@
            * SuspenseList fiber node 暂停，意味着 renderState.tail 为 null， render 阶段结束，接下来要进入 commit 阶段了
            */
           var didSuspendAlready = (workInProgress.flags & DidCapture) !== NoFlags;
-          // SuspenseList 最近完成 complete 的 child fiber node (可能是 suspense fiber node， 也有可能是其他类型的 fiber node)
+          // SuspenseList 最近完成 complete 的 child fiber node 
+          // (可能是 suspense fiber node， 也有可能是其他类型的 fiber node)
           var renderedTail = renderState.rendering;
 
           if (renderedTail === null) {
@@ -22298,8 +22299,6 @@
                * 否则我们就没有机会跳过对 findFirstSuspended 的昂贵调用。
                */
 
-              // 到这里时， suspenseList 还没有暂停
-              // 如果 workInProgressRootExitStatus 的值为 Incomplete，且 suspenseList 为挂载阶段，则 cannotBeSuspended 为 ture， 不能被暂停
               /**
                * workInProgressRootExitStatus 的值默认为 Incomplete，如果此时还是 Incomplete，说明 render 过程没有出现异常情况；
                * 而 suspenseList 也没有暂停，那么此时 suspeneList 是可以被暂停的
@@ -22394,7 +22393,7 @@
                 }
               }
             } else {
-              // SuspenseList 的 child fiber node 还没有渲染，就已经被暂停了，那么要渲染 tail 指向的 child fiber node
+              // SuspenseList 的 child fiber node 还没有渲染，就已经被暂停了，在进入 commit 阶段之前要渲染 tail 指向的 child fiber node
               cutOffTailIfNeeded(renderState, false);
             } // Next we're going to render the tail.
 
@@ -22494,7 +22493,12 @@
             }
           }
 
-          if (renderState.tail !== null) {  // 如果在 complete 操作开始之前， SuspenseList 就已经是暂停的，那么 renderState.tail 是 null，进入 commit 阶段
+          /**
+           * 如果在 complete 操作开始之前， SuspenseList 就已经是暂停的，那么 renderState.tail 是 null，进入 commit 阶段;
+           * 如果是在 complete 阶段将 SuspenseList 置为暂停的，那么此时 renderState.tail 不是 null， renderState.tail.next 是 null，
+           *    在进入 commit 阶段之前渲染 renderState.tail 指向的 child fiber node
+           */
+          if (renderState.tail !== null) {  // 
             // We still have tail rows to render. 渲染 tail 指向的 fiber node
             // Pop a row.
             // complete 阶段结束以后要协调的 fiber node
@@ -23641,8 +23645,9 @@
           return;
         }
 
-      case SuspenseComponent:
+      case SuspenseComponent:  // SuspenseList 在 commit 阶段的处理
         {
+          // 
           commitSuspenseHydrationCallbacks(finishedRoot, finishedWork);
           return;
         }
@@ -24422,12 +24427,16 @@
       case SuspenseComponent: // 在 commit 阶段处理 Suspense fiber node 收集的类 promise 对象
         {
           commitSuspenseComponent(finishedWork);
+          // // 给类 promise 对象注册对应的 onFullfilled、onRejected，对应创建异步任务重新渲染
           attachSuspenseRetryListeners(finishedWork);
           return;
         }
 
-      case SuspenseListComponent:  // ??
+      case SuspenseListComponent:  
         {
+          // 在 commit 阶段处理 SuspenseList fiber node 收集的类 promise 对象
+          // 在 render 过程中，SuspenseList fiber node 的类 promise 对象是 child Suspense fiber node 收集的类 promise 对象
+          // 给类 promise 对象注册对应的 onFullfilled、onRejected，对应创建异步任务重新渲染
           attachSuspenseRetryListeners(finishedWork);
           return;
         }
@@ -26502,9 +26511,9 @@
   }
 
   /**
-   * commit 操作的实现
+   * commit 阶段的实现
    * @param root fiber root node
-   * @param renderPriorityLevel 优先级，直接优先级
+   * @param renderPriorityLevel 优先级，直接优先级，优先处理
    */
   function commitRootImpl(root, renderPriorityLevel) {
 
