@@ -20885,7 +20885,7 @@
    *                    如果 revealOrder 为 together， 指向 null
    *              
    * @param lastContentRow  ？？
-   * @param tailMode SuspenseList 的 tail 属性： hidden、collapsed 属性
+   * @param tailMode SuspenseList 的 tail 属性： hidden、collapsed 属性（together 模式下，tailMde 为 null）
    * @param lastEffectBeforeRendering workInProgress fiber node 的最后一个副作用 ？？
    */
   function initSuspenseListRenderState(workInProgress, isBackwards, tail, lastContentRow, tailMode, lastEffectBeforeRendering) {
@@ -21070,6 +21070,7 @@
         case 'together':  // revealOrder: "together"， 统一处理 suspense 暂停
           {
             // 如果 revealOrder 为 together，那么 tail 为 null， SuspenseList 的 child fiber node 不会清空
+            // together 模式下， tail 属性没有用
             initSuspenseListRenderState(workInProgress, false, // isBackwards
             null, // tail
             null, // last
@@ -21088,7 +21089,7 @@
     }
     // 返回待处理的 child fiber node
     // forwards、backwards 模式下， workInProgress.child 都是 null, 然后进入 SuspenseList fiber node 的 complete 阶段
-    // together 模式下，workInProgress.child 是 SuspenseList fiber node 的第一个 child fiber node
+    // together 模式下，workInProgress.child 是 SuspenseList fiber node 的第一个 child fiber node， 然后开始 child fiber node 的 render 
     return workInProgress.child;
   }
 
@@ -22273,9 +22274,10 @@
       case SuspenseListComponent:  // SuspenseList fiber node 的 complete 操作
         {
           /**
-           * SuspenseList fiber node 进入 complete 阶段的情形：
-           * 1. SuspenseList fiber node 初次挂载时，协调完毕以后，直接进入 complete 阶段，然后返回待处理的 child fiber node;
-           * 2. 
+           * revealOrder 的值不同， SuspenseList fiber node 进入 complete 阶段的过程也不相同
+           * - revealOrder: 'forwards',
+           * - revealOrder: 'backwards'
+           * - revealOrder: 'together',
            */
           debugger
           console.log(' complete SuspenseListComponent');

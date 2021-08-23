@@ -105,7 +105,7 @@
                     <button onClick={() => setVisible(false)}>隐藏</button>
                     { visible && (
                         <div>
-                            <React.SuspenseList revealOrder="together" tail="collapsed" >
+                            <React.SuspenseList revealOrder="together" tail="hidden" >
                                 <div>123</div>
                                 <React.Suspense fallback={<h1>Loading profile...</h1>}>
                                     <ProfileDetails />
