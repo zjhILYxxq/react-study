@@ -20723,8 +20723,9 @@
   }
 
   /**
-   * 找到 SuspenseList 中最后一个 suspense
-   * @param firstChild SuspenseList 中的第一个 suspense
+   * 找到 SuspenseList 中上次渲染的最后一个没有暂停的 child fiber node
+   * content row， 即没有暂停的 fiber node
+   * @param firstChild SuspenseList 中的第一个 child fiber node
    */
   function findLastContentRow(firstChild) {
     // This is going to find the last row among these children that is already
@@ -20735,9 +20736,11 @@
     // will still be current since we haven't rendered them yet. The mounted
     // order may not be the same as the new order. We use the new order.
     var row = firstChild;
+    // 上一次渲染时， SuspenseList 中非 Suspense 的最后一个 child fiber node
     var lastContentRow = null;
 
     while (row !== null) {
+      // old fiber node
       var currentRow = row.alternate; // New rows can't be content rows.
 
       if (currentRow !== null && findFirstSuspended(currentRow) === null) {
@@ -20889,17 +20892,19 @@
     var renderState = workInProgress.memoizedState;
 
     if (renderState === null) {
+      // 初始化 SuspenseList fiber node 的 render state
       workInProgress.memoizedState = {
         isBackwards: isBackwards,   // SuspenseList 的 revealOrder 属性是否是 backwards
-        rendering: null,  // ？？
-        renderingStartTime: 0,  // ??
-        last: lastContentRow, // ??
-        tail: tail,  // 尾指针
+        rendering: null,  // 正在渲染的 fiber node
+        renderingStartTime: 0,  // 渲染 child fiber node 的开始时间
+        last: lastContentRow, // 上一次渲染完成的没有暂停的 fiber node
+        tail: tail,  // 尾指针，指向未渲染的 fiber node
         tailMode: tailMode,  // SuspenseList 的 tail 的属性： hidden、collapsed 属性
         lastEffect: lastEffectBeforeRendering // ??
       };
     } else {
       // We can reuse the existing object from previous renders.
+      // 更新 SuspenseList fiber node 的 render state
       renderState.isBackwards = isBackwards;
       renderState.rendering = null;
       renderState.renderingStartTime = 0;
@@ -20926,7 +20931,7 @@
    */
   function updateSuspenseListComponent(current, workInProgress, renderLanes) {
     console.log('updateSuspenseListComponent');
-    // debugger
+    debugger
     var nextProps = workInProgress.pendingProps;
     // revealOrder 属性: forwards, backwards, together
     // reveal order， fallback 显示的顺序
@@ -20980,33 +20985,42 @@
       // In legacy mode, SuspenseList doesn't work so we just
       // use make it a noop by treating it as the default revealOrder.
       // 同步阻塞渲染模式下， SuspenseList 不起作用
+      // memoizedState 置为 null， 则 complete 阶段、commit 阶段不会做任何操作
       workInProgress.memoizedState = null;
     } else {
       // 异步更新模式
       switch (revealOrder) {
         case 'forwards':  // revealOrder = "forwards", 正序处理 suspense 暂停
           {
-            // 先找到 SuspenseList 中最后一个 Suspense
+            // 找到 SuspenseList 上次渲染中没有没有暂停的最后一个 child fiber node
             // suspenseList 是在挂载阶段的话， lastContentRow 是 null
             var lastContentRow = findLastContentRow(workInProgress.child);
             // 尾指针
             var tail;
-
+            /**
+             * lastContentRow， 表示上一次渲染时 SuspenseList 结束的位置，
+             * 如果 lastContentRow 为 null， 表示 SuspenseList 的渲染还没有开始，从第一个 child fiber node 开始处理；
+             * 如果 lastContentRow 不为 null，则 tail 指针指向 lastContentRow.sibling;
+             */
             if (lastContentRow === null) {
               // The whole list is part of the tail.
               // TODO: We could fast path by just rendering the tail now.
               // 挂载阶段， 尾指针指向第一个 SuspenseList 的第一个 child fiber node
               tail = workInProgress.child;
+              // 将 wokrInProgress fiber tree 中 SuspenseList 的 child fiber node 全部移除
+              // 未渲染的 SuspenseList 的 child fiber node 通过 tail 指针获取
               workInProgress.child = null;
             } else {
               // Disconnect the tail rows after the content row.
               // We're going to render them separately later.
               // 更新阶段，尾指针指向上一次最后一个 suspense？？
               tail = lastContentRow.sibling;
+              // 将 workInProgress fiber tree 中 lastContentRow 之后的 child fiber node 全部移除
+              // 未渲染的 SuspenseList 的 child fiber node 通过 tail 指针获取
               lastContentRow.sibling = null;
             }
 
-            // 初始化 SuspenseList 的 render state
+            // 初始化/更新 SuspenseList 的 render state
             initSuspenseListRenderState(workInProgress, false, // isBackwards
             tail, lastContentRow, tailMode, workInProgress.lastEffect);
             break;
@@ -24433,10 +24447,12 @@
         }
 
       case SuspenseListComponent:  
+        debugger
         {
           // 在 commit 阶段处理 SuspenseList fiber node 收集的类 promise 对象
           // 在 render 过程中，SuspenseList fiber node 的类 promise 对象是 child Suspense fiber node 收集的类 promise 对象
           // 给类 promise 对象注册对应的 onFullfilled、onRejected，对应创建异步任务重新渲染
+          // 注意：只有给 SuspenseList fiber node 打上 Update 标记，才能触发这一步
           attachSuspenseRetryListeners(finishedWork);
           return;
         }
@@ -27428,7 +27444,7 @@
    * @param retryLane 本次渲染的更新
    */
   function retryTimedOutBoundary(boundaryFiber, retryLane) {
-    // debugger
+    debugger
     // The boundary fiber (a Suspense component or SuspenseList component)
     // previously was rendered in its fallback state. One of the promises that
     // suspended it has resolved, which means at least part of the tree was
