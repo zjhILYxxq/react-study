@@ -21032,11 +21032,16 @@
             // At the same time we're going to reverse the list of everything
             // we pass in the meantime. That's going to be our tail in reverse
             // order.
-            var _tail = null;  // 尾指针，会指向最后一个 suspense
-            // SuspenseList 中的所有 Suspense
+            var _tail = null;  // 尾指针
+            // SuspenseList 中的 child fiber node
             var row = workInProgress.child;
+            // 先将 SuspenseList 的 child fiber node 从 workInProgress fiber tree 上移除, child fiber node 先指向到 row 针织
             workInProgress.child = null;
 
+            /**
+             * 将没有暂停的 fiber node 按序挂在 workInProgress fiber tree 上
+             * 没有挂载的 fiber node 的顺序置换
+             */
             while (row !== null) {
               var currentRow = row.alternate; // New rows can't be content rows.
 
@@ -21055,6 +21060,7 @@
             } // TODO: If workInProgress.child is null, we can continue on the tail immediately.
             
             // tail 指向 SuspenseList 的最后一个 child fiber node
+            // together 模式下， SuspenseList fiber node 的 child fiber node 不会被清空
             initSuspenseListRenderState(workInProgress, true, // isBackwards
             _tail, null, // last
             tailMode, workInProgress.lastEffect);
@@ -21063,6 +21069,7 @@
 
         case 'together':  // revealOrder: "together"， 统一处理 suspense 暂停
           {
+            // 如果 revealOrder 为 together，那么 tail 为 null， SuspenseList 的 child fiber node 不会清空
             initSuspenseListRenderState(workInProgress, false, // isBackwards
             null, // tail
             null, // last
@@ -21074,6 +21081,7 @@
           {
             // The default reveal order is the same as not having
             // a boundary.
+            // 如果 revealOrder 没有指定值, 则 SuspenseList 没有用
             workInProgress.memoizedState = null;
           }
       }
@@ -22275,7 +22283,7 @@
           popSuspenseContext(workInProgress); 
           // SuspenseList fiber node 的 render state
           var renderState = workInProgress.memoizedState;
-
+          // legency 模式或者 concurrent 模式下未指定 revealOrder 属性值， renderState 为 null， suspenseList 没有什么用
           if (renderState === null) {
             // We're running in the default, "independent" mode.
             // We don't do anything in this mode.
@@ -22286,6 +22294,8 @@
            * SuspenseList fiber node 是否已经是挂起暂停的。
            * 如果 SuspenseList 已经打上了 DidCapture 标记，那么 didSuspendAlready 就是 true, 说明 SuspenseList fiber node 已经是暂停的。
            * SuspenseList fiber node 暂停，意味着 renderState.tail 为 null， render 阶段结束，接下来要进入 commit 阶段了
+           * 
+           * 注意：workInProgress fiber tree 中的 SuspenseList fiber node，最开始的时候，flags 都是 0，即未被暂停
            */
           var didSuspendAlready = (workInProgress.flags & DidCapture) !== NoFlags;
           // SuspenseList 最近完成 complete 的 child fiber node 
@@ -22320,9 +22330,7 @@
               var cannotBeSuspended = renderHasNotSuspendedYet() && (current === null || (current.flags & DidCapture) === NoFlags);
 
               if (!cannotBeSuspended) {
-                /**
-                 * SuspenseList 不可以被暂停： ？？
-                 */
+
                 var row = workInProgress.child;
 
                 while (row !== null) {
@@ -22432,6 +22440,7 @@
                 if (_newThennables !== null) {
                   // 将 suspense fiber node 的类 promise 对象列表复制给 SuspenseList fiber node
                   workInProgress.updateQueue = _newThennables;
+                  // 需要给 SuspenseList fiebr node 打上 Update 标记，这样在 commit 阶段才会给收集的类 promise 对象注册 onFullfill、onRejected，触发重新渲染
                   workInProgress.flags |= Update;
                 }
 
@@ -22490,19 +22499,21 @@
               // sibling order but that isn't a strong guarantee promised by React.
               // Especially since these might also just pop in during future commits.
               // Append to the beginning of the list.
-              // ？？
+              // 将 renderTail 依次挂到 workInProgree fiber tree 上
               renderedTail.sibling = workInProgress.child;
               workInProgress.child = renderedTail;
             } else {
 
+              // 上一次渲染的 child fiber node，已经挂在了 workInProgress fiber tree 上
               var previousSibling = renderState.last;
 
+              // 将 renderedTail 挂载 wokrInProgress fiber tree 上
               if (previousSibling !== null) {
                 previousSibling.sibling = renderedTail;
               } else {
                 workInProgress.child = renderedTail;
               }
-              // suspenseList 上一个处理的 child fiber node
+              // 将 renderedTail 缓存到 renderState 的 last 中
               renderState.last = renderedTail;
             }
           }
@@ -24740,7 +24751,7 @@
   var workInProgressRootRenderTargetTime = Infinity; // How long a render is supposed to take before we start following CPU
   // suspense heuristics and opt out of rendering more content.
 
-  var RENDER_TIMEOUT_MS = 500;  // render 超时时间 500ms, 即渲染应该花多少时间
+  var RENDER_TIMEOUT_MS = 5000000;  // render 超时时间 500ms, 即渲染应该花多少时间
 
   /**
    * 设置渲染的终止时间
