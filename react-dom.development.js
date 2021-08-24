@@ -12804,6 +12804,7 @@
   }
 
   /**
+   * 
    * @param parent
    * @param renderLanes
    */
@@ -20264,6 +20265,7 @@
    * @param renderLanes 本次渲染的优先级
    */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
+    debugger
     console.log('updateSuspenseComponent');
     // workInProgress 是正在处理 React.Suspense 类型的 fiber node
     // nexProps 中包含 fallback、children
@@ -20659,7 +20661,7 @@
 
   /**
    * 
-   * @param fiber
+   * @param fiber   
    * @param renderLanes
    */
   function scheduleWorkOnFiber(fiber, renderLanes) {
@@ -20675,14 +20677,17 @@
 
   /**
    * 
-   * @param workInProgress
-   * @param firstChild
-   * @param renderLanes
+   * @param workInProgress  SuspenseList fiber node
+   * @param firstChild SuspenseList 的第一个 child fiber node
+   * @param renderLanes 渲染 SuspenseList 时分配的 lanes
    */
   function propagateSuspenseContextChange(workInProgress, firstChild, renderLanes) {
     // Mark any Suspense boundaries with fallbacks as having work to do.
     // If they were previously forced into fallbacks, they may now be able
     // to unblock.
+    /**
+     * 将任何带有 fallback 的 suspense 边界标记为有工作去做。如果之前 Suspense 边界被强迫显示 fallback，此时要显示正常的内容了
+     */
     var node = firstChild;
 
     while (node !== null) {
@@ -20931,7 +20936,6 @@
    */
   function updateSuspenseListComponent(current, workInProgress, renderLanes) {
     console.log('updateSuspenseListComponent');
-    debugger
     var nextProps = workInProgress.pendingProps;
     // revealOrder 属性: forwards, backwards, together
     // reveal order， fallback 显示的顺序
@@ -22327,20 +22331,24 @@
 
               /**
                * workInProgressRootExitStatus 的值默认为 Incomplete，如果此时还是 Incomplete，说明 render 过程没有出现异常情况；
-               * 而 suspenseList 也没有暂停，那么此时 suspeneList 是可以被暂停的
+               *      而 suspenseList 也没有暂停，那么此时 suspeneList 是可以被暂停的;
+               * 如果 workInProgressRootExitStatus 的值为 Suspense，说明已经有 Suspense fiber node 暂停了，那么 SuspenseList fiber node 也可以被暂停
                */
               var cannotBeSuspended = renderHasNotSuspendedYet() && (current === null || (current.flags & DidCapture) === NoFlags);
 
               if (!cannotBeSuspended) {
-
+                // SuspenseList fiber node 可以被暂停
                 var row = workInProgress.child;
-
+                // 遍历 SuspenseList 的 child fiber node
                 while (row !== null) {
+                  // 找到第一个被暂停的 child fiber node
                   var suspended = findFirstSuspended(row);
 
                   if (suspended !== null) {
+                    // 给 SuspenseList fiber node 打上 DidCapture 标记，标志着被暂停
                     didSuspendAlready = true;
                     workInProgress.flags |= DidCapture;
+                    // 之后还需要渲染 tail 指针指向的 fiber node，如果 revealOrder 为 together，则不需要管
                     cutOffTailIfNeeded(renderState, false); // If this is a newly suspended tree, it might not get committed as
                     // part of the second pass. In that case nothing will subscribe to
                     // its thennables. Instead, we'll transfer its thennables to the
@@ -22373,7 +22381,9 @@
                     resetChildFibers(workInProgress, renderLanes); // Set up the Suspense Context to force suspense and immediately
                     // rerender the children.
 
+                    // SuspenseList fiber node 暂停以后， context 上下文为 ForceSuspenseFallback， 即强制 Suspense 类型的 child fiber node 显示 fallback
                     pushSuspenseContext(workInProgress, setShallowSuspenseContext(suspenseStackCursor.current, ForceSuspenseFallback));
+                    // 返回
                     return workInProgress.child;
                   }
 

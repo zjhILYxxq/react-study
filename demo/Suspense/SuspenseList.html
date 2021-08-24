@@ -48,7 +48,7 @@
                     resolve({
                         name: "zjh2"
                     });
-                }, 4000)
+                }, 600000)
             });
         }
 
@@ -110,11 +110,11 @@
                                 <React.Suspense fallback={<h1>Loading profile...</h1>}>
                                     <ProfileDetails />
                                 </React.Suspense>
-                                <React.Suspense fallback={<h1>Loading profile2...</h1>}>
-                                    <ProfileDetails2 />
-                                </React.Suspense>
                                 <React.Suspense fallback={<h1>Loading profile1...</h1>}>
                                     <ProfileDetails1 />
+                                </React.Suspense>
+                                <React.Suspense fallback={<h1>Loading profile2...</h1>}>
+                                    <ProfileDetails2 />
                                 </React.Suspense>
                                 <div>456</div>
                                 <div>789</div>                    
