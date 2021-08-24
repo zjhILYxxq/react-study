@@ -17939,6 +17939,7 @@
       });
       // callback 执行的优先级较低
       runWithPriority$1(priorityLevel > NormalPriority$1 ? NormalPriority$1 : priorityLevel, function () {
+        
         var prevTransition = ReactCurrentBatchConfig$1.transition;
         ReactCurrentBatchConfig$1.transition = 1;
 
