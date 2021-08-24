@@ -22,7 +22,7 @@
                     resolve({
                         name: "zjh"
                     });
-                }, 0)
+                }, 1000)
             });
         }
 
@@ -111,25 +111,27 @@
         }
 
         function ProfilePage() {
+            debugger
             const [visible, setVisible] = React.useState(false);
+            const [startTransition, isPending] = React.useTransition({ timeoutMs: 3000});
+            const deferredVisible = React.useDeferredValue(visible, { timeoutMs: 2000});
 
             const show = () => {
-                resource = fetchProfileData();
-                setVisible(true);
+                startTransition(() => {
+                    resource = fetchProfileData();
+                    setVisible(true);
+                });
             }
             return (
                 <div>
                     <button onClick={show}>显示</button>
                     <button onClick={() => setVisible(false)}>隐藏</button>
                     {
-                        visible && (
+                        deferredVisible && (
                             <React.Fragment>
-                                    <React.Suspense fallback={<h1>Loading profile...</h1>} unstable_avoidThisFallback={false}>
+                                    <React.Suspense fallback={<h1>Loading profile...</h1>}>
                                         <ProfileDetails />
                                     </React.Suspense>
-                                    <div>
-                                        {Array(50000).fill(1).map(item => <span>{item}</span>)}
-                                    </div>
                             </React.Fragment> 
                         )
                     }               
@@ -142,7 +144,7 @@
             // Try to read user info, although it might not have loaded yet
             const user = resource.user.read();
             return <React.Fragment>
-                    <h1 style={{height: 44, overflow: 'hidden'}}>{Array(1000).fill(user.name + ' ').map(item => <span>{item}</span>)}</h1>
+                    <h1 style={{height: 44, overflow: 'hidden'}}>{Array(1).fill(user.name + ' ').map(item => <span>{item}</span>)}</h1>
                 </React.Fragment>
             
             
