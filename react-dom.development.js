@@ -19415,6 +19415,7 @@
       // 子元素要隐藏
       if ((workInProgress.mode & ConcurrentMode) === NoMode) {
         // In legacy sync mode, don't defer the subtree. Render it now.
+        // 传统同步模式下，不要延迟 subtree，现在就渲染它
         // TODO: Figure out what we should do in Blocking mode.
         var nextState = {
           baseLanes: NoLanes
@@ -22685,7 +22686,7 @@
 
         break;
 
-      case OffscreenComponent:  // ??
+      case OffscreenComponent:  // React.OffScreen 的 complete 阶段
       case LegacyHiddenComponent:  // ??
         {
           popRenderLanes(workInProgress);

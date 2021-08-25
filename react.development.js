@@ -529,7 +529,7 @@
 
       case exports.SuspenseList:
         return 'SuspenseList';
-        
+
       case exports.OffScreen:
         return 'OffScreen';
     }
@@ -1465,7 +1465,7 @@
     } // Note: typeof might be other than 'symbol' or 'number' (e.g. if it's a polyfill).
 
 
-    if (type === exports.Fragment || type === exports.Profiler || type === REACT_DEBUG_TRACING_MODE_TYPE || type === exports.StrictMode || type === exports.Suspense || type === exports.SuspenseList || type === REACT_LEGACY_HIDDEN_TYPE || enableScopeAPI ) {
+    if (type === exports.Fragment || type === exports.Profiler || type === REACT_DEBUG_TRACING_MODE_TYPE || type === exports.StrictMode || type === exports.Suspense || type === exports.SuspenseList || type === exports.OffScreen || type === REACT_LEGACY_HIDDEN_TYPE || enableScopeAPI ) {
       return true;
     }
 
