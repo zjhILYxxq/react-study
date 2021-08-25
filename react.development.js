@@ -38,6 +38,7 @@
   var REACT_SCOPE_TYPE = 0xead7;
   var REACT_OPAQUE_ID_TYPE = 0xeae0;
   var REACT_DEBUG_TRACING_MODE_TYPE = 0xeae1;
+  exports.OffScreen = 0xeae2;
   var REACT_OFFSCREEN_TYPE = 0xeae2;
   var REACT_LEGACY_HIDDEN_TYPE = 0xeae3;
 
@@ -62,6 +63,7 @@
     REACT_OPAQUE_ID_TYPE = symbolFor('react.opaque.id');
     REACT_DEBUG_TRACING_MODE_TYPE = symbolFor('react.debug_trace_mode');
     REACT_OFFSCREEN_TYPE = symbolFor('react.offscreen');
+    exports.OffScreen = REACT_OFFSCREEN_TYPE;
     REACT_LEGACY_HIDDEN_TYPE = symbolFor('react.legacy_hidden');
   }
 
@@ -527,6 +529,9 @@
 
       case exports.SuspenseList:
         return 'SuspenseList';
+        
+      case exports.OffScreen:
+        return 'OffScreen';
     }
 
     if (typeof type === 'object') {

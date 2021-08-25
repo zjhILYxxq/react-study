@@ -19402,6 +19402,7 @@
    * @param rendrLanes 本次渲染要处理的更新
    */
   function updateOffscreenComponent(current, workInProgress, renderLanes) {
+    debugger
     // { mode: 'visible', children: xxxx}
     // mode 的值为 visible， 意味着 OffScreen 类型的 fiber node 的子元素要显示？？
     var nextProps = workInProgress.pendingProps;
