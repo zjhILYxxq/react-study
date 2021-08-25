@@ -30200,6 +30200,7 @@
       }
 
       var isRootRenderedBySomeReact = !!container._reactRootContainer;
+      // 获取指定容器节点的第一个子元素
       var rootEl = getReactRootElementInContainer(container);
       var hasNonRootReactChild = !!(rootEl && getInstanceFromNode(rootEl));
 
@@ -30214,7 +30215,7 @@
   }
 
   /**
-   *
+   * 获取指定容器节点的第一个子元素
    */
   function getReactRootElementInContainer(container) {
     if (!container) {
@@ -30222,8 +30223,10 @@
     }
 
     if (container.nodeType === DOCUMENT_NODE) {
+      // 如果容器节点是 document，返回 document.documentElement, 即 html 节点；
       return container.documentElement;
     } else {
+      // 返回指定容器节点的第一个子节点
       return container.firstChild;
     }
   }
@@ -30294,7 +30297,7 @@
    * @params parentComponent ？？
    * @params children react element
    * @params container  容器节点
-   * @params forceHydrate 是否强制使用 hydrate 模式
+   * @params forceHydrate 是否强制使用 hydrate 模式(调用 render 方法时，forceHydrate 属性为 false; 调用 hydrate 方法时, forceHydrate 属性为true)
    * @params callback  回调方法
    */
   function legacyRenderSubtreeIntoContainer(parentComponent, children, container, forceHydrate, callback) {
@@ -30478,6 +30481,7 @@
 
     if (container._reactRootContainer) {
       {
+        // 获取指定容器节点的第一个子元素
         var rootEl = getReactRootElementInContainer(container);
         var renderedByDifferentReact = rootEl && !getInstanceFromNode(rootEl);
 
@@ -30499,6 +30503,7 @@
       return true;
     } else {
       {
+        // 获取指定容器节点的第一个子元素
         var _rootEl = getReactRootElementInContainer(container);
 
         var hasNonRootReactChild = !!(_rootEl && getInstanceFromNode(_rootEl)); // Check if the container itself is a React root node.
