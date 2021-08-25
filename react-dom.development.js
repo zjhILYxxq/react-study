@@ -6239,6 +6239,8 @@
   }
 
   /**
+   * 标记 fiber tree 需要更新
+   * 
    * 标注 fiber root node 中要更新的赛道，即 pingingLanes 
    * - 将为更新分配的赛道合并到 fiber root node 的 pendingLanes；
    * - 从 fiber root node 的 suspendedLanes 中找到比当前更新赛道优先级更高的 suspendedLanes；
@@ -6262,12 +6264,14 @@
     // Unsuspend any update at equal or lower priority.
 
     /** 
-     * 理论上，任何赛道的更新，都可以解锁任何其他赛道。但是，尝试每一种可能的组合是不切实际的。我们需要一个启发去决定在哪些批次中渲染哪些赛道。
+     * 理论上，任何赛道的更新，都可以解锁任何其他赛道。但是，尝试每一种可能的组合是不切实际的。
+     * 我们需要一个启发去决定在哪些批次中渲染哪些赛道。
      * 现在，我们使用和老的过期时间模型一样的启发算法：尝试使用相等或者较低优先级的赛道，但是不要在不包括较低优先级更新的情况下尝试更高优先级的更新。
-     * 当考虑跨不同优先级更新时上面的算法很好用，但对于具有相同优先级的更新就不够用了，因为我们要处理的这些更新时并行的。
+     * 当考虑跨不同优先级更新时上面的算法很好用，但对于具有相同优先级的更新就不够用了，因为我们要处理的这些更新是并行的。
      * 取消暂停相同或者较低优先级的更新？？
      */
-    // 找到比更新赛道优先级更高的赛道
+
+    // 先找到比当前更新赛道优先级更高的赛道
     var higherPriorityLanes = updateLane - 1; // Turns 0b1000 into 0b0111
 
     // suspendedLanes 表示之前被暂停的赛道。 
@@ -24789,8 +24793,8 @@
   var RootIncomplete = 0; // render 阶段未完成，一般对应的情况：fiber node 未渲染完成
   var RootFatalErrored = 1; // 致命的错误
   var RootErrored = 2; // 错误，可重新渲染的错误？？
-  var RootSuspended = 3;  // 阻塞
-  var RootSuspendedWithDelay = 4; // 阻塞延时
+  var RootSuspended = 3;  // 暂停
+  var RootSuspendedWithDelay = 4; // 一个延时的暂停？？还是暂停被延时？？
   var RootCompleted = 5; // render 阶段完成 Describes where we are in the React execution stack
 
   // 当前的执行上下文， 默认为 0
@@ -24803,14 +24807,16 @@
   var workInProgress = null; // The lanes we're rendering
 
   //  本次渲染期间要处理的所有 lanes(更新)
-  var workInProgressRootRenderLanes = NoLanes; // Stack that allows components to change the render lanes for its subtree
+  var workInProgressRootRenderLanes = NoLanes; 
+
+  // Stack that allows components to change the render lanes for its subtree
   // This is a superset of the lanes we started working on at the root. The only
   // case where it's different from `workInProgressRootRenderLanes` is when we
   // enter a subtree that is hidden and needs to be unhidden: Suspense and
   // Offscreen component.
   // 
-  // 循环阶段，使用 workInProgressRootRenderLanes ？？
-  // begin/complete 阶段，使用 subtreeRenderLanes ？？
+  // 循环阶段，使用 workInProgressRootRenderLanes
+  // begin/complete 阶段，使用 subtreeRenderLanes
   // Most things in the work loop should deal with workInProgressRootRenderLanes.
   // Most things in begin/complete phases should deal with subtreeRenderLanes.
 
@@ -24823,7 +24829,9 @@
   // fiber root 退出渲染阶段的状态：RootCompleted、RootIncomplete、RootErrored、RootSuspended、RootSuspendedWithDelay；
   var workInProgressRootExitStatus = RootIncomplete; // A fatal error, if one is thrown
 
-  var workInProgressRootFatalError = null; // "Included" lanes refer to lanes that were worked on during this render. It's
+  var workInProgressRootFatalError = null; 
+
+  // "Included" lanes refer to lanes that were worked on during this render. It's
   // slightly different than `renderLanes` because `renderLanes` can change as you
   // enter and exit an Offscreen tree. This value is the combination of all render
   // lanes for the entire render phase.
@@ -24856,7 +24864,7 @@
   var workInProgressRootRenderTargetTime = Infinity; // How long a render is supposed to take before we start following CPU
   // suspense heuristics and opt out of rendering more content.
 
-  var RENDER_TIMEOUT_MS = 5000000;  // render 超时时间 500ms, 即渲染应该花多少时间
+  var RENDER_TIMEOUT_MS = 500;  // render 超时时间 500ms, 即渲染应该花多少时间
 
   /**
    * 设置渲染的终止时间
@@ -25072,8 +25080,8 @@
 
     /**
      * 这一步做了两件事情：
-     * - 将分配的更新赛道合并到 fiber node 的 lanes 中；
-     * - 将分配的更新赛道 fiber node 的 parent fiber node 的 childLanes 中；
+     * - 将为更新分配的 lane 合并到 fiber node 的 lanes 中；
+     * - 将为更新分配的 lane 合并到所有 parent fiber node 的 childLanes 中；
      */
     var root = markUpdateLaneFromFiberToRoot(fiber, lane);
 
@@ -25083,12 +25091,13 @@
     } // Mark that the root has a pending update.
 
     /** 
+     * 标记 fiber tree 需要做更新操作
+     * 
      * markRootUpdated 主要做了四件事情：
      * - 将更新分支合并到 fiber root node 的 pendingLanes 中；
      * - 从 fiber root node 的 suspendedLanes 中找到比当前更新赛道优先级更高的 suspendedLanes；
      * - 从 fiber root node 的 pingedLanes 中找到比当前更新赛道优先级更高的 pingedLanes；
      * - 将更新时间按更新对应的赛道存储
-     * 
     */
     markRootUpdated(root, lane, eventTime);
 
@@ -25105,7 +25114,7 @@
        * 渲染阶段的更新。如果是这样，我们不会将渲染阶段更新向后兼容？？原因他们是交错的？？
        */
       {
-        // 将新分配的更新赛道合并到 workInProgressRootUpdatedLanes 中
+        // 如果此时渲染还没有结束，那么需要将新分配的更新赛道合并到 workInProgressRootUpdatedLanes 中
         workInProgressRootUpdatedLanes = mergeLanes(workInProgressRootUpdatedLanes, lane);
       }
       // fiber root 上次结束渲染是的状态为延迟阻塞？
@@ -25613,7 +25622,7 @@
   }
 
   /**
-   * 
+   * 标记 fiber tree 被暂停
    * @param root  fiber root node
    * @param suspendedLanes 暂停的赛道集合(如果 fiber root node 是阻塞暂停的，那么他之前对应的更新都是暂停的)
    */
@@ -25625,7 +25634,7 @@
     // obnoxiously named function :)
     // 从暂停的赛道集合 suspendedLanes 中移除 pinged 的赛道
     suspendedLanes = removeLanes(suspendedLanes, workInProgressRootPingedLanes);
-    // 从暂停的赛道集合 suspendedLanes 中移除更新赛道 ？？
+    // 从暂停的赛道集合 suspendedLanes 中移除更新赛道 (为什么渲染过程中产生的新的更新要移除 ？？)
     suspendedLanes = removeLanes(suspendedLanes, workInProgressRootUpdatedLanes);
     // 重新标记 fiber root node 暂停的 lanes
     markRootSuspended(root, suspendedLanes);
@@ -25658,6 +25667,7 @@
       // 要处理的更新部分已经过期 ？？
       lanes = workInProgressRootRenderLanes;
       // 同步渲染
+      // 注意，同步渲染时使用的是 workInProgressRootRenderLanes(不是 subtreeRenderLanes， 也不是 workInProgressRootIncludedLanes)
       exitStatus = renderRootSync(root, lanes);
 
       if (includesSomeLane(workInProgressRootIncludedLanes, workInProgressRootUpdatedLanes)) {
@@ -25751,7 +25761,7 @@
 
     flushPendingDiscreteUpdates(); // If the discrete updates scheduled passive effects, flush them now so that
     // they fire before the next serial event.
-    // 处理 useEffect 的副作用
+    // 上一次渲染的 useEffect 未处理，新的渲染开始时，要优先处理
     flushPassiveEffects();
   }
 
@@ -25970,23 +25980,23 @@
         interruptedWork = interruptedWork.return;
       }
     }
-    // 当前要处理的 fiber root node
+    // 重置 workInProgressRoot 为 root
     workInProgressRoot = root;
-    // 当前要处理的 fiber node 
-    // workInProgress 和 root.current 不相等
+    // 重置 workInProgress 为容器 fiber node
     workInProgress = createWorkInProgress(root.current, null);
-    // workInProgressRootRenderLanes 本次渲染(阻塞/非阻塞)对应的赛道(更新)
-    // workInProgressRootIncludedLanes ？？ 
-    // subtreeRenderLanes ??
+    // 重置 workInProgressRootRenderLanes (本次渲染要处理的更新) 为 lanes
+    // 重置 subtreeRenderLanes() 为 lanes
+    // 重置 workInProgressRootIncludedLanes() 为 lanes
     workInProgressRootRenderLanes = subtreeRenderLanes = workInProgressRootIncludedLanes = lanes;
-    // 状态为未完成
+    // 重置 workInProgressRootExitStatus(渲染结束时的状态) 为 0
     workInProgressRootExitStatus = RootIncomplete;
+    // 重置 workInProgressRootFatalError 为 null
     workInProgressRootFatalError = null;
-    // SkippedLanes ？？
+    // 重置 workInProgressRootSkippedLanes 为 0
     workInProgressRootSkippedLanes = NoLanes;
-    // 渲染过程中产生的新的更新
+    // 重置 workInProgressRootUpdatedLanes(渲染过程中产生的新的更新) 为 0
     workInProgressRootUpdatedLanes = NoLanes;
-    // pinged 的暂停的更新
+    // 重置 workInProgressRootPingedLanes(渲染过程中已经暂停的更新被pinged) 为 0 
     workInProgressRootPingedLanes = NoLanes;
 
     {
@@ -26042,6 +26052,7 @@
           stopProfilerTimerIfRunningAndRecordDelta(erroredWork, true);
         }
         // 父组件异常处理，将 child fiber node 返回的异常数据 - 类 promise 对象收集起来
+        // 注意，这里使用的是 workInProgressRootRenderLanes(不是 subtreeRenderLanes， 也不是 workInProgressRootIncludedLanes)
         throwException(root, erroredWork.return, erroredWork, thrownValue, workInProgressRootRenderLanes);
         // 发生异常的 fiber node 进入 complete 阶段
         // 如果是 concurrent 模式，发生异常的 fiber node 标记为 Incomplete，即协调未完成
@@ -26141,7 +26152,7 @@
   }
 
   /**
-   * 
+   * 记录本次更新结束时的状态为 RootSuspendedWithDelay：4
    */
   function renderDidSuspendDelayIfPossible() {
     if (workInProgressRootExitStatus === RootIncomplete || workInProgressRootExitStatus === RootSuspended) {
@@ -26200,6 +26211,7 @@
     // and prepare a fresh one. Otherwise we'll continue where we left off.
 
     // 如果 fiber root node 或者赛道有修改，就扔掉之前的栈，准备一个新的。否则我们将从我们离开的地方继续
+    // 注意，这里使用的是 workInProgressRootRenderLanes(不是 subtreeRenderLanes， 也不是 workInProgressRootIncludedLanes)
     if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
       // workInProgressRoot 可以理解为上一次渲染时对应的 fiber root node。如果 workInProgressRoot 和 root 不一样，
       // 我们需要把 workInProgressRoot、workInProgress 重置
@@ -26285,7 +26297,7 @@
     // workInProgressRoot 和 root 不相等，意味着上一次渲染时的 fiber tree 和这一次不是同一颗 fiber tree
     // 
     // 那么 workInProgressRoot 、workInProgress 都要重置
-
+    // 注意，这里使用的是 workInProgressRootRenderLanes(不是 subtreeRenderLanes， 也不是 workInProgressRootIncludedLanes)
     if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
 
       // 重置渲染终止时间，即当前时间 + 500 ms()
@@ -26371,11 +26383,13 @@
       startProfilerTimer(unitOfWork);
       // 以 current 为参照物，对比 unitOfWork， 更新 fiber node， 并返回要处理的 child fiber node
       // 如果返回 null， 那么就需要对 unitOfWork 进行 completeUnitOfWork 操作(创建 dom 节点、收集副作用)
+      // 注意，beigin 阶段，使用的是 subtreeRenderLanes；
       next = beginWork$1(current, unitOfWork, subtreeRenderLanes);
       stopProfilerTimerIfRunningAndRecordDelta(unitOfWork, true);
     } else {
       // 以 current 为参照物，对比 unitOfWork， 更新 fiber node
       // 返回的是下一个待渲染的 fiber node
+      // 注意： begin 阶段，使用的是 subtreeRenderLanes；
       next = beginWork$1(current, unitOfWork, subtreeRenderLanes);
     }
 
@@ -26432,11 +26446,11 @@
 
         if ( (completedWork.mode & ProfileMode) === NoMode) {
           // 不是 ProfileMode 模式
-          // 
+          // 注意: complete 阶段，使用的是 subtreeRenderLanes
           next = completeWork(current, completedWork, subtreeRenderLanes);
         } else {
           startProfilerTimer(completedWork);
-          // 
+          // 注意：complete 阶段，使用的是 subtreeRenderLanes
           next = completeWork(current, completedWork, subtreeRenderLanes); // Update render duration assuming we didn't error.
 
           stopProfilerTimerIfRunningAndRecordDelta(completedWork, false);
@@ -27184,6 +27198,7 @@
     if (!rootDoesHavePassiveEffects) {
       rootDoesHavePassiveEffects = true;
       scheduleCallback(NormalPriority$1, function () {
+        // 上一次渲染的 useEffect 未处理，要先处理
         flushPassiveEffects();
         return null;
       });
@@ -27213,6 +27228,7 @@
     if (!rootDoesHavePassiveEffects) {
       rootDoesHavePassiveEffects = true;
       scheduleCallback(NormalPriority$1, function () {
+        // 上一次渲染的 useEffect 未处理，要优先处理
         flushPassiveEffects();
         return null;
       });
@@ -27425,6 +27441,7 @@
     var root = markUpdateLaneFromFiberToRoot(rootFiber, SyncLane);
 
     if (root !== null) {
+      // 标记 fiber tree 需要更新
       markRootUpdated(root, SyncLane, eventTime);
       ensureRootIsScheduled(root, eventTime);
       schedulePendingInteractions(root, SyncLane);
@@ -27464,6 +27481,7 @@
           var root = markUpdateLaneFromFiberToRoot(fiber, SyncLane);
 
           if (root !== null) {
+            // 标记 fiber tree 需要更新
             markRootUpdated(root, SyncLane, eventTime);
             ensureRootIsScheduled(root, eventTime);
             schedulePendingInteractions(root, SyncLane);
@@ -27583,10 +27601,11 @@
     var root = markUpdateLaneFromFiberToRoot(boundaryFiber, retryLane);
 
     if (root !== null) {
-      // 将为 retry 分配的 lane 合并到 fiber root node 的 pendingLanes 中
+      // 标记 fiber tree 需要更新，将为 retry 分配的 lane 合并到 fiber root node 的 pendingLanes 中
       markRootUpdated(root, retryLane, eventTime);
       // 异步任务调度，处理更新
       ensureRootIsScheduled(root, eventTime);
+      // ？？
       schedulePendingInteractions(root, retryLane);
     }
   }
@@ -28312,6 +28331,7 @@
 
       var staleFamilies = update.staleFamilies,
           updatedFamilies = update.updatedFamilies;
+      // 上一次渲染的 useEffect 未处理，要优先处理
       flushPassiveEffects();
       flushSync(function () {
         scheduleFibersWithFamiliesRecursively(root.current, updatedFamilies, staleFamilies);
@@ -29479,6 +29499,7 @@
       return hostFiber.stateNode;
     }
   }
+
   /**
    * 基于 react 应用的容器节点，创建一个 fiber node，作为 fiber tree 的根节点
    * @param containerInfo 容器节点
@@ -29505,7 +29526,7 @@
       onScheduleRoot(container, element);
     }
 
-    // 容器节点对应的 fiber node
+    // 容器节点对应的 fiber node， current fiber node
     var current$1 = container.current;
     // 返回一个时间戳，记录容器节点开始更新的时间
     var eventTime = requestEventTime();
@@ -30076,7 +30097,7 @@
   /**
    * 根据 tag 指定的类型，创建一个 fiber root node，阻塞渲染
    * @params container 容器节点
-   * @params tag fiber root node 的类型， legacy root， block root
+   * @params tag fiber root node 的类型， legacy root， block root， concurrent root
    * @params options 配置项， { hydrate: boolean, ...}
    */
   function ReactDOMBlockingRoot(container, tag, options) {
@@ -30127,8 +30148,9 @@
   };
 
   /**
-   * fiber root node 的实现，即创建一个 fiber root node 及对应的 fiber node，建立容器节点和 fiber node 的关联关系
-   * 并给容器节点绑定所有支持的事件(react 的事件机制？？)
+   * fiber root node 的实现
+   * 即创建一个 fiber root node 及对应的 fiber node，建立容器节点和 fiber node 的关联关系
+   *   并给容器节点绑定所有支持的事件(react 的事件机制？？)
    * @param container react 应用的容器节点
    * @param tag fiber root node 的类型，LegacyRoot: 0, BlockingRoot: 1, ConcurrentRoot: 2
    * @param options 配置项 { hydrate: boolean, }
@@ -30231,7 +30253,8 @@
     }
   }
   /**
-   * 根据容器节点 container 判断是否需要开启 hydrate 功能
+   * 根据容器节点 container 判断是否需要开启 hydrate 模式
+   * 如果 container 的第一个子元素有 data-reactroot 属性，react 会自动开启 hydrate 模式
    */
   function shouldHydrateDueToLegacyHeuristic(container) {
     // 获取容器节点的第一个子节点
@@ -30246,10 +30269,12 @@
    * @param {*} forceHydrate 是否强制开启 hydrate 功能，默认 false。 如果使用 ReactDOM.hydrate 方法，forceHydrate 为 true
    */
   function legacyCreateRootFromDOMContainer(container, forceHydrate) {
-    // 是否开启 hydrate 功能
-    // 当我们使用 RenderDOM.hydrate 方法时， forceHydrate 为 true，开启 hydrate 功能
-    // 当我们使用 RenderDom.render 方法时，如果容器节点的第一个子节点有属性 data-reactroot，那么开启 hydrate 功能
-    // ReactDOMServer.renderToString 方法生成的 html 字符串，根节点会带属性 data-reactroot 
+    /**
+     * 是否开启 hydrate 模式
+     * 当我们使用 RenderDOM.hydrate 方法时， forceHydrate 为 true，开启 hydrate 功能
+     * 当我们使用 RenderDom.render 方法时，如果容器节点的第一个子节点有属性 data-reactroot，那么开启 hydrate 功能
+     * ReactDOMServer.renderToString 方法生成的 html 字符串，根节点会自带属性 data-reactroot 
+     */
     var shouldHydrate = forceHydrate || shouldHydrateDueToLegacyHeuristic(container); // First clear any existing content.
 
     // 如果被判断不需要开启 hydrate 功能，容器节点的所有子节点会被移除
@@ -30265,7 +30290,7 @@
             error('render(): Target node has markup rendered by React, but there ' + 'are unrelated nodes as well. This is most commonly caused by ' + 'white-space inserted around server-rendered markup.');
           }
         }
-
+        // 非 hydrate 模式，容器节点的所有子节点都会被移除
         container.removeChild(rootSibling);
       }
     }
@@ -30315,6 +30340,7 @@
     if (!root) {  // 容器节点上还没有 fiber tree，意味着 react 应用初次挂载
       // Initial mount react 应用初次挂载
       // 基于容器节点，创建一个 fiber root node，作为 fiber tree 的根节点
+      // 如果是 hydrate 模式，那么 fiber root node 的 hydrate 属性为 true
       root = container._reactRootContainer = legacyCreateRootFromDOMContainer(container, forceHydrate);
       // fiberRoot 为容器节点对应的 fiber root node
       fiberRoot = root._internalRoot;
