@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.js"></script>
+    <script src="../../react-dom.development.js"></script>
+    <script src="../../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app">
+
+    </div>
+    <script type="text/babel">
+
+        const { useEffect } = React;
+
+        class Parent extends React.PureComponent {
+            constructor(props) {
+                super(props)
+                this.state = {
+                    // value: '1 2 3 4 5 6 7 8 9 10',
+                    // list: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                    list: ['A', 'B', 'C', 'D', 'E']
+                }
+                // this.valueChange = this.valueChange.bind(this)
+                // this.addList = this.addList.bind(this)
+                this.changeList = this.changeList.bind(this);
+                // 1 9 12 10 5 3 14 7
+            }
+            // valueChange(e) {
+            //     this.setState({
+            //         value: e.target.value,
+            //         list: e.target.value.split(' ')
+            //     })
+            // }
+            // addList() {
+            //     this.setState({
+            //         list: [...this.state.list, this.state.value]
+            //     })
+            // }
+            
+            changeList() {
+                setTimeout(() => {
+                    debugger
+                    this.setState({
+                        list: ['C', 'E', 'B', 'A', 'F', 'M']
+                    });
+                })
+            }
+
+            render() {
+                return (
+                    <div>
+                        <div>
+                            {this.state.list.map(item => <div key={item}>{item}</div>)}
+                        </div>
+                        <button onClick={this.changeList}>修改</button>
+                    </div>
+                )
+            }
+        }
+
+        
+        class Comp1 extends React.Component {
+            
+        }
+
+        
+    
+        function Child1(props) {
+            return <React.Fragment>
+                    {props.list.map(item => <div key={item}>{item}</div>)}
+                </React.Fragment>
+        }
+
+
+        function Child2(props) {
+            return <div>{props.value}</div>
+        }
+    
+    
+        class Child3 extends React.Component {
+            componentDidUpdate() {
+                alert('update Child3')
+            }
+            componentDidMount() {
+                alert('mount Child3')
+            }
+            render() {
+                return <div>Child3</div>
+            }
+        }
+
+        function Child4(props) {
+            return <div title="child4" style={{background: 'red'}} onClick={() => alert('child4')}>
+                    <div>{props && props.name}</div>
+                    <span>123</span>
+                </div>
+        }
+
+
+        function Child5(props) {
+            const [state, setState] = React.useState(0);
+            curState = state;
+          
+            
+            React.useEffect(() => {
+                debugger
+                console.log('Child5 effect' + state);
+                return () => {
+                    console.log('destory effect' + state);
+                }
+            });
+            React.useLayoutEffect(() => {
+                console.log('Child5 layoutEffect' + state);
+                return () => {
+                    console.log('destory layoutEffect' + state);
+                }
+            });
+
+            // const step = () => {
+            //     console.log('requestAnimationFrame' + curState);
+            //     if (curState >= 10) return false;
+            //     setState(curState + 1);
+            //     requestAnimationFrame(step);
+            // }
+
+            // requestAnimationFrame(step);
+
+            // const setTimer = () => {
+            //     timer = setTimeout(() => {
+            //         clearTimeout(timer);
+            //         setState(curState + 1);
+            //         if (curState >= 10) return clearTimeout(timer);
+            //         setTimer();
+            //     }, 4)
+            // }
+
+            return <div>{state}</div>
+        }
+
+        
+        // var a = ReactDOM.render(
+        //     <React.Fragment>
+        //         <Child4 />
+        //     </React.Fragment>,
+        //     document.getElementById('app')
+        // );
+        
+        var b = ReactDOMServer.renderToString(Child4());
+        document.getElementById('app').innerHTML = b;
+        console.log(b);
+        debugger
+        let c = ReactDOM.hydrate( <Child4 />, document.getElementById('app'), (instance) => {
+            console.log(instance);
+        });
+        // var c = ReactDOMServer.renderToStaticMarkup(Child4());
+        // console.log(c);
+        
+    </script>
+    
+</body>
+</html>

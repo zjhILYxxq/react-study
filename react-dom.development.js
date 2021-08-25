@@ -13086,7 +13086,7 @@
   function createUpdate(eventTime, lane) {
     var update = {
       eventTime: eventTime,  // update 对象的时间戳
-      lane: lane,  // 更新对应的赛道
+      lane: lane,  // 为更新分配的 lane
       tag: UpdateState,  // update 的类型，默认为 UpdateState，即新旧 state 做合并操作t
       payload: null,  // 负载，对应 new state
       callback: null, // 更新操作的 callback
@@ -13098,24 +13098,27 @@
 
   /**
    * 将 update 对象添加到 fiber node 的 updateQueue 队列中
-   * fiber node 的 update 对象是按照生成的时间排序，其中 pending 指针指向最后一个 update 对象， pending.next 指向第一个 update 对象
+   * fiber node 的 update 对象是按照生成的时间排序，存储 update 对象的是一个首尾相接的链表结构(最后一个 update 对象的 next 指针指向第一个 update 对象)
+   * pending 指针指向最后一个 update 对象， pending.next 指向第一个 update 对象
+   * 即在 render 阶段处理 update 对象链表时，通过 pending.next 可以找到要处理的第一个 update 对象
    * @params fiber current fiber node
    * @params update update 对象
    */
   function enqueueUpdate(fiber, update) {
-    // 获取 fiber node 的 updateQueue
+    // 获取 fiber node 的 updateQueue， updateQueue 是一个普通对象
     var updateQueue = fiber.updateQueue;
     // 如果 updateQueue 为 null，说明 fiber node 已经被卸载掉了
     if (updateQueue === null) {
       // Only occurs if the fiber has been unmounted.
       return;
     }
-    // sharedQueue ?? 
+
     // 一个 fiber node 对应一个 updateQueue
-    // 所有的 updateQueue 共同对应一个 sharedQueue ？？
     // sharedQueue 是一个 对象： { pending: xxx }
+    // sharedQueue，current fiber node 和 new fiber node 共享同一个 sharedQueue
     var sharedQueue = updateQueue.shared;
     // 等待的 update，批次更新的时候，会一次性生成多个 update 对象
+    // pending 指针指向
     var pending = sharedQueue.pending;
 
     if (pending === null) {
@@ -13776,13 +13779,15 @@
 
         update.callback = callback;
       }
-      // 将 update 对象添加到 updateQueue 队列中
+      // 将 update 对象添加到 fiber node 的 updateQueue 队列中
       enqueueUpdate(fiber, update);
       // 为 fiber node 的更新， 安排一个调度任务
       scheduleUpdateOnFiber(fiber, lane, eventTime);
     },
     /**
-     * 
+     * 类组件强制更新
+     * @param inst  类组件实例
+     * @param callback
      */
     enqueueForceUpdate: function (inst, callback) {
       var fiber = get(inst);
@@ -13798,7 +13803,7 @@
 
         update.callback = callback;
       }
-
+      // 将新生成的 update 对象添加到 fiber node 的 updateQueue 列表中
       enqueueUpdate(fiber, update);
       // 为 fiber node 的更新， 安排一个调度任务
       scheduleUpdateOnFiber(fiber, lane, eventTime);
@@ -23185,6 +23190,7 @@
                 // prevent a bail out.
                 var update = createUpdate(NoTimestamp, SyncLane);
                 update.tag = ForceUpdate;
+                // 将生成的 update 对象添加到 fiber node 的 updateQueue 中
                 enqueueUpdate(sourceFiber, update);
               }
             } // The source fiber did not complete. Mark it with Sync priority to
@@ -27410,7 +27416,9 @@
   function captureCommitPhaseErrorOnRoot(rootFiber, sourceFiber, error) {
     var errorInfo = createCapturedValue(error, sourceFiber);
     var update = createRootErrorUpdate(rootFiber, errorInfo, SyncLane);
+    // 将生成的 update 对象添加到 fiber node 的 updateQueue 列表中
     enqueueUpdate(rootFiber, update);
+
     var eventTime = requestEventTime();
     var root = markUpdateLaneFromFiberToRoot(rootFiber, SyncLane);
 
@@ -27447,6 +27455,7 @@
         if (typeof ctor.getDerivedStateFromError === 'function' || typeof instance.componentDidCatch === 'function' && !isAlreadyFailedLegacyErrorBoundary(instance)) {
           var errorInfo = createCapturedValue(error, sourceFiber);
           var update = createClassErrorUpdate(fiber, errorInfo, SyncLane);
+          // 将生成的 update 对象添加到 fiber node 的 updateQueue 列表中
           enqueueUpdate(fiber, update);
           var eventTime = requestEventTime();
           var root = markUpdateLaneFromFiberToRoot(fiber, SyncLane);
@@ -29506,7 +29515,7 @@
       }
     }
 
-    // 容器节点对应的 fiber node 需要更新，需要先给分配一个 lane，是 defaultLanes
+    // 容器节点对应的 fiber node 需要更新，需要先给分配一个 lane。由于更新容器节点的优先级是普通优先级，分配的 lane 是 defaultLanes
     var lane = requestUpdateLane(current$1);
 
     // 如果 parentComponent 没有的话，此时会返回一个空的 context ： { }
@@ -29912,6 +29921,12 @@
     }; // Support DevTools props for function components, forwardRef, memo, host components, etc.
 
 
+    /**
+     * 
+     * @param fiber
+     * @param path
+     * @param value
+     */
     overrideProps = function (fiber, path, value) {
       fiber.pendingProps = copyWithSet(fiber.memoizedProps, path, value);
 
@@ -29922,6 +29937,10 @@
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
+    /**
+     * @param fiber
+     * @param path
+     */
     overridePropsDeletePath = function (fiber, path) {
       fiber.pendingProps = copyWithDelete(fiber.memoizedProps, path);
 
@@ -29932,6 +29951,12 @@
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
+    /**
+     * 
+     * @param fiber
+     * @param oldPath
+     * @param newPath
+     */
     overridePropsRenamePath = function (fiber, oldPath, newPath) {
       fiber.pendingProps = copyWithRename(fiber.memoizedProps, oldPath, newPath);
 
@@ -29942,12 +29967,18 @@
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
+    /**
+     * @param fiber
+     */
     scheduleUpdate = function (fiber) {
       // 为 fiber node 的更新， 安排一个调度任务
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
-    // 设置 fiber node 暂停的判断逻辑方法
+    /**
+     * 设置 fiber node 暂停的判断逻辑方法
+     * @param newShouldSuspendImpl 新的暂停逻辑的实现
+     */
     setSuspenseHandler = function (newShouldSuspendImpl) {
       shouldSuspendImpl = newShouldSuspendImpl;
     };
@@ -30240,12 +30271,12 @@
   }
   
   /**
-   * 将 react 元素渲染到指定的容器节点中
+   * 将 react 组件渲染到指定的容器节点中
    * @params parentComponent ？？
    * @params children react element
    * @params container  容器节点
    * @params forceHydrate 是否强制使用 hydrate 模式
-   * @params callback
+   * @params callback  回调方法
    */
   function legacyRenderSubtreeIntoContainer(parentComponent, children, container, forceHydrate, callback) {
     
@@ -30259,7 +30290,7 @@
     var root = container._reactRootContainer;
     var fiberRoot;
 
-    if (!root) {
+    if (!root) {  // 容器节点上还没有 fiber tree，意味着 react 应用初次挂载
       // Initial mount react 应用初次挂载
       // 基于容器节点，创建一个 fiber root node，作为 fiber tree 的根节点
       root = container._reactRootContainer = legacyCreateRootFromDOMContainer(container, forceHydrate);
@@ -30283,7 +30314,7 @@
         // 更新容器节点对应的 fiber node
         updateContainer(children, fiberRoot, parentComponent, callback);
       });
-    } else {
+    } else {  // 容器节点上已经有 fiber tree，此时需要更新 fiber tree
       // react 应用已经启动
       fiberRoot = root._internalRoot;
 
@@ -30297,7 +30328,7 @@
         };
       } // Update
 
-
+      // 直接更新容器节点
       updateContainer(children, fiberRoot, parentComponent, callback);
     }
     //
@@ -30338,7 +30369,7 @@
    * 以 hydrate 模式开启一个 react 应用
    * @params element react element
    * @params container 容器节点
-   * @params callback 回调方法
+   * @params callback 使用 ReactDOM.hydrate 时传入的 callback
    */
   function hydrate(element, container, callback) {
     
@@ -30356,7 +30387,7 @@
       }
     } // TODO: throw or warn if we couldn't hydrate?
 
-
+    // 将 react 组件渲染到指定的容器节点
     return legacyRenderSubtreeIntoContainer(null, element, container, true, callback);
   }
   
@@ -30380,7 +30411,7 @@
         error('You are calling ReactDOM.render() on a container that was previously ' + 'passed to ReactDOM.createRoot(). This is not supported. ' + 'Did you mean to call root.render(element)?');
       }
     }
-
+    // 将 react 应用渲染到指定的容器节点
     return legacyRenderSubtreeIntoContainer(null, element, container, false, callback);
   }
 
@@ -30403,11 +30434,12 @@
         throw Error( "parentComponent must be a valid React Component" );
       }
     }
-
+    // 将 react 组件渲染到指定的容器节点
     return legacyRenderSubtreeIntoContainer(parentComponent, element, containerNode, false, callback);
   }
 
   /**
+   * 移除指定容器节点上的 react 组件
    * @param container 容器节点
    */
   function unmountComponentAtNode(container) {
