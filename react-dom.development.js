@@ -25059,7 +25059,7 @@
 
   /**
    * 为 fiber node 的更新， 安排一个调度任务
-   * @params fiber 要更新的fiber node
+   * @params fiber 要更新的fiber node，是一个 current fiber node
    * @params lane 为此次更新分配的赛道
    * @parms eventTime 时间戳
    */
@@ -25204,16 +25204,15 @@
   // on a fiber.
 
   /**
-   * 将分配的赛道合并到 sourceFiber 原来的赛道中
-   * 如果 sourceFiber 不是容器节点对应的 fiber node， 还要把分配的赛道合并到所有 parent fiber node 的 child
-   * @params sourceFiber 一个 fiber node
+   * 将为更新分配的赛道合并到 fiber node 的 lanes以及 parent fiber node 的 childLanes 中
+   * @params sourceFiber 一个 fiber node， 是一个 current fiber node 还是一个 workInProgress fiber node
    * @params lane 为新的更新，分配的赛道
    */
   function markUpdateLaneFromFiberToRoot(sourceFiber, lane) {
     // Update the source fiber's lanes
 
-    // 将新分配的更新赛道合并到 fiber node 原来的赛道中
-    // lanes，上一次渲染结束(完成？？中断？？)遗留的更新；
+    // 每发生一次更新，都会为这一次更新分配一个 lane
+    // 为更新分配的 lane，要合并到对应的 fiber node 的 lanes。一个 fiber node 的 lanes 不为 0， 说明该 fiber node 还有更新未处理
     sourceFiber.lanes = mergeLanes(sourceFiber.lanes, lane);
     // current fiber node
     var alternate = sourceFiber.alternate;
@@ -25235,6 +25234,8 @@
     // parent fiber node
     var parent = sourceFiber.return;
 
+    // 将为更新分配的 lane 都合并到 parent fiber node 的 childLanes 中
+    // 一个 fiber node 的 childLanes 不为 0， 意味着 child fiber node 的更新未处理完，需要处理 child fiber node
     while (parent !== null) {
       parent.childLanes = mergeLanes(parent.childLanes, lane);
       alternate = parent.alternate;
@@ -27420,6 +27421,7 @@
     enqueueUpdate(rootFiber, update);
 
     var eventTime = requestEventTime();
+    // 将为更新分配的 SyncLane 合并到 fiber node 的 lanes 以及 parent fiber node 的 childLanes 中
     var root = markUpdateLaneFromFiberToRoot(rootFiber, SyncLane);
 
     if (root !== null) {
@@ -27458,6 +27460,7 @@
           // 将生成的 update 对象添加到 fiber node 的 updateQueue 列表中
           enqueueUpdate(fiber, update);
           var eventTime = requestEventTime();
+          // 将为更新分配的 SyncLane 合并到 fiber node 的 lanes 以及 parent fiber node 的 childLanes 中
           var root = markUpdateLaneFromFiberToRoot(fiber, SyncLane);
 
           if (root !== null) {
@@ -29586,6 +29589,10 @@
     }
   }
 
+  /**
+   * 
+   * @param retryLane
+   */
   function markRetryLaneImpl(fiber, retryLane) {
     var suspenseState = fiber.memoizedState;
 
@@ -29595,6 +29602,11 @@
   } // Increases the priority of thennables when they resolve within this boundary.
 
 
+  /**
+   * 
+   * @param fiber
+   * @param retryLane
+   */
   function markRetryLaneIfNotHydrated(fiber, retryLane) {
     markRetryLaneImpl(fiber, retryLane);
     var alternate = fiber.alternate;
@@ -29604,6 +29616,9 @@
     }
   }
 
+  /**
+   * @param fiber
+   */
   function attemptUserBlockingHydration$1(fiber) {
     if (fiber.tag !== SuspenseComponent) {
       // We ignore HostRoots here because we can't increase
@@ -29619,6 +29634,10 @@
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
+
+  /**
+   * @param fiber
+   */
   function attemptContinuousHydration$1(fiber) {
     if (fiber.tag !== SuspenseComponent) {
       // We ignore HostRoots here because we can't increase
@@ -29636,7 +29655,7 @@
   }
 
   /**
-   * 
+   * @param fiber
    */
   function attemptHydrationAtCurrentPriority$1(fiber) {
     if (fiber.tag !== SuspenseComponent) {
