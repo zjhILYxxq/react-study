@@ -178,10 +178,6 @@ Suspense 消除 race condition
 
 #### portal
 
-
-#### React 的最佳实践
-
-
 #### mobx
 
 
@@ -194,6 +190,14 @@ Suspense 消除 race condition
 #### react-router
 
 #### 为什么 react 每次更新时要从根节点开始协调
+
+
+
+### React 的最佳实践
+
+#### hooks 的最佳实践
+
+1. 多个 useState 的使用问题
 
 
 
