@@ -6300,8 +6300,10 @@
 
     // suspendedLanes 表示之前被暂停的赛道。 
     // root.suspendedLanes & higherPriorityLanes，是为了从暂停的赛道中找出有比当前更新赛道(更新)中优先级更高的 suspensed 赛道(更新)
+    // 如果暂停的 lane，比当前优先级要低，那么不处理；
     root.suspendedLanes &= higherPriorityLanes;
     // 从 pinged 的赛道中找到比当前更新赛道(更新)优先级更高的 pinged 赛道(更新)
+    // 如果 pinged 的 lane 比当前优先级要低， 也不处理；
     root.pingedLanes &= higherPriorityLanes;
     // 
     var eventTimes = root.eventTimes;
@@ -6353,6 +6355,7 @@
 
   /**
    * 
+   * @param
    */
   function markDiscreteUpdatesExpired(root) {
     root.expiredLanes |= InputDiscreteLanes & root.pendingLanes;
@@ -6360,13 +6363,14 @@
 
   /**
    * 
+   * @param lanes
    */
   function hasDiscreteLanes(lanes) {
     return (lanes & InputDiscreteLanes) !== NoLanes;
   }
 
   /**
-   * 
+   * @param
    */
   function markRootMutableRead(root, updateLane) {
     root.mutableReadLanes |= updateLane & root.pendingLanes;
@@ -6382,13 +6386,19 @@
     var noLongerPendingLanes = root.pendingLanes & ~remainingLanes;
     // 遗留的更新会在下一次调度任务进行处理
     root.pendingLanes = remainingLanes; // Let's try everything again
-
+    // 
     root.suspendedLanes = 0;
+    // 
     root.pingedLanes = 0;
+    //
     root.expiredLanes &= remainingLanes;
+    //
     root.mutableReadLanes &= remainingLanes;
+    //
     root.entangledLanes &= remainingLanes;
+    //
     var entanglements = root.entanglements;
+    //
     var eventTimes = root.eventTimes;
     var expirationTimes = root.expirationTimes; // Clear the lanes that no longer have pending work
 
@@ -6446,6 +6456,7 @@
   function setEnabled(enabled) {
     _enabled = !!enabled;
   }
+
   function isEnabled() {
     return _enabled;
   }
@@ -24915,7 +24926,7 @@
   // 在渲染期间畅通的赛道
   var workInProgressRootPingedLanes = NoLanes;
 
-  // 
+  // 最近一次处理的 fiber tree
   var mostRecentlyUpdatedRoot = null; 
 
   // The most recent time we committed a fallback. This lets us ensure a train
@@ -25288,7 +25299,7 @@
     // the same root, then it's not a huge deal, we just might batch more stuff
     // together more than necessary.
 
-
+    // 最近一次处理的 fiber root tree
     mostRecentlyUpdatedRoot = root;
   } // This is split into a separate function so we can mark a fiber with pending
   // work without treating it as a typical update that originates from an event;
