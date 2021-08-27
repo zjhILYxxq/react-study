@@ -201,6 +201,8 @@ Suspense 消除 race condition
 
 2. React.Strict 模式下 useReducer 不是纯函数引发的副作用 
 
+3. useReducer 定义的 action 多次触发问题 
+
 
 
 
