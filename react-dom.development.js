@@ -1259,8 +1259,11 @@
   }
 
   var ReactDebugCurrentFrame = ReactSharedInternals.ReactDebugCurrentFrame;
+
   var current = null;
+
   var isRendering = false;
+  
   function getCurrentFiberOwnerNameInDevOrNull() {
     {
       if (current === null) {
@@ -4387,6 +4390,10 @@
   16384; // Static tags describe aspects of a fiber that are not specific to a render,
 
   var ReactCurrentOwner = ReactSharedInternals.ReactCurrentOwner;
+
+  /**
+   * @param fiber
+   */
   function getNearestMountedFiber(fiber) {
     var node = fiber;
     var nearestMounted = fiber;
@@ -5414,17 +5421,17 @@
    * 优先级从高到底：
    * - SyncLane，同步赛道，优先级为 15；
    * - SyncBatchedLane， 同步批量赛道，14；
-   * - InputDiscreteHydrationLane， ？？， 13
-   * - inputDiscreteLanes，离散输入赛道 ？？ 12
-   * - InputContinuousHydrationLane， ？？ ，11
-   * - inputContinuousLanes， ？？， 10
-   * - DefaultHydrationLane， ？？， 9
+   * - InputDiscreteHydrationLane，离散注水事件 ？？ 13
+   * - inputDiscreteLanes，离散事件 ？？ 12
+   * - InputContinuousHydrationLane， 连续注水事件 ？？ ，11
+   * - inputContinuousLanes， 连续事件， 10
+   * - DefaultHydrationLane， 默认注水 ？？， 9
    * - DefaultLanes， 默认赛道， 8
-   * - TransitionHydrationLane， ？？，7
-   * - TransitionLanes， ？？， 6
-   * - RetryLanes， ？？，5
+   * - TransitionHydrationLane， 过渡注水 ？？，7
+   * - TransitionLanes， 过渡(对应 useTransition)， 6
+   * - RetryLanes， 重试(对应 Suspense、SuspenseList)，5
    * - SelectiveHydrationLane， ？？， 4
-   * - IdleHydrationLane， ？？， 3
+   * - IdleHydrationLane，空闲注水 ？？， 3
    * - IdleLanes，空闲赛道， 2
    * - OffscreenLane， ？？， 1
    * - 
@@ -5968,8 +5975,9 @@
   // be a pure function, so that it always returns the same lane for given inputs.
 
   /**
-   * 根据赛道优先级，找到对应的赛道
-   * @param lanePriority 赛道优先级
+   * 根据优先级为更新分配 lane
+   * 分配 lane 时，如果当前优先级的 lane 已经全部被占用，会做降级处理
+   * @param lanePriority 更新对应的赛道优先级
    * @param wipLanes 之前的渲染中的更新
    */
   function findUpdateLane(lanePriority, wipLanes) {
@@ -5991,6 +5999,7 @@
           if (_lane === NoLane) {
             // Shift to the next priority level
             // 这里的意思是 InputDiscreteLanes 已经都使用，只能分配 InputContinuousLanes
+            // InputDiscreteLanes 分配了两条赛道
             return findUpdateLane(InputContinuousLanePriority, wipLanes);
           }
 
@@ -6035,9 +6044,9 @@
           return _lane3;
         }
 
-      case TransitionPriority: // 6 Should be handled by findTransitionLane instead
+      case TransitionPriority: // 6 过渡优先级 Should be handled by findTransitionLane instead
 
-      case RetryLanePriority: // 5
+      case RetryLanePriority: // 5 重试优先级
         // Should be handled by findRetryLane instead
         break;
 
@@ -6060,7 +6069,11 @@
   // be pure function, so that it always returns the same lane for given inputs.
 
   /**
-   * 
+   * 为过渡类型的更新分配 lane，分配的 lane 要从 TransitionLanes 中找
+   * 分配原则：
+   * 1. 从未安排工作的 lanes 中选出最靠前的一条；
+   * 2. 如果没有未安排工作的 lanes，那就从未开始工作的 lanes 选出最靠前的一条；
+   * 3. 如果所有的 lanes 都已经开始工作，那么就选择第一条，第一条中原来的工作被中断？？
    * @param wipLanes 当前工作中的所有 lanes
    * @param pendingLanes 待处理的 lanes
    */
@@ -6068,16 +6081,19 @@
     // First look for lanes that are completely unclaimed, i.e. have no
     // pending work.
 
+    // 先从没有待处理工作的 TransitionLanes 类型的 lanes 中找；
     var lane = pickArbitraryLane(TransitionLanes & ~pendingLanes);
 
     if (lane === NoLane) {
       // If all lanes have pending work, look for a lane that isn't currently
       // being worked on.
+      // 如果所有的 TransitionLanes 都已经安排了工作，那么就从当前没有开始工作的 TransitionLanes 类型的 lanes 中找
       lane = pickArbitraryLane(TransitionLanes & ~wipLanes);
 
       if (lane === NoLane) {
         // If everything is being worked on, pick any lane. This has the
         // effect of interrupting the current work-in-progress.
+        // 如果所有的lanes有已经开始工作，那么直接分配 lane，原来 lanes 上的工作会被中断 ？？
         lane = pickArbitraryLane(TransitionLanes);
       }
     }
@@ -6087,7 +6103,10 @@
   // be pure function, so that it always returns the same lane for given inputs.
 
   /**
-   * 从当前工作中的所有的 lanes 中找到 retry lanes
+   * 为重试类型的更新分配 lane，分配的 lane 要从 RetryLanes 中寻找
+   * 分配原则：
+   * - 从未开始工作的 lanes 中选择最靠前的一条；
+   * - 如果没有未开始工作的 lanes，选择 RetryLanes 中的第一条，原来的工作会被中断；
    * @param wipLanes 当前工作中的所有 lanes
    */
   function findRetryLane(wipLanes) {
@@ -6099,7 +6118,7 @@
     var lane = pickArbitraryLane(RetryLanes & ~wipLanes);
 
     if (lane === NoLane) {
-      // 以为者 retry 类型的 lane 都已经被占用了，那么直接从 RetryLanes 中选优先级最高的 lane
+      // 以为者 retry 类型的 lane 都已经被占用了，那么直接从 RetryLanes 中选择第一条作为 lane
       lane = pickArbitraryLane(RetryLanes);
     }
 
@@ -6215,7 +6234,8 @@
   }
 
   /**
-   * 
+   * 从两条 lane：a、b 中，获取优先级较高的一条 lane
+   * lane 对应的值越小，优先级越高
    */
   function higherPriorityLane(a, b) {
     // This works because the bit ranges decrease in priority as you go left.
@@ -12428,7 +12448,8 @@
   var NoTransition = 0;
 
   /**
-   * 请求当前 transition(转换 ？？)
+   * 判断当前是否处于过渡阶段
+   * 如果使用了 useTransition， 那么 ReactCurrentBatchConfig.transition 就不是 0
    */
   function requestCurrentTransition() {
     return ReactCurrentBatchConfig.transition;
@@ -13767,7 +13788,7 @@
       var fiber = get(inst);
       // 更新触发时间
       var eventTime = requestEventTime();
-      // 更新时的 lane ？？
+      // 为当前更新操作分配一个 lane
       var lane = requestUpdateLane(fiber);
       // 创建一个 update 对象
       var update = createUpdate(eventTime, lane);
@@ -13794,10 +13815,15 @@
      * @param callback
      */
     enqueueForceUpdate: function (inst, callback) {
+      // 获取类组件实例对应的 fiber node
       var fiber = get(inst);
+      // 记录更新发生的时间
       var eventTime = requestEventTime();
+      // 为更新分配一个 lane
       var lane = requestUpdateLane(fiber);
+      // 创建一个 update 对象
       var update = createUpdate(eventTime, lane);
+      // update 对象的类型为强制更新
       update.tag = ForceUpdate;
 
       if (callback !== undefined && callback !== null) {
@@ -17439,6 +17465,7 @@
 
         if (!objectIs(snapshot, maybeNewSnapshot)) {
           setSnapshot(maybeNewSnapshot);
+          // 为更新分配一个 lane
           var lane = requestUpdateLane(fiber);
           markRootMutableRead(root, lane);
         } // If the source mutated between render and now,
@@ -17457,7 +17484,7 @@
 
         try {
           latestSetSnapshot(latestGetSnapshot(source._source)); // Record a pending mutable source update with the same expiration time.
-
+          // 为更新分配一个 lane
           var lane = requestUpdateLane(fiber);
           markRootMutableRead(root, lane);
         } catch (error) {
@@ -17950,8 +17977,9 @@
       });
       // callback 执行的优先级较低
       runWithPriority$1(priorityLevel > NormalPriority$1 ? NormalPriority$1 : priorityLevel, function () {
-        
+        // ??
         var prevTransition = ReactCurrentBatchConfig$1.transition;
+        /// ??
         ReactCurrentBatchConfig$1.transition = 1;
 
         try {
@@ -18100,8 +18128,11 @@
       }
     }
 
+    // 记录 setState 发生的时间
     var eventTime = requestEventTime();
+    // 为更新分配一个 lane
     var lane = requestUpdateLane(fiber);
+    // 创建一个 update 对象
     var update = {
       lane: lane,
       action: action,
@@ -24880,7 +24911,10 @@
   // 在渲染期间畅通的赛道
   var workInProgressRootPingedLanes = NoLanes;
 
-  var mostRecentlyUpdatedRoot = null; // The most recent time we committed a fallback. This lets us ensure a train
+  // 
+  var mostRecentlyUpdatedRoot = null; 
+
+  // The most recent time we committed a fallback. This lets us ensure a train
   // model where we don't commit new loading states in too quick succession.
 
   // 最近一次显示加载状态的时间。用于确保我们不会太快的连续提交加载状态
@@ -24928,25 +24962,35 @@
   var pendingPassiveHookEffectsUnmount = [];
   // ??
   var rootsWithPendingDiscreteUpdates = null; // Use these to prevent an infinite loop of nested updates
-
+  // 嵌套的更新，最多允许 50 个
   var NESTED_UPDATE_LIMIT = 50;
+  // 
   var nestedUpdateCount = 0;
+  // 
   var rootWithNestedUpdates = null;
+  //
   var NESTED_PASSIVE_UPDATE_LIMIT = 50;
-  var nestedPassiveUpdateCount = 0; // Marks the need to reschedule pending interactions at these lanes
+  // 
+  var nestedPassiveUpdateCount = 0; 
+  // Marks the need to reschedule pending interactions at these lanes
   // during the commit phase. This enables them to be traced across components
   // that spawn new work during render. E.g. hidden boundaries, suspended SSR
   // hydration or SuspenseList.
   // TODO: Can use a bitmask instead of an array
 
   // 标记需要在 commit 阶段重新安排这些 lanes 的待处理交互。这使得可以跨组件追踪渲染过程中昌盛的新的工作，如隐藏边界、暂停 SSR 或者 SuspenseList ？？
-  var spawnedWorkDuringRender = null; // If two updates are scheduled within the same event, we should treat their
+  var spawnedWorkDuringRender = null; 
+  // If two updates are scheduled within the same event, we should treat their
   // event times as simultaneous, even if the actual clock time has advanced
   // between the first and second call.
-  // currentEventTime 默认为 -1
-  var currentEventTime = NoTimestamp;
-  var currentEventWipLanes = NoLanes;
-  var currentEventPendingLanes = NoLanes; // Dev only flag that tracks if passive effects are currently being flushed.
+  // 当前事件发生事件， 默认为 -1
+  var currentEventTime = NoTimestamp;   
+  // 当前事件的 workInProgress lanes， 等价与 workInProgressRootIncludedLanes ？？
+  var currentEventWipLanes = NoLanes; 
+  // 当前事件中待处理的 lanes ？？
+  var currentEventPendingLanes = NoLanes; 
+  
+  // Dev only flag that tracks if passive effects are currently being flushed.
   // We warn about state updates for unmounted components differently in this case.
 
   var isFlushingPassiveEffects = false;
@@ -24979,15 +25023,20 @@
 
   /**
    * fiber node 做更新的时候，会先分配一个赛道
+   * 分配逻辑：
+   * - 如果是不是 BlockingMode( legacy、strict)，直接分配 SyncLane = 1， 优先级最高；
+   * - 如果不是 concurrent(BlockMode)，如果当前是直接优先级，分配 SyncLane = 1，否则分配 SyncBatchedLane = 2；
+   * - 如果是 concurrent 模式，会根据更新的优先级,分配对应的 lane (如果当前优先级的 lane 全部被占用，会做降级处理)；
    * @params fiber fiber node
    */
   function requestUpdateLane(fiber) {
-    // Special cases
-    // fiber node 的模式包含： NoMode: 0, StrictMode: 1, BlockingMode: 2,  ConcurrentMode: 4
-    // 如果 fiber root node 的 flag 为 ConcurrentRoot， 对应的 fiber node 的 mode 为 CurrentMode | BlockingMode | StrictMode = 7；
-    // 如果 fiber root node 的 flag 为 BlockingRoot， 对应的 fiber node 的 mode 为 BlockingMode | StrictMode = 3；
-    // 如果 fiber root node 的 flag 为 LegacyRoot， 对应的 fiber node 的 mode 为 NoMode = 0；
-    // 阻塞渲染模式下， mode 为 0； 非阻塞渲染模式下，mode 为 ConcurrentMode | BlockingMode | StrictMode = 7
+    /**
+     * fiber node 的模式包含： NoMode: 0, StrictMode: 1, BlockingMode: 2,  ConcurrentMode: 4
+     * - 如果 fiber root node 的 flag 为 ConcurrentRoot， 对应的 fiber node 的 mode 为 CurrentMode | BlockingMode | StrictMode = 7；
+     * - 如果 fiber root node 的 flag 为 BlockingRoot， 对应的 fiber node 的 mode 为 BlockingMode | StrictMode = 3；
+     * - 如果 fiber root node 的 flag 为 LegacyRoot， 对应的 fiber node 的 mode 为 NoMode = 0；
+     * 阻塞渲染模式下， mode 为 0； 非阻塞渲染模式下，mode 为 ConcurrentMode | BlockingMode | StrictMode = 7
+     */
     var mode = fiber.mode;
 
     if ((mode & BlockingMode) === NoMode) {  // 如果 fiber node 的 mode 不包含 BlockingMode，对应的赛道Wie SyncLane = 1
@@ -25018,23 +25067,23 @@
      * 对于相同事件相同优先级的所有更新来说，给更新分配 lane 的算法应该是稳定的，因此该算法的输入值必行相同。
      * 举个例子，我们会使用 renderLanes 来避免选择一个已经处于 rendering 的 lane ??
      * 然而，相同事件导致的更新对应的 lanes 可能会发生变异，例如我们在 flushSync 或者 prepareFreshStack 进行更新 ？？
-     * ？？
      * 
      */
-    // 非阻塞渲染模式
+    // concurrent 模式
     // Wip，即 work in progress
     if (currentEventWipLanes === NoLanes) {
+      // currentEventWipLanes 就是 workInProgressRootIncludedLanes
       currentEventWipLanes = workInProgressRootIncludedLanes;
     }
-    // 请求当前 transition，查看是否有 transition 
+    // 判断当前是否处于过渡阶段(如果使用了 useTransition，isTransition 就是 true)
     var isTransition = requestCurrentTransition() !== NoTransition;
 
-    // transition 涉及的逻辑是啥 ？？
     if (isTransition) {
+      // 如果使用了 useTransition
       if (currentEventPendingLanes !== NoLanes) {
         currentEventPendingLanes = mostRecentlyUpdatedRoot !== null ? mostRecentlyUpdatedRoot.pendingLanes : NoLanes;
       }
-
+      // 
       return findTransitionLane(currentEventWipLanes, currentEventPendingLanes);
     } // TODO: Remove this dependency on the Scheduler priority.
     // To do that, we're replacing it with an update lane priority.
@@ -25053,7 +25102,7 @@
 
     if ( // TODO: Temporary. We're removing the concept of discrete updates.
     (executionContext & DiscreteEventContext) !== NoContext && schedulerPriority === UserBlockingPriority$2) {
-      // 离散事件上下文
+      // 离散事件上下文， 一般为点击事件吧
       lane = findUpdateLane(InputDiscreteLanePriority, currentEventWipLanes);
     } else {
       // 根据 react 优先级，获取对应的赛道优先级
@@ -25101,6 +25150,7 @@
    * @parms eventTime 时间戳
    */
   function scheduleUpdateOnFiber(fiber, lane, eventTime) {
+    debugger
     
     // 检查嵌套的 update 数量，不能超过 50 
     checkForNestedUpdates();
@@ -25885,7 +25935,7 @@
   }
 
   /**
-   * 处理非批量更新，设置当前执行上下文为 LegacyUnbatchedContext ？？
+   * 处理非批量更新，设置当前执行上下文为 LegacyUnbatchedContext
    * 非批次更新，会立刻处理更新，进入渲染流程
    * @params fn 设置执行上下文以后的 callback
    * @params a 
@@ -25895,7 +25945,7 @@
     var prevExecutionContext = executionContext;
     // executionContext = executionContext & ~BatchedContext
     // 00000000 & ~00000001
-    // 
+    // 移除批处理上下文
     executionContext &= ~BatchedContext;
     // executionContext = executionContext | LegacyUnbatchedContext
     executionContext |= LegacyUnbatchedContext;
@@ -26242,9 +26292,14 @@
     // 如果 fiber root node 或者赛道有修改，就扔掉之前的栈，准备一个新的。否则我们将从我们离开的地方继续
     // 注意，这里使用的是 workInProgressRootRenderLanes(不是 subtreeRenderLanes， 也不是 workInProgressRootIncludedLanes)
     if (workInProgressRoot !== root || workInProgressRootRenderLanes !== lanes) {
-      // workInProgressRoot 可以理解为上一次渲染时对应的 fiber root node。如果 workInProgressRoot 和 root 不一样，
-      // 我们需要把 workInProgressRoot、workInProgress 重置
-      // 重置渲染过程中的全局变量：workInProgressRoot、workInProgress 等
+      /**
+       * workInProgressRoot 可以理解为上一次渲染时对应的 fiber root node。
+       * 如果上一次渲染已经结束，那么 workInProgressRoot 为 null，workInProgressRootRenderLanes 为 0， 
+       *    初始化  workInProgressRoot、workInProgress、null，workInProgressRootRenderLanes 等；
+       * 如果上一次渲染没有结束，workInProgressRoot 不为 null， workInProgressRootRenderLanes 不为 0，
+       *    但是和这次渲染分配的 lanes 不一样，此时就要重置 workInProgressRoot、workInProgress、null，workInProgressRootRenderLanes 等；
+       * 我们需要把 workInProgressRoot、workInProgress 重置, 重置渲染过程中的全局变量：workInProgressRoot、workInProgress 等
+       */
       prepareFreshStack(root, lanes);
       // 开始处理待定交互 ？？
       startWorkOnPendingInteractions(root, lanes);
@@ -29568,8 +29623,12 @@
       }
     }
 
-    // 容器节点对应的 fiber node 需要更新，需要先给分配一个 lane。由于更新容器节点的优先级是普通优先级，分配的 lane 是 defaultLanes
-    var lane = requestUpdateLane(current$1);
+    /**
+     * 容器节点对应的 fiber node 需要更新，需要先给分配一个 lane。
+     * legency 模式下，分配的 lane 直接为 SyncLane = 1；
+     * concurrent 模式下， 会根据更新的优先级分配对应的 lane。 更新容器节点，优先级为普通优先级，分配的 lane 是 defaultLanes 类型的 lane；
+     */
+    var lane = requestUpdateLane(current$1);  // 一个更新一条 lane
 
     // 如果 parentComponent 没有的话，此时会返回一个空的 context ： { }
     var context = getContextForSubtree(parentComponent);
@@ -29715,6 +29774,7 @@
     }
 
     var eventTime = requestEventTime();
+    // 为当前 fiber node 的更新分配一个 lane
     var lane = requestUpdateLane(fiber);
     // 为 fiber node 的更新， 安排一个调度任务
     scheduleUpdateOnFiber(fiber, lane, eventTime);
@@ -30136,7 +30196,7 @@
 
   // render 方法，将 react element 渲染为真实的 dom 节点
   ReactDOMRoot.prototype.render = ReactDOMBlockingRoot.prototype.render = function (children) {
-    
+    debugger
     // fiber root node
     var root = this._internalRoot;
 
@@ -30469,12 +30529,13 @@
   }
   
   /**
-   * 
+   * react 阻塞渲染
    * @params element react element 
    * @params container 容器节点
    * @params callback 回调方法
    */
   function render(element, container, callback) {
+    debugger
     if (!isValidContainer(container)) {
       {
         throw Error( "Target container is not a DOM element." );
@@ -30545,7 +30606,7 @@
         }
       } // Unmount should not be batched.
 
-
+      // 非批处理更新：建立 update 对象以后，立即进入 render 阶段
       unbatchedUpdates(function () {
         legacyRenderSubtreeIntoContainer(null, null, container, false, function () {
           // $FlowFixMe This should probably use `delete container._reactRootContainer`

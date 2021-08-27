@@ -128,6 +128,7 @@
    */
   // 当前批处理配置
   var ReactCurrentBatchConfig = {
+    // 用于判断是否使用了 useTransition
     transition: 0
   };
 
@@ -2520,7 +2521,7 @@
     // 默认情况下，它每帧让步多次？？ 它不会尝试与帧边界对齐，因为大多数任务都不会需要帧对齐
     // 如果需要，使用 requestAnimationFrame
     // 调度程序每次执行的时间片段是 5ms
-    var yieldInterval = 5;
+    var yieldInterval = 5000000;
 
     // 
     var deadline = 0; // TODO: Make this configurable
