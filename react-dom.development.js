@@ -5438,67 +5438,79 @@
    * @param lanes 从当前所有赛道中找到优先级最高的赛道
    */
   function getHighestPriorityLanes(lanes) {
+    // 如果 lanes 中最高优先级 lane 为 SyncLane，对应的优先级为 SyncLanePriority 即 15
+    // SyncLane 只分配一条 lane，即一次渲染只能处理一次该类型的更新
     if ((SyncLane & lanes) !== NoLanes) {
-      // 如果 lanes 中最高优先级 lane 为 SyncLane，对应的优先级为 SyncLanePriority 即 15
       return_highestLanePriority = SyncLanePriority;
       return SyncLane;
     }
 
+    // 如果 lanes 中最高优先级 lane 为 SyncBatchedLane，对应的优先级为 SyncBatchedLanePriority 即 14
+    // SyncBatchedLane 只分配一条 lane， 即一次渲染只能处理一个该类型的更新
     if ((SyncBatchedLane & lanes) !== NoLanes) {
-      // 如果 lanes 中最高优先级 lane 为 SyncBatchedLane，对应的优先级为 SyncBatchedLanePriority 即 14
       return_highestLanePriority = SyncBatchedLanePriority;
       return SyncBatchedLane;
     }
 
+    // 如果 lanes 中最高优先级 lane 为 InputDiscreteHydrationLane， 对应的优先级为 InputDiscreteHydrationLane 即 13
+    // InputDiscreteHydrationLane 只分配一条 lane， 即一次渲染只能处理一个该类型的更新
     if ((InputDiscreteHydrationLane & lanes) !== NoLanes) {
-      // 如果 lanes 中最高优先级 lane 为 InputDiscreteHydrationLane
-      // 对应的优先级为 InputDiscreteHydrationLane 即 13
       return_highestLanePriority = InputDiscreteHydrationLanePriority;
       return InputDiscreteHydrationLane;
     }
 
+    // 如果 lanes 中最高优先级 lane 为 inputDiscreteLanes，对应的优先级为 12
+    // inputDiscreteLanes 分配两条 lane，一次渲染可以处理两个该类型的更新
     var inputDiscreteLanes = InputDiscreteLanes & lanes;
 
     if (inputDiscreteLanes !== NoLanes) {
-      // 如果 lanes 中最高优先级 lane 为 inputDiscreteLanes，对应的优先级为 12
       return_highestLanePriority = InputDiscreteLanePriority;
       return inputDiscreteLanes;
     }
 
+    // 如果 lanes 中最高优先级 lane 为 InputContinuousHydrationLane， 对应的优先级为  11
+    // InputContinuousHydrationLane 只分配一条 lane， 即一次渲染只能处理一个该类型的更新
     if ((lanes & InputContinuousHydrationLane) !== NoLanes) {
-      // 如果 lanes 中最高优先级 lane 为 InputContinuousHydrationLane， 对应的优先级为  11
       return_highestLanePriority = InputContinuousHydrationLanePriority;
       return InputContinuousHydrationLane;
     }
 
+    // 如果 lanes 中最高优先级 lane 为 inputContinuousLanes, 对应的优先级为  10
+    // inputContinuousLanes 分配 2 条 lane， 即一次渲染只能处理两个该类型的更新
     var inputContinuousLanes = InputContinuousLanes & lanes;
 
     if (inputContinuousLanes !== NoLanes) {
-      // 如果 lanes 中最高优先级 lane 为 inputContinuousLanes，对应的优先级为 10
       return_highestLanePriority = InputContinuousLanePriority;
       return inputContinuousLanes;
     }
 
+
+    // 如果 lanes 中最高优先级 lane 为 DefaultHydrationLane， 对应的优先级为 9
+    // DefaultHydrationLane 只有一条 lane，即一次渲染只能处理一个该类型的更新
     if ((lanes & DefaultHydrationLane) !== NoLanes) {
-      // 如果 lanes 中最高优先级 lane 为 DefaultHydrationLane， 对应的优先级为 9
       return_highestLanePriority = DefaultHydrationLanePriority;
       return DefaultHydrationLane;
     }
 
+    // 如果 lanes 中最高有优先级了 lanes 为 defaultLanes，对应的优先级为 8
+    // DefaultLanes 分配了 3 条 lane，即一次渲染可以处理 3个该类型的更新
     var defaultLanes = DefaultLanes & lanes;
 
     if (defaultLanes !== NoLanes) {
-      // 如果 lanes 中最高有优先级了 lanes 为 defaultLanes，对应的优先级为 8
       return_highestLanePriority = DefaultLanePriority;
       return defaultLanes;
     }
 
+    // 如果 lanes 中最高优先级的 lanes 为 TransitionHydrationLane， 对应的优先级为 7
+    // TransitionHydrationLane 只分配了一条 lane，即一次渲染可以处理 1 个该类型的更新
     if ((lanes & TransitionHydrationLane) !== NoLanes) {
       // 如果 lanes 中最高优先级 lane 为
       return_highestLanePriority = TransitionHydrationPriority;
       return TransitionHydrationLane;
     }
 
+    // 如果 lanes 中最高优先的 lanes 为 TransitionLanes，对应的优先级为 6
+    // TransitionLanes 分配了 9 条 lane，即一次渲染可以处理 9 个该类型的更新
     var transitionLanes = TransitionLanes & lanes;
 
     if (transitionLanes !== NoLanes) {
@@ -5506,6 +5518,8 @@
       return transitionLanes;
     }
 
+    // 如果 lanes 中最高优先级的 lanes 为 RetryLanes， 对应的优先级为 5
+    // retryLanes 分配了 4 条 lane，即一次渲染可以处理 4 个该类型的更新
     var retryLanes = RetryLanes & lanes;
 
     if (retryLanes !== NoLanes) {
@@ -5513,16 +5527,22 @@
       return retryLanes;
     }
 
+    // 如果 lanes 中最高优先级的 lanes 为 SelectiveHydrationLane， 对应的优先级为 4
+    // SelectiveHydrationLane  只有一条 lane，即一次渲染可以处理一个该类型的更新
     if (lanes & SelectiveHydrationLane) {
       return_highestLanePriority = SelectiveHydrationLanePriority;
       return SelectiveHydrationLane;
     }
 
+    // 如果 lanes 中最高优先级的 lanes 为 IdleHydrationLane，对应的优先级为 3
+    // IdleHydrationLane 只有一条 lane，即一次渲染可以处理一个该类型的更新
     if ((lanes & IdleHydrationLane) !== NoLanes) {
       return_highestLanePriority = IdleHydrationLanePriority;
       return IdleHydrationLane;
     }
 
+    // 如果 lanes 中最高优先级的 lanes 为 IdleLanes， 对应的优先级为 2
+    // IdleLanes 分配两条 lane，即一次渲染可以两个该类型的更新
     var idleLanes = IdleLanes & lanes;
 
     if (idleLanes !== NoLanes) {
@@ -5530,6 +5550,8 @@
       return idleLanes;
     }
 
+    // 如果 lanes 中最高优先级的 lanes 为 OffscreenLane， 对应的优先级为 1
+    // OffscreenLane 只有一条 lane，即一次渲染可以处理一个该类型的更新
     if ((OffscreenLane & lanes) !== NoLanes) {
       return_highestLanePriority = OffscreenLanePriority;
       return OffscreenLane;
@@ -5538,7 +5560,6 @@
     {
       error('Should have found matching lanes. This is a bug in React.');
     } // This shouldn't be reachable, but as a fallback, return the entire bitmask.
-
 
     return_highestLanePriority = DefaultLanePriority;
     return lanes;
@@ -5618,10 +5639,10 @@
   /**
    * 获取下一个要处理的赛道集合
    * 选择策略：
-   * - 第一步, 拿到 pendingLanes(所有待处理的更新)、expiredLanes(已经过期的更新)、suspendedLanes(暂停的更新)、pingedLanes(懒加载的组件/异步数据已经拿到，对应的更新已经畅通了)；
+   * - 第一步, 拿到 pendingLanes(所有待处理的更新)、expiredLanes(已经过期的更新)、suspendedLanes(暂停的更新)、pingedLanes(懒加载的组件/异步数据已经拿到，对应的更新已经恢复工作了)；
    *          pendingLanes 中会包含 expiredLanes、suspendedLanes、pingedLanes；
-   * - 第二步, 如果有 expiredLanes (已经处理过期的更新), 先选择过期的更新作为 nextLanes；
-   * - 第三步, 如果没有过期的更新，那么先从 pendingLanes 中选出优先级比空闲优先级高的更新 nonIdlePendingLanes, 
+   * - 第二步, 如果有 expiredLanes (已经处理过期的更新), 先选择过期的更新作为 nextLanes，优先级为 SyncLanePriority；
+   * - 第三步, 如果没有过期的更新，那么先从 pendingLanes 中选出优先级比空闲优先级高的更新，即非空闲优先级 nonIdlePendingLanes, 
    *          然后再从 nonIdlePendingLanes 选出非阻塞的更新 nonIdleUnblockedLanes, 再从 nonIdleUnblockedLanes 中选择优先级最高的一类更新作为 nextLanes；
    *          如果 nonIdlePendingLanes 中的更新都是已经阻塞的，那么选出已经 pinged 的更新 nonIdlePingedLanes， 再从 nonIdlePingedLanes 中选择优先级最高的一类更新作为 nextLanes;
    * - 第四步, 如果没有过期的更新，pengdingLanes 中的更新优先级都是空闲优先级，
@@ -5629,9 +5650,10 @@
    *          如果 pendingLanes 中的更新都是阻塞的，那么选出已经 pinged 的更新，再从 pinged 的更新中选出优先级最高的一类更新作为 nextLanes；
    * - 第五步，根据第二步、第三步、第四步中挑选出的  nextLanes，再结合 pengingLanes，从 pengdingLanes 中选出优先级和 nextLanes 一样和比 nextLanes 高的更新；
    * 
-   * 总的来说， 从 pingLanes 选择接下来要处理的更新时，先选择过期的；如果没有过期的， 选择非空闲非阻塞的且优先级最高的；如果没有非空闲非阻塞的，选择非空闲阻塞但已经畅通且优先级最高的；
-   * 如果都是空闲的，选择空闲非阻塞且优先级最高的；如果没有空闲非阻塞的，选择空闲阻塞但已经 pinged 且优先级最高的；
+   * 总的来说， 从 pingLanes 选择接下来要处理的更新时，先选择过期的；如果没有过期的， 选择非空闲非暂停的且优先级最高的；如果没有非空闲非暂停的，选择非空闲暂停但已经恢复工作且优先级最高的；
+   * 如果都是空闲的，选择空闲非暂停且优先级最高的；如果没有空闲非暂停的，选择空闲暂停但已经恢复工作的 且优先级最高的；
    * 更新初步选好以后，如果 pingingLanes 有比选好的更新优先级更高的，尽管是阻塞的，也好合并到一起；
+   * 此时如果上一次的渲染没有处理完，要比较上一次渲染和这一次的优先级，如果上一次的优先级高，继续上一次的渲染；如果上一次的优先级低，要中断上一次的渲染，开始本次渲染
    * 
    * 可能的情况：
    * - 非空闲的非阻塞的更新；
@@ -5645,8 +5667,8 @@
    */
   function getNextLanes(root, wipLanes) {
     // Early bailout if there's no pending work left.
-    // pendingLanes 可以理解为所有待处理的更新的集合
-    // pendingLanes 可能和 workInProgressRootRenderLanes 不一样
+
+    // 已经安排工作的 lanes
     var pendingLanes = root.pendingLanes;
 
     // 如果没有更新需要处理，直接返回
@@ -5674,26 +5696,28 @@
       // Do not work on any idle work until all the non-idle work has finished,
       // even if the work is suspended.
       // 在所有非空闲工作完成之前，即使工作暂停，也不要从事任何空闲工作
-      // 获取非空闲工作对应的赛道集合
-      // pendingLanes 中可能存在优先级为空闲的更新
+      // 从 pindingLanes 中，选出非空闲的 lanes
       var nonIdlePendingLanes = pendingLanes & NonIdleLanes;
 
       if (nonIdlePendingLanes !== NoLanes) {  // 非空闲工作
         // 查看非空闲赛道中是否有暂停的赛道
-        // pending 中有可能存在暂停的更新
+        // 从非空闲的 lanes 中选出非暂停的 lanes
         var nonIdleUnblockedLanes = nonIdlePendingLanes & ~suspendedLanes;
 
         if (nonIdleUnblockedLanes !== NoLanes) { // 待处理的非空闲非阻塞的更细
-          // 如果没有暂停的赛道，直接从所有赛道中选取优先级最高的赛道
+          // 从非空闲非阻塞的 lanes 中选出优先级最高的 lanes
           nextLanes = getHighestPriorityLanes(nonIdleUnblockedLanes);
           // 最高优先级
           nextLanePriority = return_highestLanePriority;
         } else {
           // 如果有暂停的赛道，要先从非空闲赛道中选出已经畅通的赛通，然后从畅通的赛通中选出优先级最高的赛道
           // 到这一步，意味着待处理的更新都是阻塞的？？如果待处理的更新时从阻塞变为 pinged 的，那么优先处理
+          // pingedLanes 并不会从 SuspenedLanes 中移除
+          // 从非空闲已暂停的 lanes 中选出已恢复工作的 lanes
           var nonIdlePingedLanes = nonIdlePendingLanes & pingedLanes;
 
-          if (nonIdlePingedLanes !== NoLanes) { // 从畅通的赛道中选出优先级最高的赛道
+          if (nonIdlePingedLanes !== NoLanes) { 
+            // 从非空闲已经恢复工作的 lanes 中选出优先级最高的 lanes
             nextLanes = getHighestPriorityLanes(nonIdlePingedLanes);
             nextLanePriority = return_highestLanePriority;
           }
@@ -5701,16 +5725,17 @@
       } else {
         // The only remaining work is Idle.
         // 没有非空闲的赛道，即只剩下空闲的赛道了，查看空闲赛道中非阻塞的赛道
-        // 从优先级为空闲的待处理更新中，找出没有阻塞的更新
+        // 找到空闲非暂停的赛道
         var unblockedLanes = pendingLanes & ~suspendedLanes;
 
         if (unblockedLanes !== NoLanes) { // 空闲非阻塞
-          // 如果没有阻塞的赛道，直接选择优先级最高的赛道
+          // 从空闲非暂停的 lanes 中选出优先级最高的 lanes(可能是一条，也可能是多条)
           nextLanes = getHighestPriorityLanes(unblockedLanes);
           // 返回赛道对应的优先级
           nextLanePriority = return_highestLanePriority;
         } else {
-          if (pingedLanes !== NoLanes) {  // 空闲阻塞但已经 pinged 通
+          if (pingedLanes !== NoLanes) {
+            // 空闲的 lanes 都已经暂停了，那么从恢复工作的 lanes 中选出优先级最高的 lanes
             nextLanes = getHighestPriorityLanes(pingedLanes);
             nextLanePriority = return_highestLanePriority;
           }
@@ -5726,18 +5751,19 @@
     // are suspended.
 
 
-    // 如果有较高优先级的赛道，获取较高优先级的赛道
-    // nextLanes 是下一步准备要渲染的赛道。
-    // 从等待更新的赛道中再次寻找比 nextLanes 优先级更高的赛道(什么意思？？)
-    //
+    /**
+     * 上面的选择 nextLanes 的逻辑，是优先选择未暂停的 lanes，此时如果有优先级比 nextLanes 高但是已经暂停的 lanes
+     * 也需要一起合并到 nextLans 中，在此次渲染过程中一并处理
+     */
     nextLanes = pendingLanes & getEqualOrHigherPriorityLanes(nextLanes); // If we're already in the middle of a render, switching lanes will interrupt
     // it and we'll lose our progress. We should only do this if the new lanes are
     // higher priority.
 
-    // 如果我们已经在渲染过程中，切换 lane 将会导致中断渲染，我们丢失当前工作进程。我们只能在新 lanes 有较高优先级时做这样的操作？？
-    // 没有暂停
-    // wipLanes !== NoLanes 意味着上一次的更新导致的渲染过程没有结束
-    // nextLanes 是本次渲染对应的更新，如果和 wipLanes 不一样，说明有新的更新进来
+    /**
+     * 如果我们已经在渲染过程中，切换 lane 将会导致中断渲染，我们丢失当前工作进程。我们只能在新 lanes 有较高优先级时做这样的操作？？
+     * wipLanes !== NoLanes 意味着上一次的更新导致的渲染过程没有结束
+     * nextLanes 是本次渲染对应的更新，如果和 wipLanes 不一样，且 wipLanes 没有暂停，说明有新的更新进来
+     */
     if (wipLanes !== NoLanes && wipLanes !== nextLanes && // If we already suspended with a delay, then interrupting is fine. Don't
     // bother waiting until the root is complete.
     (wipLanes & suspendedLanes) === NoLanes) {
@@ -5861,7 +5887,7 @@
   }
   
   /**
-   * 找到 fiber root node 中已经过期的赛道
+   * 收集 fiber root node 中已经过期的赛道
    * 这一步做了两件事情：
    * - 如果赛道没有过期时间，且是已经畅通的，重新计算一个过期时间；
    * - 如果赛道有过期时间，且已经过期，将赛道标注为已过期，强制更新
@@ -5877,7 +5903,7 @@
     var pendingLanes = root.pendingLanes;
     // 暂停的赛道
     var suspendedLanes = root.suspendedLanes;
-    // 已经畅通的赛道(懒加载已经好了)
+    // 已经恢复工作的赛道
     var pingedLanes = root.pingedLanes;
     // fiber root 各个赛道的终止时间
     var expirationTimes = root.expirationTimes; // Iterate through the pending lanes and check if we've reached their
@@ -6300,10 +6326,10 @@
 
     // suspendedLanes 表示之前被暂停的赛道。 
     // root.suspendedLanes & higherPriorityLanes，是为了从暂停的赛道中找出有比当前更新赛道(更新)中优先级更高的 suspensed 赛道(更新)
-    // 如果暂停的 lane，比当前优先级要低，那么不处理；
+    // TODO: 那么比 updateLane 优先级低的 suspensedLanes 怎么处理？？
     root.suspendedLanes &= higherPriorityLanes;
     // 从 pinged 的赛道中找到比当前更新赛道(更新)优先级更高的 pinged 赛道(更新)
-    // 如果 pinged 的 lane 比当前优先级要低， 也不处理；
+    // TODO: 那么比 updateLane 优先级低的 pingedLanes 怎么处理？？
     root.pingedLanes &= higherPriorityLanes;
     // 
     var eventTimes = root.eventTimes;
@@ -6328,6 +6354,7 @@
     // 把之前暂停的赛道集合，合并到 fiber root node 的 suspendedLanes 集合中
     root.suspendedLanes |= suspendedLanes;
     // 去除掉 pingedLanes 中又被暂停的 lanes
+    // 暂停的 lanes 要从 pingedLanes 中移除
     root.pingedLanes &= ~suspendedLanes; // The suspended lanes are no longer CPU-bound. Clear their expiration times.
     // 暂停的赛道不在有 cpu 的限制，所以可以清除他们对应的过期时间
     // fiber root node 各个赛道的过期时间
@@ -12360,6 +12387,7 @@
 
   /**
    * 同步任务调度，采取的是同步优先级
+   * 以直接优先级，处理多个同步任务
    * @param callback
    */
   function scheduleSyncCallback(callback) {
@@ -25212,6 +25240,7 @@
         workInProgressRootUpdatedLanes = mergeLanes(workInProgressRootUpdatedLanes, lane);
       }
       // fiber root 上次结束渲染是的状态为延迟阻塞？
+      // TODO: 这一段的逻辑？？
       if (workInProgressRootExitStatus === RootSuspendedWithDelay) {
         // The root already suspended with a delay, which means this render
         // definitely won't finish. Since we have a new update, let's mark it as
@@ -25255,12 +25284,11 @@
         // root inside of batchedUpdates should be synchronous, but layout updates
         // should be deferred until the end of the batch.
         // 执行同步任务，以 fiber root node 为起点，做更新操作
-        // 同步更新
+        // 同步非批次更新，直接进入渲染阶段
         performSyncWorkOnRoot(root);
       } else {
-        // 批量更新或者已处理 render、commit 阶段
-        // 批量更新是异步的
-        // 调度异步任务
+        // 批量更新、render、commit 阶段，异步渲染
+        // 为 fiber tree 确定一个异步调度任务
         ensureRootIsScheduled(root, eventTime);
         schedulePendingInteractions(root, lane);
 
@@ -25290,7 +25318,7 @@
         }
       } // Schedule other updates after in case the callback is sync.
 
-      // 为 fiber tree 确定一个调度任务
+      // 为 fiber tree 确定一个异步调度任务
       ensureRootIsScheduled(root, eventTime);
       schedulePendingInteractions(root, lane);
     } // We use this when assigning a lane for a transition inside
@@ -25400,6 +25428,7 @@
     // 
     if (nextLanes === NoLanes) {
       // Special case: There's nothing to work on.
+      // 没有要处理的更新，要清理掉调度任务
       if (existingCallbackNode !== null) {
         cancelCallback(existingCallbackNode);
         root.callbackNode = null;
@@ -25431,7 +25460,7 @@
     if (newCallbackPriority === SyncLanePriority) {
       // Special case: Sync React callbacks are scheduled on a special
       // internal queue
-      // 同步赛道优先级
+      // 同步赛道优先级，直接优先级，进行同步任务调度
       newCallbackNode = scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
     } else if (newCallbackPriority === SyncBatchedLanePriority) {
       // 同步批处理赛道优先级
@@ -25473,12 +25502,13 @@
     // 在决定使用哪些赛道之前，清除所有的待处理的被动 effect，以防止他们安排额外的工作？？
     // fiber root node 对应的调度任务
     var originalCallbackNode = root.callbackNode;
-    // 刷新被动的 effect ？？
+    // 清理到 useEffect 副作用
     var didFlushPassiveEffects = flushPassiveEffects();
 
     if (didFlushPassiveEffects) {
       // Something in the passive effect phase may have canceled the current task.
       // Check if the task node for this root was changed.
+      // 在副作用中，可能导致当前任务被取消掉
       if (root.callbackNode !== originalCallbackNode) {
         // The current task was canceled. Exit. We don't need to call
         // `ensureRootIsScheduled` because the check above implies either that
@@ -26403,7 +26433,8 @@
       // 这里为什么要设置一个渲染终止时间 ？？
       resetRenderTimer();
       // 预处理工作，设置当前要处理的 fiber root node 以及对应的 fiber node (阻塞渲染和非阻塞渲染都有这一步)
-      // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
+      // 重置 workInProgressRoot 为 root， workInProgress 为容器 fiebr node
+      // 重置 workInProgressRootRenderLanes、workInProgressRootIncludedLanes、subtreeRenderLanes 为 lanes
       prepareFreshStack(root, lanes);
       // ？？ 阻塞渲染和非阻塞渲染，都有这一步
       startWorkOnPendingInteractions(root, lanes);
