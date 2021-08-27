@@ -17071,8 +17071,9 @@
   }
 
   /**
-   * @param state
-   * @param action
+   * 函数式组件 state reducer， 用于获取函数式组件的 state
+   * @param {*} state 函数式组件的当前state
+   * @param {*} action 函数式组件调用 setState 方法时传入的值， 可以是函数， 也可以是普通值
    */
   function basicStateReducer(state, action) {
     // $FlowFixMe: Flow doesn't like mixed types
@@ -17080,9 +17081,10 @@
   }
 
   /**
-   * @param reducer
-   * @param initialArg
-   * @param init
+   * 挂载阶段供 useReducer 调用， 返回 state、 setState
+   * @param {*} reducer  用户自定义 reducer
+   * @param {*} initialArg 用于初始化 state 的值
+   * @param {*} init 用于惰性初始化的函数
    */
   function mountReducer(reducer, initialArg, init) {
     var hook = mountWorkInProgressHook();
@@ -18086,9 +18088,10 @@
   }
 
   /**
-   * @param fiber
-   * @param queue
-   * @param action
+   * 执行函数式组件的 setState 方法
+   * @param fiber  触发 setState 方法的 fiber node
+   * @param queue  hook 对象的 queue 属性
+   * @param action 执行 setState 方法时传入的值
    */
   function dispatchAction(fiber, queue, action) {
     {
@@ -19421,7 +19424,12 @@
           baseLanes: NoLanes
         };
         workInProgress.memoizedState = nextState;
-        // 
+        /**
+         * pushRenderLanes 做了三件事情：
+         * 1. 将原来的 subtreeRenderLanes 加入到栈中( subtreeRenderLanes 是基础数据类型，入栈之后的值不会变化)
+         * 2. 将 _subtreeRenderLanes 合并到 subtreeRenderLanes 中；
+         * 3. 将 _subtreeRenderLanes 合并到 workInProgressRootIncludedLanes 中；
+         */
         pushRenderLanes(workInProgress, renderLanes);
       } else if (!includesSomeLane(renderLanes, OffscreenLane)) {
         // 
@@ -19446,6 +19454,12 @@
         workInProgress.memoizedState = _nextState; // We're about to bail out, but we need to push this to the stack anyway
         // to avoid a push/pop misalignment.
 
+        /**
+         * pushRenderLanes 做了三件事情：
+         * 1. 将原来的 subtreeRenderLanes 加入到栈中( subtreeRenderLanes 是基础数据类型，入栈之后的值不会变化)
+         * 2. 将 _subtreeRenderLanes 合并到 subtreeRenderLanes 中；
+         * 3. 将 _subtreeRenderLanes 合并到 workInProgressRootIncludedLanes 中；
+         */
         pushRenderLanes(workInProgress, nextBaseLanes);
         return null;
       } else {
@@ -19456,6 +19470,12 @@
         workInProgress.memoizedState = _nextState2; // Push the lanes that were skipped when we bailed out.
 
         var subtreeRenderLanes = prevState !== null ? prevState.baseLanes : renderLanes;
+        /**
+         * pushRenderLanes 做了三件事情：
+         * 1. 将原来的 subtreeRenderLanes 加入到栈中( subtreeRenderLanes 是基础数据类型，入栈之后的值不会变化)
+         * 2. 将 _subtreeRenderLanes 合并到 subtreeRenderLanes 中；
+         * 3. 将 _subtreeRenderLanes 合并到 workInProgressRootIncludedLanes 中；
+         */
         pushRenderLanes(workInProgress, subtreeRenderLanes);
       }
     } else {
@@ -19463,7 +19483,8 @@
       var _subtreeRenderLanes;
 
       if (prevState !== null) {
-        // 
+        // prevState 不为 null， 说明 OffScreen fiber node 要 update
+        // 将 renderLanes 合并到
         _subtreeRenderLanes = mergeLanes(prevState.baseLanes, renderLanes); // Since we're not hidden anymore, reset the state
 
         workInProgress.memoizedState = null;
@@ -19471,12 +19492,18 @@
         // We weren't previously hidden, and we still aren't, so there's nothing
         // special to do. Need to push to the stack regardless, though, to avoid
         // a push/pop misalignment.
+        // 挂载 OffScreen fiber node， 且 mode 为 visible
         _subtreeRenderLanes = renderLanes;
       }
-      // 
+      /**
+       * pushRenderLanes 做了三件事情：
+       * 1. 将原来的 subtreeRenderLanes 加入到栈中( subtreeRenderLanes 是基础数据类型，入栈之后的值不会变化)
+       * 2. 将 _subtreeRenderLanes 合并到 subtreeRenderLanes 中；
+       * 3. 将 _subtreeRenderLanes 合并到 workInProgressRootIncludedLanes 中；
+       */
       pushRenderLanes(workInProgress, _subtreeRenderLanes);
     }
-    // 协调 primary child
+    // 协调 child fiber node
     reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     return workInProgress.child;
   } // Note: These happen to have identical begin phases, for now. We shouldn't hold
@@ -24808,7 +24835,7 @@
   // 工作中的 fiber node
   var workInProgress = null; // The lanes we're rendering
 
-  //  本次渲染期间要处理的所有 lanes(更新)
+  //  本次渲染期间要处理的所有 lanes(workInProgressRootRenderLanes 只是用来在渲染开始时，用来获取要处理的更新吗？)
   var workInProgressRootRenderLanes = NoLanes; 
 
   // Stack that allows components to change the render lanes for its subtree
@@ -24822,7 +24849,7 @@
   // Most things in the work loop should deal with workInProgressRootRenderLanes.
   // Most things in begin/complete phases should deal with subtreeRenderLanes.
 
-  // 子树要渲染的赛道 ？？
+  // 整个 begin、complete 阶段使用的都是 subtreeRenderLanes ？？
   var subtreeRenderLanes = NoLanes;
 
   // 创建一个关于 subtreeRenderLanes 的光标
@@ -26203,7 +26230,7 @@
    * @param lanes 本次渲染处理的更新对应的 lanes
    */
   function renderRootSync(root, lanes) {
-    
+    debugger
     // 先存储当前执行上下文
     var prevExecutionContext = executionContext;
     // 将执行上下文设置为 renderContext

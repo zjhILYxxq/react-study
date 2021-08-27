@@ -199,6 +199,8 @@ Suspense 消除 race condition
 
 1. 多个 useState 的使用问题
 
+2. React.Strict 模式下 useReducer 不是纯函数引发的副作用 
+
 
 
 

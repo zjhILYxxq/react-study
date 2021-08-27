@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.js"></script>
+    <script src="../../react-dom.development.js"></script>
+    <script src="../../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+        
+        function Component() {
+
+            const myRef = React.useRef(null);
+            const [count, setCount] = React.useState(0)
+
+            const back = () => {
+                console.log(myRef.current.scrollTop);
+                myRef.current.scrollTop = 0;
+                console.log(myRef.current.scrollTop);
+            }
+
+            React.useEffect(() => {
+                console.log(myRef.current.scrollTop);
+                myRef.current.scrollTop = myRef.current.scrollTop + 10;
+                console.log(myRef.current.scrollTop);
+            }, [count]);
+            return (
+                <div>
+                    <button onClick={() => setCount(count + 1) }>{count}</button>
+                    <div ref={myRef} style={{width: '200px', height: '500px', overflow: 'auto'}}>
+                        <div>a</div>
+                        {Array(100).fill(1).map(item => <div>123</div>)} 
+                    </div>    
+                </div>
+            )
+        }
+
+        ReactDOM.render(<Component/>, document.getElementById('app'));
+    </script>
+</body>
