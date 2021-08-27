@@ -5993,7 +5993,7 @@
 
       case InputDiscreteLanePriority:  // 离散输入赛道优先级： 12
         {
-          // 判断离散类型的赛道是否已经分配
+          // 从未开始工作的 InputDiscreteLanes 中分配 lane
           var _lane = pickArbitraryLane(InputDiscreteLanes & ~wipLanes);
 
           if (_lane === NoLane) {
@@ -6009,10 +6009,12 @@
 
       case InputContinuousLanePriority: // 连续输入赛道优先级 ： 10
         {
+          // 从未开始工作的 InputContinuousLanes 中分配 lane
           var _lane2 = pickArbitraryLane(InputContinuousLanes & ~wipLanes);
 
           if (_lane2 === NoLane) {
             // Shift to the next priority level
+            // 如果 InputContinuousLanes 已经全部分配完毕，降级处理，分配 DefaultLanes 的 lane
             return findUpdateLane(DefaultLanePriority, wipLanes);
           }
 
@@ -6021,18 +6023,18 @@
 
       case DefaultLanePriority: // 默认的赛道优先级： 8
         {
-          // 主要用于判断 DefaultLanes 类型的赛道是否已经被占用
+          // 从未开始工作的 DefaultLanes 中分配 lane
           var _lane3 = pickArbitraryLane(DefaultLanes & ~wipLanes);
 
           if (_lane3 === NoLane) {
             // DefaultLanes 类型的赛道已经全部被占用
             // If all the default lanes are already being worked on, look for a
             // lane in the transition range.
-            // 查看 TransitionLanes 类型的赛道是否也被占用
+            // 如果 DefaultLanes 已经分配完毕，从未开始工作的 TransitionLanes 中 分配 lane
             _lane3 = pickArbitraryLane(TransitionLanes & ~wipLanes);
 
             if (_lane3 === NoLane) {
-              // 如果 DefaultLanes、TransitionLanes 类型的赛道都被占用，虽然这种情况非常少见，但是还是会出现 ？？
+              // 如果 DefaultLanes、TransitionLanes 类型的赛道都被占用，虽然这种情况非常少见，但是还是会出现，此时直接分配 DefaultLanes 的第一条 lane
               // 此时分配 DefaultLanes 中优先级最高的赛道
               // All the transition lanes are taken, too. This should be very
               // rare, but as a last resort, pick a default lane. This will have
@@ -6051,8 +6053,10 @@
         break;
 
       case IdleLanePriority: // 空闲赛道优先级： 2
+        // 从未开始工作的 IdleLanes 分配 lane
         var lane = pickArbitraryLane(IdleLanes & ~wipLanes);
 
+        // 如果 IdleLanes 都已经分配完毕，直接分配 IdleLanes 的第一条 lane，原来的工作会被中断
         if (lane === NoLane) {
           lane = pickArbitraryLane(IdleLanes);
         }
@@ -29395,12 +29399,18 @@
     this.eventTimes = createLaneMap(NoLanes); // 事件时间 ？？ NoLanes 为 0
     // 存储每个赛道的过期时间
     this.expirationTimes = createLaneMap(NoTimestamp); // 过期时间 ？？ NoTimestamo(无时间戳？？) 为 -1
-    this.pendingLanes = NoLanes; // 本次渲染等待处理的更新 
-    this.suspendedLanes = NoLanes; // 暂停赛道 
-    this.pingedLanes = NoLanes; // 畅通的赛道
-    this.expiredLanes = NoLanes; // 过期的赛道
-    this.mutableReadLanes = NoLanes; // 可变读取赛道 
-    this.finishedLanes = NoLanes; // 已经结束的本次渲染要处理的更新对应的 lanes
+    // 已经安排工作的 lanes(待处理的更新)
+    this.pendingLanes = NoLanes; 
+    // 暂停工作的 lanes (暂停的更新)
+    this.suspendedLanes = NoLanes;
+    // 恢复工作的 lanes (之前暂停，现在恢复的更新)
+    this.pingedLanes = NoLanes;
+    // 过期的 lanes
+    this.expiredLanes = NoLanes; 
+    // 可变读取赛道  ?
+    this.mutableReadLanes = NoLanes; 
+    // 已经结束的本次渲染要处理的更新对应的 lanes
+    this.finishedLanes = NoLanes; 
     this.entangledLanes = NoLanes; // 纠缠的赛道 
     this.entanglements = createLaneMap(NoLanes); // 纠缠？？
 
