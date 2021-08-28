@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="../../react.development.16.12.js"></script>
-    <script src="../../react-dom.development.16.12.js"></script>
+    <script src="../../react.development.js"></script>
+    <script src="../../react-dom.development.js"></script>
     <script src="../../react-dom-server.browser.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
     <title>Document</title>
@@ -14,12 +14,14 @@
     <script type="text/babel">
 
         const reducer = (state, action) => {
+            debugger
+            console.log('reducer');
                 switch(action) {
                     case "INCREMENT":
                         return { ...state, count: state.count + 1 };
                     case "DECREMENT":
-                        state.count = state.count - 1; // 注意与上面 INCREMENT 的不同
-                        return { ...state };
+                        // state.count = state.count - 1; // 注意与上面 INCREMENT 的不同
+                        return { ...state, count: state.count - 1 };
                     case "RESET":
                         return { count: 0 };
                     default:
@@ -28,18 +30,62 @@
             }
         function Component() {
             const [state, dispatch] = React.useReducer(reducer, { count: 0 });
+            const myRef = React.useRef(null);
+
+            const handleClick = () => {
+                setTimeout(() => {
+                    // dispatch('INCREMENT');
+                    // dispatch('INCREMENT');
+                    // dispatch('INCREMENT');
+                    // dispatch('INCREMENT');
+                    myRef.current.click();
+                    myRef.current.click();
+                    // myRef.current.click();
+                    // myRef.current.click();
+                });
+                // dispatch('INCREMENT');
+                // myRef.current.click();
+                // myRef.current.click();
+                // myRef.current.click();
+                // myRef.current.click();
+
+                // setTimeout(() => {
+                //     dispatch('INCREMENT');
+                // });
+
+                // setTimeout(() => {
+                //     dispatch('INCREMENT');
+                // });
+                // setTimeout(() => {
+                //     dispatch('INCREMENT');
+                // });
+                // setTimeout(() => {
+                //     dispatch('INCREMENT');
+                // });
+                // setTimeout(() => {
+                //     dispatch('INCREMENT');
+                // });
+                // setTimeout(() => {
+                //     dispatch('INCREMENT');
+                // });
+                // setTimeout(() => {
+                //     dispatch('INCREMENT');
+                // });
+                // setTimeout(() => {
+                //     dispatch('INCREMENT');
+                // });
+            }
 
             return (
-                <React.StrictMode>
-                    <div>
-                        <button onClick={() => dispatch('INCREMENT')}>+</button> / <button onClick={() => dispatch('DECREMENT')}>-</button>
+                    <div style={{marginTop: 200}}>
+                        <button onClick={() => handleClick()}>+</button> / <button ref={myRef} onClick={() => dispatch('DECREMENT')}>-</button>
                         <div>{state.count}</div> 
                     </div>
-                </React.StrictMode>
             )
         }
 
-        ReactDOM.render(<React.StrictMode><Component /></React.StrictMode>, document.getElementById('app'));
+        // ReactDOM.render(<Component />, document.getElementById('app'));
+        new ReactDOM.createRoot(document.getElementById('app')).render(<Component />);
     
     </script>
 </body>

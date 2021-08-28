@@ -200,7 +200,7 @@ Suspense 消除 race condition
 
 #### 为什么 react 每次更新时要从根节点开始协调
 
-
+#### flushDiscreteUpdates 是啥？？
 
 ### React 的最佳实践
 

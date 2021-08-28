@@ -16,7 +16,7 @@
         function Component() {
             const [mode, setMode] = React.useState('visible');
             return (
-                <div>
+                <div style={{marginTop: '100px'}}>
                     <button onClick={() => setMode('hidden')}>隐藏</button><button onClick={() => setMode('visible')}>显示</button>
                     <React.OffScreen mode={mode}>
                         <div>123</div>

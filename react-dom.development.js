@@ -18268,7 +18268,6 @@
         error("State updates from the useState() and useReducer() Hooks don't support the " + 'second callback argument. To execute a side effect after ' + 'rendering, declare it in the component body with useEffect().');
       }
     }
-
     // 记录 setState 发生的时间
     var eventTime = requestEventTime();
     // 根据当前更新的优先级，为更新分配一个 lane
@@ -18283,7 +18282,6 @@
     }; // Append the update to the end of the list.
 
     var pending = queue.pending;
-
     if (pending === null) {
       // This is the first update. Create a circular list.
       update.next = update;
@@ -18291,7 +18289,6 @@
       update.next = pending.next;
       pending.next = update;
     }
-
     queue.pending = update;
     var alternate = fiber.alternate;
 
@@ -18305,6 +18302,7 @@
         // The queue is currently empty, which means we can eagerly compute the
         // next state before entering the render phase. If the new state is the
         // same as the current state, we may be able to bail out entirely.
+
         var lastRenderedReducer = queue.lastRenderedReducer;
 
         if (lastRenderedReducer !== null) {
@@ -25298,7 +25296,6 @@
    */
   function scheduleUpdateOnFiber(fiber, lane, eventTime) {
     debugger
-    
     // 检查嵌套的 update 数量，不能超过 50 
     checkForNestedUpdates();
     warnAboutRenderPhaseUpdatesInDEV(fiber);
@@ -25415,6 +25412,7 @@
       priorityLevel === UserBlockingPriority$2 || priorityLevel === ImmediatePriority$1)) {
         // This is the result of a discrete event. Track the lowest priority
         // discrete update per root so we can flush them early, if needed.
+        console.log('xxxx');
         if (rootsWithPendingDiscreteUpdates === null) {
           rootsWithPendingDiscreteUpdates = new Set([root]);
         } else {
@@ -25423,6 +25421,7 @@
       } // Schedule other updates after in case the callback is sync.
 
       // 为 fiber tree 确定一个异步调度任务
+      console.log('zjh2');
       ensureRootIsScheduled(root, eventTime);
       schedulePendingInteractions(root, lane);
     } // We use this when assigning a lane for a transition inside
@@ -25521,10 +25520,8 @@
      * 如果赛道没有过期时间，其是畅通的，重新为赛道计算过期时间
      */
     markStarvedLanesAsExpired(root, currentTime); // Determine the next lanes to work on, and their priority.
-
     // 获取接下来要处理的 lanes(更新)
     var nextLanes = getNextLanes(root, root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes); // This returns the priority level computed during the `getNextLanes` call.
-
     // 接下来要处理的 lanes 对应的优先级
     // 如果是过期的更新，是同步优先级
     var newCallbackPriority = returnNextLanesPriority();
@@ -25589,6 +25586,7 @@
    * @param root fiber root node
    */
   function performConcurrentWorkOnRoot(root) {
+    debugger
     // Since we know we're in a React event, we can clear the current
     // event time. The next update will compute a new event time.
     currentEventTime = NoTimestamp;
@@ -25977,6 +25975,7 @@
    * 
    */
   function flushDiscreteUpdates() {
+    console.log('flushDiscreteUpdates');
     // TODO: Should be able to flush inside batchedUpdates, but not inside `act`.
     // However, `act` uses `batchedUpdates`, so there's no way to distinguish
     // those two cases. Need to fix this before exposing flushDiscreteUpdates
@@ -26030,6 +26029,7 @@
    * @param a
    */
   function batchedUpdates$1(fn, a) {
+    debugger
     var prevExecutionContext = executionContext;
     // 将当前上下文变为批量处理上下文
     executionContext |= BatchedContext;
@@ -26888,9 +26888,6 @@
    * @param root  fiber root node
    */
   function commitRoot(root) {
-    debugger
-    console.log('commit root');
-    
     // 获取当前的优先级
     var renderPriorityLevel = getCurrentPriorityLevel();
     // 为 commit 操作建立一个调度任务，优先级为直接优先级，即 commit 对应的调度优先执行
@@ -26904,6 +26901,8 @@
    * @param renderPriorityLevel 优先级，直接优先级，优先处理
    */
   function commitRootImpl(root, renderPriorityLevel) {
+
+    console.log('commit root 实现');
 
     do {
       // `flushPassiveEffects` will call `flushSyncUpdateQueue` at the end, which
@@ -27202,7 +27201,6 @@
       onCommitRoot$1();
     } // Always call this before exiting `commitRoot`, to ensure that any
     // additional work on this root is scheduled.
-
 
     ensureRootIsScheduled(root, now());
 
