@@ -76,7 +76,15 @@ fiber root node 的 current 指针指向 current fiber tree，更新完成以后
 优先级：
 - 调度优先级
 - react 优先级
-- lane 优先级
+- lane 优先级， 即更新优先级
+
+一次更新中涉及的流程：
+- 先根据触发更新的操作的优先级，为更新分配一个 lane，新生成的 lane 会合并到 fiber root node 的 pendingLanes 中；
+- 计算下一次更新要处理的 lanes 已经对应的优先级；
+- 根据优先级，建立一个异步任务，添加到任务队列中(任务队列是一个堆，顶部永远是优先级最高的任务)；
+- 执行异步任务的 callback，再次计算本次更新要处理的 lanes，将 workInProgressRootRenderLanes 设置为 lanes；
+- 开始 begin / complete 流程；
+- 开始 commit 流程；
 
 
 #### Concurrent

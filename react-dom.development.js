@@ -13801,7 +13801,7 @@
       var fiber = get(inst);
       // 执行 setState 方法触发更新时，需要基于当前时间创建一个新的时间戳
       var eventTime = requestEventTime();
-      // 为当前更新分配一个赛道
+      // 根据当前更细的优先级，分配一个 lane
       var lane = requestUpdateLane(fiber);
       // 创建一个新的 update 对象，每一次执行 setState 方法时，都会创建一个新的 update 对象
       var update = createUpdate(eventTime, lane);
@@ -13831,7 +13831,7 @@
       var fiber = get(inst);
       // 更新触发时间
       var eventTime = requestEventTime();
-      // 为当前更新操作分配一个 lane
+      // 根据当前更新的优先级，分配一个 lane
       var lane = requestUpdateLane(fiber);
       // 创建一个 update 对象
       var update = createUpdate(eventTime, lane);
@@ -13862,7 +13862,7 @@
       var fiber = get(inst);
       // 记录更新发生的时间
       var eventTime = requestEventTime();
-      // 为更新分配一个 lane
+      // 根据当前更新的优先级，分配一个 lane
       var lane = requestUpdateLane(fiber);
       // 创建一个 update 对象
       var update = createUpdate(eventTime, lane);
@@ -17508,7 +17508,7 @@
 
         if (!objectIs(snapshot, maybeNewSnapshot)) {
           setSnapshot(maybeNewSnapshot);
-          // 为更新分配一个 lane
+          // 根据当前更新的优先级，为更新分配一个 lane
           var lane = requestUpdateLane(fiber);
           markRootMutableRead(root, lane);
         } // If the source mutated between render and now,
@@ -17527,7 +17527,7 @@
 
         try {
           latestSetSnapshot(latestGetSnapshot(source._source)); // Record a pending mutable source update with the same expiration time.
-          // 为更新分配一个 lane
+          // 根据当前更新的优先级，为更新分配一个 lane
           var lane = requestUpdateLane(fiber);
           markRootMutableRead(root, lane);
         } catch (error) {
@@ -18173,7 +18173,7 @@
 
     // 记录 setState 发生的时间
     var eventTime = requestEventTime();
-    // 为更新分配一个 lane
+    // 根据当前更新的优先级，为更新分配一个 lane
     var lane = requestUpdateLane(fiber);
     // 创建一个 update 对象
     var update = {
@@ -25065,7 +25065,7 @@
   }
 
   /**
-   * fiber node 做更新的时候，会先分配一个赛道
+   * fiber node 做更新的时候，会根据更新的优先级，会先分配一个赛道
    * 分配逻辑：
    * - 如果是不是 BlockingMode( legacy、strict)，直接分配 SyncLane = 1， 优先级最高；
    * - 如果不是 concurrent(BlockMode)，如果当前是直接优先级，分配 SyncLane = 1，否则分配 SyncBatchedLane = 2；
@@ -28490,6 +28490,11 @@
     }
   };
 
+  /**
+   * @param fiber
+   * @param updatedFamilies
+   * @param staleFamilies
+   */
   function scheduleFibersWithFamiliesRecursively(fiber, updatedFamilies, staleFamilies) {
     {
       var alternate = fiber.alternate,
@@ -28559,6 +28564,10 @@
     }
   }
 
+  /**
+   * @param root
+   * @param families
+   */
   var findHostInstancesForRefresh = function (root, families) {
     {
       var hostInstances = new Set();
@@ -28570,6 +28579,11 @@
     }
   };
 
+  /**
+   * @param fiber
+   * @param types
+   * @param hostInstances
+   */
   function findHostInstancesForMatchingFibersRecursively(fiber, types, hostInstances) {
     {
       var child = fiber.child,
@@ -28616,6 +28630,10 @@
     }
   }
 
+  /**
+   * @param fiber
+   * @param hostInstances
+   */
   function findHostInstancesForFiberShallowly(fiber, hostInstances) {
     {
       var foundHostInstances = findChildHostInstancesForFiberShallowly(fiber, hostInstances);
@@ -28651,6 +28669,11 @@
     }
   }
 
+  /**
+   * 
+   * @param fiber
+   * @param hostInstances
+   */
   function findChildHostInstancesForFiberShallowly(fiber, hostInstances) {
     {
       var node = fiber;
@@ -28743,7 +28766,7 @@
     this.alternate = null; // 替换者
 
     {
-      // 性能优化 ？？
+      // TODO: 性能优化 ？？
       // Note: The following is done to avoid a v8 performance cliff.
       //
       // Initializing the fields below to smis and later updating them with
@@ -29676,7 +29699,7 @@
     }
 
     /**
-     * 容器节点对应的 fiber node 需要更新，需要先给分配一个 lane。
+     * 容器节点对应的 fiber node 需要更新，会更新更新的优先级，分配一个 lane。
      * legency 模式下，分配的 lane 直接为 SyncLane = 1；
      * concurrent 模式下， 会根据更新的优先级分配对应的 lane。 更新容器节点，优先级为普通优先级，分配的 lane 是 defaultLanes 类型的 lane；
      */
@@ -29826,7 +29849,7 @@
     }
 
     var eventTime = requestEventTime();
-    // 为当前 fiber node 的更新分配一个 lane
+    // 根据当前 fiber node 的更新的优先级，分配一个 lane
     var lane = requestUpdateLane(fiber);
     // 为 fiber node 的更新， 安排一个调度任务
     scheduleUpdateOnFiber(fiber, lane, eventTime);
