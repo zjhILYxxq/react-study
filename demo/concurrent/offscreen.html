@@ -20,14 +20,15 @@
                     <button onClick={() => setMode('hidden')}>隐藏</button><button onClick={() => setMode('visible')}>显示</button>
                     <React.OffScreen mode={mode}>
                         <div>123</div>
+                        <div>456</div>
                     </React.OffScreen>
                 </div>
             )
         }
 
-        new ReactDOM.createRoot(document.getElementById('app')).render(<Component />);
+        // new ReactDOM.createRoot(document.getElementById('app')).render(<Component />);
 
-        // ReactDOM.render(<Component/>, document.getElementById('app'));
+        ReactDOM.render(<Component/>, document.getElementById('app'));
 
 
     </script>

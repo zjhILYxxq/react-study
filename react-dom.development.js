@@ -5661,9 +5661,13 @@
    * - 非空闲的阻塞但已经 pinged 的 + 非空闲的阻塞的；
    * - 空闲的非阻塞的更新；
    * - 空闲的阻塞但已经 pinged 的 + 空闲的阻塞的；
-   * - 
    * @param root 一个 fiber root node
-   * @param wipLanes workInProgressRootRenderLanes  workInProgressRootRenderLanes 可以理解为上一次渲染对应的赛道(优先级)
+   * @param wipLanes workInProgressRootRenderLanes 当前渲染时正在工作的 lanes。如果 workInProgressRootRenderLanes 不为 0， 说明在渲染过程中产生了新的更新。
+   *                 产生新的更新以后，要重新计算下一次异步调度任务的 lanes 以及优先级，然后将优先级和 workInProgressRootRenderLanes 的优先级对比。
+   *                 如果新的优先级大于 workInProgressRootRenderLanes 优先级，那么下一次异步调度任务就要优先执行，原来的调度任务就会中断；
+   *                 
+   *                    
+   * 
    */
   function getNextLanes(root, wipLanes) {
     // Early bailout if there's no pending work left.
@@ -11242,6 +11246,10 @@
     }
   }
 
+  /**
+   * 隐藏 dom 节点 (给 dom 节点添加 display: none 属性)
+   * @instance dom 节点
+   */
   function hideInstance(instance) {
     // TODO: Does this work for all element types? What about MathML? Should we
     // pass host context to this method?
@@ -11254,18 +11262,36 @@
       style.display = 'none';
     }
   }
+  /**
+   * 隐藏文本节点
+   * @param textInstance  文本节点
+   */
   function hideTextInstance(textInstance) {
     textInstance.nodeValue = '';
   }
+  /**
+   * 显示 dom 节点（即去掉 dispaly: none 属性）
+   * @param instance  dom 节点
+   * @param props
+   */
   function unhideInstance(instance, props) {
     instance = instance;
     var styleProp = props[STYLE$1];
     var display = styleProp !== undefined && styleProp !== null && styleProp.hasOwnProperty('display') ? styleProp.display : null;
     instance.style.display = dangerousStyleValue('display', display);
   }
+  /**
+   * 显示文本节点
+   * @param textInstance 文本节点
+   * @param text 文本节点的内容
+   */
   function unhideTextInstance(textInstance, text) {
     textInstance.nodeValue = text;
   }
+
+  /**
+   * @param container
+   */
   function clearContainer(container) {
     if (container.nodeType === ELEMENT_NODE) {
       container.textContent = '';
@@ -11277,6 +11303,12 @@
       }
     }
   } // -------------------
+
+  /**
+   * @param instance
+   * @param type
+   * @param props
+   */
   function canHydrateInstance(instance, type, props) {
     if (instance.nodeType !== ELEMENT_NODE || type.toLowerCase() !== instance.nodeName.toLowerCase()) {
       return null;
@@ -11285,6 +11317,11 @@
 
     return instance;
   }
+
+  /**
+   * @param instance
+   * @param text
+   */
   function canHydrateTextInstance(instance, text) {
     if (text === '' || instance.nodeType !== TEXT_NODE) {
       // Empty strings are not parsed by HTML so there won't be a correct match here.
@@ -11294,13 +11331,24 @@
 
     return instance;
   }
+
+  /**
+   * @param instance
+   */
   function isSuspenseInstancePending(instance) {
     return instance.data === SUSPENSE_PENDING_START_DATA;
   }
+
+  /**
+   * @param instance
+   */
   function isSuspenseInstanceFallback(instance) {
     return instance.data === SUSPENSE_FALLBACK_START_DATA;
   }
 
+  /**
+   * @param node
+   */
   function getNextHydratable(node) {
     // Skip non-hydratable nodes.
     for (; node != null; node = node.nextSibling) {
@@ -11314,12 +11362,29 @@
     return node;
   }
 
+  /**
+   * @param instance
+   */
   function getNextHydratableSibling(instance) {
     return getNextHydratable(instance.nextSibling);
   }
+
+  /**
+   * @param parentInstance
+   */
   function getFirstHydratableChild(parentInstance) {
     return getNextHydratable(parentInstance.firstChild);
   }
+
+  /**
+   * 
+   * @param instance
+   * @param type
+   * @param props
+   * @param rootContainerInstance
+   * @param hostContext
+   * @param internalInstanceHandle
+   */
   function hydrateInstance(instance, type, props, rootContainerInstance, hostContext, internalInstanceHandle) {
     precacheFiberNode(internalInstanceHandle, instance); // TODO: Possibly defer this until the commit phase where all the events
     // get attached.
@@ -11334,10 +11399,21 @@
 
     return diffHydratedProperties(instance, type, props, parentNamespace);
   }
+
+  /**
+   * 
+   * @param textInstance
+   * @param text
+   * @param internalInstanceHandle
+   */
   function hydrateTextInstance(textInstance, text, internalInstanceHandle) {
     precacheFiberNode(internalInstanceHandle, textInstance);
     return diffHydratedText(textInstance, text);
   }
+
+  /**
+   * @param suspenseInstance
+   */
   function getNextHydratableInstanceAfterSuspenseInstance(suspenseInstance) {
     var node = suspenseInstance.nextSibling; // Skip past all nodes within this suspense boundary.
     // There might be nested nodes so we need to keep track of how
@@ -11369,6 +11445,9 @@
   // SuspenseInstance. I.e. if its previous sibling is a Comment with
   // SUSPENSE_x_START_DATA. Otherwise, null.
 
+  /**
+   * @param targetInstane
+   */
   function getParentSuspenseInstance(targetInstance) {
     var node = targetInstance.previousSibling; // Skip past all nodes within this suspense boundary.
     // There might be nested nodes so we need to keep track of how
@@ -11396,19 +11475,35 @@
 
     return null;
   }
+
+  /**
+   * 
+   * @param container
+   */
   function commitHydratedContainer(container) {
     // Retry if any event replaying was blocked on this.
     retryIfBlockedOn(container);
   }
+
+  /**
+   * @param suspenseInstance
+   */
   function commitHydratedSuspenseInstance(suspenseInstance) {
     // Retry if any event replaying was blocked on this.
     retryIfBlockedOn(suspenseInstance);
   }
+
+  /**
+   * @param parentContainer
+   * @param textInstance
+   * @param text
+   */
   function didNotMatchHydratedContainerTextInstance(parentContainer, textInstance, text) {
     {
       warnForUnmatchedText(textInstance, text);
     }
   }
+
   function didNotMatchHydratedTextInstance(parentType, parentProps, parentInstance, textInstance, text) {
     if ( parentProps[SUPPRESS_HYDRATION_WARNING$1] !== true) {
       warnForUnmatchedText(textInstance, text);
@@ -11469,6 +11564,9 @@
       }
     };
   }
+  /**
+   * 
+   */
   function isOpaqueHydratingObject(value) {
     return value !== null && typeof value === 'object' && value.$$typeof === REACT_OPAQUE_ID_TYPE;
   }
@@ -19566,6 +19664,7 @@
         // We weren't previously hidden, and we still aren't, so there's nothing
         // special to do. Need to push to the stack regardless, though, to avoid
         // a push/pop misalignment.
+        // 我们之前没有隐藏，现在仍然没有，所以没有什么特别要做的。
         // 挂载 OffScreen fiber node， 且 mode 为 visible
         _subtreeRenderLanes = renderLanes;
       }
@@ -22791,18 +22890,20 @@
       case LegacyHiddenComponent:  // ??
         {
           popRenderLanes(workInProgress);
-
+          // 只有在更新阶段，才会给 fiber node 添加 update 标记
           if (current !== null) {
             var _nextState = workInProgress.memoizedState;
             var _prevState = current.memoizedState;
+            // current fiber node 是否是隐藏的
             var prevIsHidden = _prevState !== null;
+            // workInProgress fiber node 是否是要隐藏的
             var nextIsHidden = _nextState !== null;
 
             if (prevIsHidden !== nextIsHidden && newProps.mode !== 'unstable-defer-without-hiding') {
               workInProgress.flags |= Update;
             }
           }
-
+          // 挂载阶段，直接返回 null，就算 OffScreen 的 mode 属性为 'hidden'， 也不起作用
           return null;
         }
     }
@@ -23906,8 +24007,9 @@
   }
 
   /**
-   * @param finishedWork
-   * @param isHidden
+   * 隐藏/显示所有的子节点 (OffScreen) - 修改 dom 节点的 display 属性
+   * @param finishedWork  OffScreen fiber node
+   * @param isHidden 是否需要隐藏 true：需要隐藏； false：不需要隐藏；
    */
   function hideOrUnhideAllChildren(finishedWork, isHidden) {
     {
@@ -23916,23 +24018,24 @@
       var node = finishedWork;
 
       while (true) {
-        if (node.tag === HostComponent) {
-          var instance = node.stateNode;
+        if (node.tag === HostComponent) {  // fiber node 的类型为原生的 fiber node
+          var instance = node.stateNode;  // dom 节点
 
           if (isHidden) {
-            hideInstance(instance);
+            hideInstance(instance);  // 隐藏 dom 节点
           } else {
-            unhideInstance(node.stateNode, node.memoizedProps);
+            unhideInstance(node.stateNode, node.memoizedProps);  // 显示 dom 节点
           }
-        } else if (node.tag === HostText) {
+        } else if (node.tag === HostText) {  // fiber node 的类型为文本节点
           var _instance3 = node.stateNode;
 
           if (isHidden) {
-            hideTextInstance(_instance3);
+            hideTextInstance(_instance3);  // 隐藏文本节点
           } else {
-            unhideTextInstance(_instance3, node.memoizedProps);
+            unhideTextInstance(_instance3, node.memoizedProps);  // 显示文本节点
           }
         } else if ((node.tag === OffscreenComponent || node.tag === LegacyHiddenComponent) && node.memoizedState !== null && node !== finishedWork) ; else if (node.child !== null) {
+          // 子节点不为空
           node.child.return = node;
           node = node.child;
           continue;
@@ -24697,11 +24800,12 @@
           break;
         }
 
-      case OffscreenComponent:  // ??
+      case OffscreenComponent:  // OffScreen 在 commit 阶段是否需要隐藏 dom 节点
       case LegacyHiddenComponent: // ??
         {
           var newState = finishedWork.memoizedState;
           var isHidden = newState !== null;
+          // 隐藏 / 显示 dom 节点
           hideOrUnhideAllChildren(finishedWork, isHidden);
           return;
         }
@@ -25788,12 +25892,13 @@
     if (root === workInProgressRoot && includesSomeLane(root.expiredLanes, workInProgressRootRenderLanes)) { // 本次渲染的更新中已经过期的
       // There's a partial tree, and at least one of its lanes has expired. Finish
       // rendering it before rendering the rest of the expired work.
-      // 要处理的更新部分已经过期 ？？
+      // concurrent 模式下，有一些更新过期了，需要进行同步阻塞渲染
       lanes = workInProgressRootRenderLanes;
       // 同步渲染
       // 注意，同步渲染时使用的是 workInProgressRootRenderLanes(不是 subtreeRenderLanes， 也不是 workInProgressRootIncludedLanes)
       exitStatus = renderRootSync(root, lanes);
 
+      // 
       if (includesSomeLane(workInProgressRootIncludedLanes, workInProgressRootUpdatedLanes)) {
         // The render included lanes that were updated during the render phase.
         // For example, when unhiding a hidden tree, we include all the lanes
@@ -25803,12 +25908,18 @@
         // Note that this only happens when part of the tree is rendered
         // concurrently. If the whole tree is rendered synchronously, then there
         // are no interleaved events.
-        // ？？
+        /**
+         * 渲染包括在渲染阶段产生的更新。比如，当取消之前隐藏的树时，我们包括之前在树隐藏时跳过的所有 lanes。
+         * 这组 lanes 是我们开始渲染的 lanes 的超集。
+         * 
+         * 请注意这仅在树的一部分同时呈现时发生 ？？如果整棵树是同步渲染的，则没有交错的事件。
+         */
         lanes = getNextLanes(root, lanes);
         exitStatus = renderRootSync(root, lanes);
       }
     } else {
       // 获取本次渲染要处理的更新对应的赛道(赛道有对应的优先级)
+      // legacy 模式下，开始同步阻塞渲染
       lanes = getNextLanes(root, NoLanes);
       // 同步渲染 fiber root node
       exitStatus = renderRootSync(root, lanes);
