@@ -14,7 +14,7 @@
     <script type="text/babel">
 
         function Component() {
-            const [mode, setMode] = React.useState('visible');
+            const [mode, setMode] = React.useState('hidden');
             return (
                 <div style={{marginTop: '100px'}}>
                     <button onClick={() => setMode('hidden')}>隐藏</button><button onClick={() => setMode('visible')}>显示</button>

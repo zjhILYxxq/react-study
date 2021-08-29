@@ -22061,6 +22061,8 @@
     // Mutation mode
     /**
      * 将 child fiber node 对应的 dom 节点添加到 parent fiber node 对应的 dom 节点中
+     * 这一步， parent fiber node 会收集所有的 child fiber node 对应的 dom 节点
+     * 如果 child fiber node 是组件、Suspense、OffScreen 等类型，也会把他们 child fiber node 对应的 dom 节点收集上来，然后在 commit 操作时更新 dom 节点
      * @param parent parent fiber node 对应的 dom 节点
      * @param workInProgress parent fiber node
      * @param needsVisibilityToggle
@@ -22271,7 +22273,7 @@
    * @param rendrLanes 本次渲染要处理的更新
    */
   function completeWork(current, workInProgress, renderLanes) {
-    
+    debugger
     // new props
     var newProps = workInProgress.pendingProps;
 
