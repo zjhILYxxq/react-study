@@ -22,7 +22,7 @@
                     resolve({
                         name: "zjh"
                     });
-                }, 1000)
+                }, 30000)
             });
         }
 
@@ -111,23 +111,24 @@
         }
 
         function ProfilePage() {
-            debugger
             const [visible, setVisible] = React.useState(false);
-            const [startTransition, isPending] = React.useTransition({ timeoutMs: 3000});
-            const deferredVisible = React.useDeferredValue(visible, { timeoutMs: 2000});
+            // const [startTransition, isPending] = React.useTransition({ timeoutMs: 3000});
+            // const deferredVisible = React.useDeferredValue(visible, { timeoutMs: 2000});
 
             const show = () => {
-                startTransition(() => {
-                    resource = fetchProfileData();
-                    setVisible(true);
-                });
+                // startTransition(() => {
+                //     resource = fetchProfileData();
+                //     setVisible(true);
+                // });
+                resource = fetchProfileData();
+                setVisible(true);
             }
             return (
                 <div>
                     <button onClick={show}>显示</button>
                     <button onClick={() => setVisible(false)}>隐藏</button>
                     {
-                        deferredVisible && (
+                        visible && (
                             <React.Fragment>
                                     <React.Suspense fallback={<h1>Loading profile...</h1>}>
                                         <ProfileDetails />

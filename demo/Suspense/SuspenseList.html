@@ -22,7 +22,7 @@
                     resolve({
                         name: "zjh"
                     });
-                }, 2000)
+                }, 5000)
             });
         }
 
@@ -105,8 +105,7 @@
                     <button onClick={() => setVisible(false)}>隐藏</button>
                     { visible && (
                         <div>
-                            <React.SuspenseList revealOrder="backwards" tail="collapsed">
-                                <div>123</div>
+                            <React.SuspenseList revealOrder="together" tail="collapsed">
                                 <React.Suspense fallback={<h1>Loading profile...</h1>}>
                                     <ProfileDetails />
                                 </React.Suspense>
@@ -115,9 +114,7 @@
                                 </React.Suspense>
                                 <React.Suspense fallback={<h1>Loading profile2...</h1>}>
                                     <ProfileDetails2 />
-                                </React.Suspense>
-                                <div>456</div>
-                                <div>789</div>                    
+                                </React.Suspense>                 
                             </React.SuspenseList>
                         </div>
                     )}

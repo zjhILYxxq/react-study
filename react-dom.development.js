@@ -18268,6 +18268,7 @@
         error("State updates from the useState() and useReducer() Hooks don't support the " + 'second callback argument. To execute a side effect after ' + 'rendering, declare it in the component body with useEffect().');
       }
     }
+    debugger
     // 记录 setState 发生的时间
     var eventTime = requestEventTime();
     // 根据当前更新的优先级，为更新分配一个 lane
@@ -19581,7 +19582,7 @@
     var nextProps = workInProgress.pendingProps;
     // react element
     var nextChildren = nextProps.children;
-    // old state
+    // old state，如果之前 mode 为 visible，那么 prevState 为 null
     var prevState = current !== null ? current.memoizedState : null;
 
     if (nextProps.mode === 'hidden' || nextProps.mode === 'unstable-defer-without-hiding') {
@@ -19616,7 +19617,7 @@
         {
           markSpawnedWork(OffscreenLane);
         }
-
+        // 设置 OffScreen fiber node 的 lanes、childLanes 设置为 OffscreenLane
         workInProgress.lanes = workInProgress.childLanes = laneToLanes(OffscreenLane);
         var _nextState = {
           baseLanes: nextBaseLanes
@@ -19654,9 +19655,9 @@
 
       if (prevState !== null) {
         // prevState 不为 null， 说明 OffScreen fiber node 要 update
-        // 将 renderLanes 合并到
+        // 将上一次的 renderLanes 和 这一次的 renderLanes 合并到一起
         _subtreeRenderLanes = mergeLanes(prevState.baseLanes, renderLanes); // Since we're not hidden anymore, reset the state
-
+        // 子元素显示的时候，就会把 memoizedState 清空
         workInProgress.memoizedState = null;
       } else {
         // We weren't previously hidden, and we still aren't, so there's nothing
@@ -20484,7 +20485,7 @@
   };
 
   /**
-   * 挂载 Suspense 状态 ？？
+   * 给 Suspense OffScreen fiber node 添加 state: { baseLanes: renderLanes }
    * @param renderLanes 本次渲染要处理的更新
    */
   function mountSuspenseOffscreenState(renderLanes) {
@@ -20494,9 +20495,9 @@
   }
 
   /**
-   * 
-   * @param prevOffscreenState
-   * @param renderLanes
+   * 更新 Suspense OffScreen fiber node 的 state
+   * @param prevOffscreenState 之前的状态
+   * @param renderLanes 
    */
   function updateSuspenseOffscreenState(prevOffscreenState, renderLanes) {
     return {
@@ -20552,7 +20553,6 @@
    */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
     debugger
-    console.log('updateSuspenseComponent');
     // workInProgress 是正在处理 React.Suspense 类型的 fiber node
     // nexProps 中包含 fallback、children
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
@@ -20626,7 +20626,10 @@
     // which branch we're currently rendering. Ideally we would model this using
     // a stack.
 
-    if (current === null) {   // Suspense fiber node 挂载操作
+    if (current === null) { 
+
+       // Suspense fiber node 挂载操作
+
       // Initial mount
       // If we're currently hydrating, try to hydrate this boundary.
       // But only if this has a fallback.
@@ -20678,16 +20681,20 @@
         // 挂载 React.Suspense 的子元素，返回一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
         return mountSuspensePrimaryChildren(workInProgress, nextPrimaryChildren, renderLanes);
       }
-    } else {  // Suspense fiber node 的更新操作
+    } else {
+
+      // Suspense fiber node 的更新操作
+
       // This is an update.
       // If the current fiber has a SuspenseState, that means it's already showing
       // a fallback.
       // 如果 old fiber fiber 已经有了 suspense state，表示 fallback 已经显示了
       var prevState = current.memoizedState;
 
-      if (prevState !== null) { // fallback 当前在显示
-
-        if (showFallback) {  // 尽管 fallback 已经显示了，但是依旧需要显示
+      if (prevState !== null) { 
+        // fallback 当前在显示
+        if (showFallback) {
+           // 尽管 fallback 已经显示了，但是依旧需要显示
           var _nextFallbackChildren2 = nextProps.fallback;
           var _nextPrimaryChildren2 = nextProps.children;
 
@@ -20699,7 +20706,8 @@
           _primaryChildFragment3.childLanes = getRemainingWorkInPrimaryTree(current, renderLanes);
           workInProgress.memoizedState = SUSPENDED_MARKER;
           return _fallbackChildFragment;
-        } else { // fallback 不需要再显示了
+        } else {
+          // fallback 不需要再显示了
           var _nextPrimaryChildren3 = nextProps.children;
           // 更新 Suspense fiber node 的 child fiber node - OffScreen fiber node
           var _primaryChildFragment4 = updateSuspensePrimaryChildren(current, workInProgress, _nextPrimaryChildren3, renderLanes);
@@ -20707,7 +20715,8 @@
           workInProgress.memoizedState = null;
           return _primaryChildFragment4;
         }
-      } else {  // fallback 当前没有显示了
+      } else { 
+        // fallback 当前没有显示了
         // The current tree is not already showing a fallback.
         if (showFallback) {  // 超时？？需要显示 fallback
           // Timed out.
@@ -20771,6 +20780,7 @@
     var mode = workInProgress.mode;
     // offscreen fiber node
     var progressedPrimaryFragment = workInProgress.child;
+    // offscreen fiber node 的 props
     var primaryChildProps = {
       mode: 'hidden',
       children: primaryChildren
@@ -20781,6 +20791,7 @@
     var fallbackChildFragment;
 
     if ((mode & BlockingMode) === NoMode && progressedPrimaryFragment !== null) {
+      //
       // In legacy mode, we commit the primary tree as if it successfully
       // completed, even though it's in an inconsistent state.
       primaryChildFragment = progressedPrimaryFragment;
@@ -20802,7 +20813,7 @@
     } else {
       // 创建一个 REACT_OFFSCREEN_TYPE 类型的 fiber node
       primaryChildFragment = createFiberFromOffscreen(primaryChildProps, mode, NoLanes, null);
-      //
+      // 创建 fallback 对应的 fiber node
       fallbackChildFragment = createFiberFromFragment(fallbackChildren, mode, renderLanes, null);
     }
 
@@ -20810,6 +20821,8 @@
     fallbackChildFragment.return = workInProgress;
     // fragment 类型的 fiber node 会作为 offScreen fiber node 的 sibling
     primaryChildFragment.sibling = fallbackChildFragment;
+    // Suspense fiber node 的 child 指针指向 primaryChildFragment
+    // primaryChildFragment 的 child 指针指向  fallbackChildFragment
     workInProgress.child = primaryChildFragment;
     return fallbackChildFragment;
   }
@@ -20837,7 +20850,7 @@
     var currentPrimaryChildFragment = current.child;
     // fallback fiber node
     var currentFallbackChildFragment = currentPrimaryChildFragment.sibling;
-    // 复用 offscreen fiber node
+    // 复用 offscreen fiber node, mode 为 visible
     var primaryChildFragment = createWorkInProgressOffscreenFiber(currentPrimaryChildFragment, {
       mode: 'visible',
       children: primaryChildren
@@ -20849,6 +20862,8 @@
     }
 
     primaryChildFragment.return = workInProgress;
+    // fallback 需要显示时，是作为 primaryChildFragment 的兄弟节点
+    // 现在 fallback 不需要显示了，去掉 currentFallbackChildFragment
     primaryChildFragment.sibling = null;
 
     if (currentFallbackChildFragment !== null) {
@@ -22273,7 +22288,6 @@
    * @param rendrLanes 本次渲染要处理的更新
    */
   function completeWork(current, workInProgress, renderLanes) {
-    debugger
     // new props
     var newProps = workInProgress.pendingProps;
 
@@ -22452,7 +22466,7 @@
          * 3. child fiber node 协调成成， Suspense complete；
          */
         {
-          // debugger
+          debugger
           popSuspenseContext(workInProgress);
           // nextState 为 { dehydrated: null, retryLane: 0 }
           var nextState = workInProgress.memoizedState;
@@ -22889,6 +22903,7 @@
       case OffscreenComponent:  // React.OffScreen 的 complete 阶段
       case LegacyHiddenComponent:  // ??
         {
+          debugger
           popRenderLanes(workInProgress);
           // 只有在更新阶段，才会给 fiber node 添加 update 标记
           if (current !== null) {
@@ -24766,6 +24781,7 @@
 
       case SuspenseComponent: // 在 commit 阶段处理 Suspense fiber node 收集的类 promise 对象
         {
+          debugger
           commitSuspenseComponent(finishedWork);
           // // 给类 promise 对象注册对应的 onFullfilled、onRejected，对应创建异步任务重新渲染
           attachSuspenseRetryListeners(finishedWork);
@@ -25423,7 +25439,6 @@
       } // Schedule other updates after in case the callback is sync.
 
       // 为 fiber tree 确定一个异步调度任务
-      console.log('zjh2');
       ensureRootIsScheduled(root, eventTime);
       schedulePendingInteractions(root, lane);
     } // We use this when assigning a lane for a transition inside
@@ -25977,7 +25992,7 @@
    * 
    */
   function flushDiscreteUpdates() {
-    console.log('flushDiscreteUpdates');
+    // console.log('flushDiscreteUpdates');
     // TODO: Should be able to flush inside batchedUpdates, but not inside `act`.
     // However, `act` uses `batchedUpdates`, so there's no way to distinguish
     // those two cases. Need to fix this before exposing flushDiscreteUpdates
@@ -26903,7 +26918,7 @@
    * @param renderPriorityLevel 优先级，直接优先级，优先处理
    */
   function commitRootImpl(root, renderPriorityLevel) {
-
+    debugger
     console.log('commit root 实现');
 
     do {
@@ -27147,7 +27162,7 @@
       }
     } // Read this again, since an effect might have updated it
 
-
+    
     remainingLanes = root.pendingLanes; // Check if there's remaining work on this root
 
     if (remainingLanes !== NoLanes) {

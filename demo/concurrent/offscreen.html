@@ -13,22 +13,35 @@
     <div id="app"></div>
     <script type="text/babel">
 
+        const Component1 = React.memo((props) => {
+            const [count, setCount] = React.useState(0);
+
+            return <div onClick={() => {setTimeout(() => setCount(count + 1), 500); props.setMode('hidden'); setTimeout(() => props.setMode('visible'), 0)}}>{Array(10000).fill(count).map(item => <span>{item}</span>)}</div>
+        });
+
         function Component() {
             const [mode, setMode] = React.useState('hidden');
+
+            const handleClick = React.useCallback((value) => {
+                setMode(value);
+                // setTimeout(() => {
+                //     setMode('visible')
+                // }, 2000)
+            }, [])
+
             return (
                 <div style={{marginTop: '100px'}}>
-                    <button onClick={() => setMode('hidden')}>隐藏</button><button onClick={() => setMode('visible')}>显示</button>
+                    <button onClick={() => handleClick('hidden')}>隐藏</button><button onClick={() => setTimeout(() => handleClick('visible'), 1000)}>显示</button>
                     <React.OffScreen mode={mode}>
-                        <div>123</div>
-                        <div>456</div>
+                        <Component1 setMode={handleClick}/>
                     </React.OffScreen>
                 </div>
             )
         }
 
-        // new ReactDOM.createRoot(document.getElementById('app')).render(<Component />);
+        new ReactDOM.createRoot(document.getElementById('app')).render(<Component />);
 
-        ReactDOM.render(<Component/>, document.getElementById('app'));
+        // ReactDOM.render(<Component/>, document.getElementById('app'));
 
 
     </script>
