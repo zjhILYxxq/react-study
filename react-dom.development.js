@@ -19617,7 +19617,7 @@
         {
           markSpawnedWork(OffscreenLane);
         }
-        // 设置 OffScreen fiber node 的 lanes、childLanes 设置为 OffscreenLane
+        // 设置 OffScreen fiber node 的 lanes、childLanes 设置为 OffscreenLane, 空闲时渲染
         workInProgress.lanes = workInProgress.childLanes = laneToLanes(OffscreenLane);
         var _nextState = {
           baseLanes: nextBaseLanes
@@ -25029,7 +25029,7 @@
   // 工作中的 fiber node
   var workInProgress = null; // The lanes we're rendering
 
-  //  本次渲染期间要处理的所有 lanes(workInProgressRootRenderLanes 只是用来在渲染开始时，用来获取要处理的更新吗？)
+  // 本次渲染期间要处理的所有 lanes(workInProgressRootRenderLanes 只是用来在渲染开始时，用来获取要处理的更新吗？)
   var workInProgressRootRenderLanes = NoLanes; 
 
   // Stack that allows components to change the render lanes for its subtree
@@ -25053,6 +25053,16 @@
   var workInProgressRootExitStatus = RootIncomplete; // A fatal error, if one is thrown
 
   var workInProgressRootFatalError = null; 
+
+  /**
+   * workInProgressRootRenderLanes: 异步更新任务开始后，根据任务优先级，要优先处理的 lanes;
+   * subtreeRenderLanes: 协调某个 fiber node 时，要处理的 lanes。一般情况下， subtreeRenderLanes 会和 workInProgressRootRenderLanes 保持一致；
+   *     但如果要协调的是 OffScreen fiber node，那么 subtreeRenderLanes 可能会和 workInProgressRootRenderLanes 不一样，此时可能需要额外处理另外 lanes
+   *     的更新；当 OffScreen fiber node 结束 complete 操作以后，会恢复到 workInProgressRootRenderLanes；
+   * workInProgressRootIncludedLanes: 整个异步任务更新过程中，处理过的 lanes。一般情况下，会和 workInProgressRootRenderLanes 保持一致；
+   *     但如果有 OffScreen fiber node 要处理，那么 workInProgressRootIncludedLanes 可能会和 workInProgressRootRenderLanes 不一样。
+   *     workInProgressRootIncludedLanes 会包含 OffScreen fiber node 涉及的 lanes；
+   */
 
   // "Included" lanes refer to lanes that were worked on during this render. It's
   // slightly different than `renderLanes` because `renderLanes` can change as you
