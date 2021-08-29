@@ -201,6 +201,10 @@
   var hasOwnProperty = Object.prototype.hasOwnProperty;
   var illegalAttributeNameCache = {};
   var validatedAttributeNameCache = {};
+
+  /**
+   * @param attributeName
+   */
   function isAttributeNameSafe(attributeName) {
     if (hasOwnProperty.call(validatedAttributeNameCache, attributeName)) {
       return true;
@@ -223,6 +227,13 @@
 
     return false;
   }
+
+  /**
+   * 
+   * @param name
+   * @param propertyInfo
+   * @param isCustomComponentTag
+   */
   function shouldIgnoreAttribute(name, propertyInfo, isCustomComponentTag) {
     if (propertyInfo !== null) {
       return propertyInfo.type === RESERVED;
@@ -238,6 +249,13 @@
 
     return false;
   }
+
+  /**
+   * @param name
+   * @param value
+   * @param propertyInfo
+   * @param isCustomComponentTag
+   */
   function shouldRemoveAttributeWithWarning(name, value, propertyInfo, isCustomComponentTag) {
     if (propertyInfo !== null && propertyInfo.type === RESERVED) {
       return false;
@@ -268,6 +286,14 @@
         return false;
     }
   }
+
+  /**
+   * 
+   * @param name
+   * @param value
+   * @param propertyInfo
+   * @param isCustomComponentTag
+   */
   function shouldRemoveAttribute(name, value, propertyInfo, isCustomComponentTag) {
     if (value === null || typeof value === 'undefined') {
       return true;
@@ -300,10 +326,23 @@
 
     return false;
   }
+
+  /**
+   * @param name
+   */
   function getPropertyInfo(name) {
     return properties.hasOwnProperty(name) ? properties[name] : null;
   }
 
+  /**
+   * @param name
+   * @param type
+   * @param mustUseProperty
+   * @param attributeName
+   * @param attributeNamespace
+   * @param sanitizeURL
+   * @param removeEmptyString
+   */
   function PropertyInfoRecord(name, type, mustUseProperty, attributeName, attributeNamespace, sanitizeURL, removeEmptyString) {
     this.acceptsBooleans = type === BOOLEANISH_STRING || type === BOOLEAN || type === OVERLOADED_BOOLEAN;
     this.attributeName = attributeName;
@@ -608,6 +647,7 @@
       return value;
     }
   }
+
   /**
    * Sets the value for a property on a node.
    * 通过 dom.setAttribute 给 dom 节点设置属性值
@@ -894,6 +934,10 @@
     componentFrameCache = new PossiblyWeakMap();
   }
 
+  /**
+   * @param fn
+   * @param construct
+   */
   function describeNativeComponentFrame(fn, construct) {
     // If something asked for a stack inside a fake render, it should get ignored.
     if (!fn || reentry) {
@@ -1047,17 +1091,27 @@
     return syntheticFrame;
   }
 
+  /**
+   * 
+   */
   function describeClassComponentFrame(ctor, source, ownerFn) {
     {
       return describeNativeComponentFrame(ctor, true);
     }
   }
+
+  /**
+   * 
+   */
   function describeFunctionComponentFrame(fn, source, ownerFn) {
     {
       return describeNativeComponentFrame(fn, false);
     }
   }
 
+  /**
+   * @param Component
+   */
   function shouldConstruct(Component) {
     var prototype = Component.prototype;
     return !!(prototype && prototype.isReactComponent);
@@ -1116,6 +1170,9 @@
     return '';
   }
 
+  /**
+   * @param fiber
+   */
   function describeFiber(fiber) {
     var owner =  fiber._debugOwner ? fiber._debugOwner.type : null ;
     var source =  fiber._debugSource ;
@@ -1168,6 +1225,12 @@
     }
   }
 
+  /**
+   * 
+   * @param outerType
+   * @param innerType
+   * @param wrapperName
+   */
   function getWrappedName(outerType, innerType, wrapperName) {
     var functionName = innerType.displayName || innerType.name || '';
     return outerType.displayName || (functionName !== '' ? wrapperName + "(" + functionName + ")" : wrapperName);
@@ -1264,6 +1327,9 @@
 
   var isRendering = false;
   
+  /**
+   * 
+   */
   function getCurrentFiberOwnerNameInDevOrNull() {
     {
       if (current === null) {
@@ -1280,6 +1346,9 @@
     return null;
   }
 
+  /**
+   * 
+   */
   function getCurrentFiberStackInDev() {
     {
       if (current === null) {
@@ -1291,6 +1360,7 @@
       return getStackByFiberInDevAndProd(current);
     }
   }
+
   /**
    * 重置 current， current 缓存当前要处理的 fiber node
    */
@@ -1462,6 +1532,10 @@
 
     node._valueTracker = trackValueOnNode(node);
   }
+
+  /**
+   * @param node
+   */
   function updateValueIfChanged(node) {
     if (!node) {
       return false;
@@ -1485,6 +1559,9 @@
     return false;
   }
 
+  /**
+   * @param doc
+   */
   function getActiveElement(doc) {
     doc = doc || (typeof document !== 'undefined' ? document : undefined);
 
@@ -1595,6 +1672,12 @@
       setValueForProperty(node, 'checked', checked, false);
     }
   }
+
+  /**
+   * 
+   * @param element
+   * @param props
+   */
   function updateWrapper(element, props) {
     var node = element;
 
@@ -1656,6 +1739,13 @@
       }
     }
   }
+
+  /**
+   * 
+   * @param element
+   * @param props
+   * @param isHydrating
+   */
   function postMountWrapper(element, props, isHydrating) {
     var node = element; // Do not assign value if it is already set. This prevents user text input
     // from being lost during SSR hydration.
@@ -1720,12 +1810,21 @@
       node.name = name;
     }
   }
+
+  /**
+   * @param element
+   * @param props
+   */
   function restoreControlledState(element, props) {
     var node = element;
     updateWrapper(node, props);
     updateNamedCousins(node, props);
   }
 
+  /**
+   * @param rootNode
+   * @param props
+   */
   function updateNamedCousins(rootNode, props) {
     var name = props.name;
 
