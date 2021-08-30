@@ -212,6 +212,9 @@ Suspense 消除 race condition
 
 > 初次挂载的时候，设置 mode="hidden", 依旧需要 render 子节点，这会消耗一些时间，不能立刻进入 commit 阶段。
 
+
+#### hydrate 注水时为什么会发生丢失 dom 节点属性的副作用 ？？
+
 ### React 的最佳实践
 
 #### hooks 的最佳实践

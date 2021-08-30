@@ -10292,6 +10292,14 @@
     }
   }
 
+  /**
+   * 
+   * @param domElement 要注水的 dom 节点
+   * @param tag 要注水的 dom 节点的标签类型
+   * @param rawProps fiber node 的 pendingProps
+   * @param parentNamespace
+   * @param rootContainerElement
+   */
   function diffHydratedProperties(domElement, tag, rawProps, parentNamespace, rootContainerElement) {
     var isCustomComponentTag;
     var extraAttributeNames;
@@ -10380,10 +10388,12 @@
     assertValidProps(tag, rawProps);
 
     {
+      // 用于收集要注水的 dom 节点的属性
       extraAttributeNames = new Set();
+      // 要注水的 dom 节点原来的属性
       var attributes = domElement.attributes;
 
-      for (var _i = 0; _i < attributes.length; _i++) {
+      for (var _i = 0; _i < attributes.length; _i++) { // 遍历要注水的 dom 节点原来的属性
         var name = attributes[_i].name.toLowerCase();
 
         switch (name) {
@@ -10411,7 +10421,7 @@
     }
 
     var updatePayload = null;
-
+    // 遍历 fiber node 的 pendingProps
     for (var propKey in rawProps) {
       if (!rawProps.hasOwnProperty(propKey)) {
         continue;
@@ -10419,7 +10429,7 @@
 
       var nextProp = rawProps[propKey];
 
-      if (propKey === CHILDREN) {
+      if (propKey === CHILDREN) {  // "children"
         // For text content children we compare against textContent. This
         // might match additional HTML that is hidden when we read it using
         // textContent. E.g. "foo" will match "f<span>oo</span>" but that still
@@ -10446,7 +10456,7 @@
             updatePayload = [CHILDREN, '' + nextProp];
           }
         }
-      } else if (registrationNameDependencies.hasOwnProperty(propKey)) {
+      } else if (registrationNameDependencies.hasOwnProperty(propKey)) {  // onXxxx
         if (nextProp != null) {
           if ( typeof nextProp !== 'function') {
             warnForInvalidEventListener(propKey, nextProp);
@@ -10475,7 +10485,7 @@
               warnForPropDifference(propKey, serverHTML, expectedHTML);
             }
           }
-        } else if (propKey === STYLE) {
+        } else if (propKey === STYLE) {  // "style"
           // $FlowFixMe - Should be inferred as not undefined.
           extraAttributeNames.delete(propKey);
 
@@ -11486,17 +11496,18 @@
 
   /**
    * 
-   * @param instance
-   * @param type
-   * @param props
-   * @param rootContainerInstance
+   * @param instance  要注水的 dom 节点
+   * @param type dom 元素的类型
+   * @param props  fiber node 的 pendignProps
+   * @param rootContainerInstance 容器 dom 节点
    * @param hostContext
-   * @param internalInstanceHandle
+   * @param internalInstanceHandle 
    */
   function hydrateInstance(instance, type, props, rootContainerInstance, hostContext, internalInstanceHandle) {
+    // ？？
     precacheFiberNode(internalInstanceHandle, instance); // TODO: Possibly defer this until the commit phase where all the events
     // get attached.
-
+    // 
     updateFiberProps(instance, props);
     var parentNamespace;
 
@@ -16511,9 +16522,9 @@
   4;
 
   // This may have been an insertion or a hydration.
-  // 
+  // 最近一次结束注水(不管成功失败)操作的 fiber node
   var hydrationParentFiber = null;
-  // 
+  // 下一个要注水的 dom 实例
   var nextHydratableInstance = null;
   // 用于判断是否处于 hydrate 中
   var isHydrating = false;
@@ -16531,7 +16542,7 @@
     var parentInstance = fiber.stateNode.containerInfo;
     // 从容器节点的所有子节点中，找到第一个可注水的 dom 节点
     nextHydratableInstance = getFirstHydratableChild(parentInstance);
-    // 
+    // 初始化为 container fiber node
     hydrationParentFiber = fiber;
     // 进入 hydrate 模式
     isHydrating = true;
@@ -16539,32 +16550,39 @@
   }
 
   /**
-   * 
-   * @param returnFiber
-   * @param instance
+   * instance 不能注水，从 returnFiber 对应的 dom 节点中移除
+   * 删除的过程：
+   * 1. 创建一个 fiber node，stateNode 指向要删除的 dom 节点，打上 Deletion 标记；
+   * 2. 在 commit 节点删除 dom 节点；
+   * @param returnFiber  parent fiber node
+   * @param instance 不能注水的 dom 实例
    */
   function deleteHydratableInstance(returnFiber, instance) {
     {
       switch (returnFiber.tag) {
         case HostRoot:
+          // 发出警告， xxx 下面的 instance 不能注水
           didNotHydrateContainerInstance(returnFiber.stateNode.containerInfo, instance);
           break;
 
         case HostComponent:
+          // 发出警告， xxx 下面的 instance 不能注水
           didNotHydrateInstance(returnFiber.type, returnFiber.memoizedProps, returnFiber.stateNode, instance);
           break;
       }
     }
-
+    // 创建一个要删除的 fiber node
     var childToDelete = createFiberFromHostInstanceForDeletion();
+    // 要删除的 fiber node 的 stateNode 指向 instance
     childToDelete.stateNode = instance;
     childToDelete.return = returnFiber;
+    // 要删除的 fiber node 在 commit 阶段删除对应的 dom 节点
     childToDelete.flags = Deletion; // This might seem like it belongs on progressedFirstDeletion. However,
     // these children are not part of the reconciliation list of children.
     // Even if we abort and rereconcile the children, that will try to hydrate
     // again and the nodes are still in the host tree so these will be
     // recreated.
-
+    // 收集要删除的 fiber node
     if (returnFiber.lastEffect !== null) {
       returnFiber.lastEffect.nextEffect = childToDelete;
       returnFiber.lastEffect = childToDelete;
@@ -16692,7 +16710,7 @@
   }
 
   /**
-   * 尝试声明下一次可水化的实例？？
+   * 尝试声明下一次可水化的实例，用来判断 fiber node 是否有可注水的实例对象
    * @param fiber workInProgress fiber node
    */
   function tryToClaimNextHydratableInstance(fiber) {
@@ -16709,6 +16727,8 @@
       insertNonHydratedInstance(hydrationParentFiber, fiber);
       // 不是 hydrate 模式
       isHydrating = false;
+      // 最近一次结束注水(不管成功失败)操作的 fiber node
+      // 主要是为了输出警告信息： parent dom 节点中没有 xxxx
       hydrationParentFiber = fiber;
       return;
     }
@@ -16720,12 +16740,16 @@
       // If we can't hydrate this instance let's try the next one.
       // We use this as a heuristic. It's based on intuition and not data so it
       // might be flawed or unnecessary.
+      // nextInstance 不能用来注水，那就找到 nextInstance 的兄弟节点，看可不可以注水
       nextInstance = getNextHydratableSibling(firstAttemptedInstance);
 
-      if (!nextInstance || !tryHydrate(fiber, nextInstance)) {
+      if (!nextInstance || !tryHydrate(fiber, nextInstance)) {  // 如果兄弟节点依旧不可以注水
         // Nothing to hydrate. Make it an insertion.
+        // 如果 nextInstance 及兄弟节点都不可以注水，那么 fiber node 就需要做 insert 操作了
+        // (这里比较奇怪，为什么不继续找兄弟节点了？？)
         insertNonHydratedInstance(hydrationParentFiber, fiber);
         isHydrating = false;
+        // 最近一次结束注水(不管成功失败)操作的 fiber node
         hydrationParentFiber = fiber;
         return;
       } // We matched the next one, we'll now assume that the first one was
@@ -16733,23 +16757,25 @@
       // we'll have to schedule a deletion. To do that, this node needs a dummy
       // fiber associated with it.
 
-
+      // 不能注水的 dom 节点，要在 commit 阶段移除
       deleteHydratableInstance(hydrationParentFiber, firstAttemptedInstance);
     }
-    
+    // 最近一次结束注水(不管成功失败)操作的 fiber node
     hydrationParentFiber = fiber;
+    // 从 nextInstance 中获取第一个可注水的 子节点
     nextHydratableInstance = getFirstHydratableChild(nextInstance);
   }
 
   /**
-   * 
-   * @param fiber
-   * @param rootContainerInstance
+   * 注水的准备工作
+   * @param fiber 注水成功的 fiber node
+   * @param rootContainerInstance 容器 dom 节点
    * @param hostContext
    */
   function prepareToHydrateHostInstance(fiber, rootContainerInstance, hostContext) {
-
+    // 要注水的 dom 节点
     var instance = fiber.stateNode;
+    // 
     var updatePayload = hydrateInstance(instance, fiber.type, fiber.memoizedProps, rootContainerInstance, hostContext, fiber); // TODO: Type this specific to this type of component.
 
     fiber.updateQueue = updatePayload; // If the update payload indicates that there is a change or if there
@@ -16804,6 +16830,7 @@
   }
 
   /**
+   * 
    * @param fiber
    */
   function skipPastDehydratedSuspenseInstance(fiber) {
@@ -16821,6 +16848,7 @@
   }
 
   /**
+   * 弹出上一个完成注水的 fiber node，弹出的 fiber node 是指定 fiber node 的 parent fiber node
    * @param fiber
    */
   function popToNextHostParent(fiber) {
@@ -16834,21 +16862,26 @@
   }
 
   /**
-   * @param fiber
+   * 判断 fiber node 是否注水成功
+   * @param fiber  workInProgress fiber node
    */
   function popHydrationState(fiber) {
 
+    // 如果 fiber !== hydrationParentFiber, 说明 fiber 没有注水操作，直接返回 false
     if (fiber !== hydrationParentFiber) {
       // We're deeper than the current hydration context, inside an inserted
       // tree.
       return false;
     }
 
-    if (!isHydrating) {
+    if (!isHydrating) {  //
       // If we're not currently hydrating but we're in a hydration context, then
       // we were an insertion and now need to pop up reenter hydration of our
       // siblings.
+      // isHydrating 为 false， 说明注水失败了。但是 fiber === hydrationParentFiber，我们仍然处于注水环境中，
+      // 说明我们是一个 insert，此时需要弹出需要重新注水的兄弟？
       popToNextHostParent(fiber);
+      // isHydrating = true, 说明上一次注水成功了
       isHydrating = true;
       return false;
     }
@@ -16861,7 +16894,7 @@
 
     if (fiber.tag !== HostComponent || type !== 'head' && type !== 'body' && !shouldSetTextContent(type, fiber.memoizedProps)) {
       var nextInstance = nextHydratableInstance;
-
+      // 删除没有注水的 dom 节点
       while (nextInstance) {
         deleteHydratableInstance(fiber, nextInstance);
         nextInstance = getNextHydratableSibling(nextInstance);
@@ -16871,11 +16904,14 @@
     popToNextHostParent(fiber);
 
     if (fiber.tag === SuspenseComponent) {
+      // 什么情况下 fiebr.tag 会等于 SuspenseComponent ？？
+      // Suspense 的 fallback 也会注水 ？？
       nextHydratableInstance = skipPastDehydratedSuspenseInstance(fiber);
     } else {
+      // 下一个要注水的 dom 实例
       nextHydratableInstance = hydrationParentFiber ? getNextHydratableSibling(fiber.stateNode) : null;
     }
-
+    // fiber 注水成功
     return true;
   }
 
@@ -16883,7 +16919,7 @@
    * 重置 hydrate 状态
    */
   function resetHydrationState() {
-    // 
+    // 重置 hydrationParentFiber 为 null
     hydrationParentFiber = null;
     // 将下一个可注水的 dom 实例置为 null
     nextHydratableInstance = null;
@@ -20271,12 +20307,13 @@
    * @param renderLanes
    */
   function updateHostComponent(current, workInProgress, renderLanes) {
-    // 
+    debugger
     pushHostContext(workInProgress);
     
     if (current === null) {
       // 如果 current fiber node 为 null ？？
-      // 这是一个什么操作 ？？ 和 hydrate 有关
+      // current 为 null，说明 workInProgress fiber node 是挂载
+      // 此时需要先去判断一下 fiber node 是不是有对应的可注水的 dom 实例
       tryToClaimNextHydratableInstance(workInProgress);
     }
     // workInProgress fiber node 对应的 dom 标签字符串
@@ -22499,6 +22536,7 @@
           if (current === null || current.child === null) {
             // If we hydrated, pop so that we can delete any remaining children
             // that weren't hydrated.
+            // 判断 fiber node 是否注水成功
             var wasHydrated = popHydrationState(workInProgress);
 
             if (wasHydrated) {
@@ -22552,18 +22590,20 @@
             // "stack" as the parent. Then append children as we go in beginWork
             // or completeWork depending on whether we want to add them top->down or
             // bottom->up. Top->down is faster in IE11.
-            // 
+            // 判断 workInProgress 是否注水成功
             var _wasHydrated = popHydrationState(workInProgress);
 
             if (_wasHydrated) {
               // TODO: Move this and createInstance step into the beginPhase
               // to consolidate.
+              // 注水成功
               if (prepareToHydrateHostInstance(workInProgress, rootContainerInstance, currentHostContext)) {
                 // If changes to the hydrated node need to be applied at the
                 // commit-phase we mark this as such.
                 markUpdate(workInProgress);
               }
             } else {
+              // 注水失败，要新增一个 dom 节点
               // 创建 fiber node 对应的 dom 节点
               var instance = createInstance(type, newProps, rootContainerInstance, currentHostContext, workInProgress);
               // 将 child fiber node 对应的 dom 节点添加到 parent fiber node 对应的 dom 节点中
@@ -29672,7 +29712,7 @@
   }
 
   /**
-   * 
+   * 创建一个要删除的 fiber node
    */
   function createFiberFromHostInstanceForDeletion() {
     var fiber = createFiber(HostComponent, null, null, NoMode); // TODO: These should not need a type.
@@ -29681,6 +29721,13 @@
     fiber.type = 'DELETED';
     return fiber;
   }
+
+  /**
+   * 
+   * @param portal
+   * @param mode
+   * @param lanes
+   */
   function createFiberFromPortal(portal, mode, lanes) {
     var pendingProps = portal.children !== null ? portal.children : [];
     var fiber = createFiber(HostPortal, pendingProps, portal.key, mode);
