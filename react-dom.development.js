@@ -11404,9 +11404,10 @@
   } // -------------------
 
   /**
-   * @param instance
-   * @param type
-   * @param props
+   * 判断 dom 节点是否可以注水
+   * @param instance  dom 实例对象
+   * @param type dom 节点类型
+   * @param props 属性值
    */
   function canHydrateInstance(instance, type, props) {
     if (instance.nodeType !== ELEMENT_NODE || type.toLowerCase() !== instance.nodeName.toLowerCase()) {
@@ -11418,8 +11419,9 @@
   }
 
   /**
-   * @param instance
-   * @param text
+   * 判断文本节点是否可以注水
+   * @param instance  文本节点
+   * @param text 文本内容
    */
   function canHydrateTextInstance(instance, text) {
     if (text === '' || instance.nodeType !== TEXT_NODE) {
@@ -11432,6 +11434,7 @@
   }
 
   /**
+   * 
    * @param instance
    */
   function isSuspenseInstancePending(instance) {
@@ -11609,11 +11612,18 @@
     }
   }
 
+  /**
+   * 
+   */
   function didNotMatchHydratedTextInstance(parentType, parentProps, parentInstance, textInstance, text) {
     if ( parentProps[SUPPRESS_HYDRATION_WARNING$1] !== true) {
       warnForUnmatchedText(textInstance, text);
     }
   }
+
+  /**
+   * 
+   */
   function didNotHydrateContainerInstance(parentContainer, instance) {
     {
       if (instance.nodeType === ELEMENT_NODE) {
@@ -11623,6 +11633,10 @@
       }
     }
   }
+
+  /**
+   * 
+   */
   function didNotHydrateInstance(parentType, parentProps, parentInstance, instance) {
     if ( parentProps[SUPPRESS_HYDRATION_WARNING$1] !== true) {
       if (instance.nodeType === ELEMENT_NODE) {
@@ -11632,29 +11646,49 @@
       }
     }
   }
+  /**
+   * hydrate 模式下，没有找到可注水的 dom 实例，发出警告
+   */
   function didNotFindHydratableContainerInstance(parentContainer, type, props) {
     {
       warnForInsertedHydratedElement(parentContainer, type);
     }
   }
+  /**
+   * hydrate 模式下，没有找到可注水的文本节点，发出警告
+   */
   function didNotFindHydratableContainerTextInstance(parentContainer, text) {
     {
       warnForInsertedHydratedText(parentContainer, text);
     }
   }
+
+  /**
+   * 
+   */
   function didNotFindHydratableInstance(parentType, parentProps, parentInstance, type, props) {
     if ( parentProps[SUPPRESS_HYDRATION_WARNING$1] !== true) {
       warnForInsertedHydratedElement(parentInstance, type);
     }
   }
+
+  /**
+   * 
+   */
   function didNotFindHydratableTextInstance(parentType, parentProps, parentInstance, text) {
     if ( parentProps[SUPPRESS_HYDRATION_WARNING$1] !== true) {
       warnForInsertedHydratedText(parentInstance, text);
     }
   }
+
+  /**
+   * 
+   */
   function didNotFindHydratableSuspenseInstance(parentType, parentProps, parentInstance) {
     if ( parentProps[SUPPRESS_HYDRATION_WARNING$1] !== true) ;
   }
+
+
   var clientId = 0;
   function makeClientIdInDEV(warnOnAccessInDEV) {
     var id = 'r:' + (clientId++).toString(36);
@@ -16540,28 +16574,32 @@
   }
 
   /**
-   * 
+   * fiber node 没有找到可注水的实例对象，需要新增(去掉 Hydrating 标记，添加 Placement 标记)
    * @param returnFiber
-   * @param fiber
+   * @param fiber workInProgress fiber node
    */
   function insertNonHydratedInstance(returnFiber, fiber) {
+    // 去掉 fiber node 的 Hydrating 标记，添加 Placement 标记
     fiber.flags = fiber.flags & ~Hydrating | Placement;
 
     {
       switch (returnFiber.tag) {
-        case HostRoot:
+        case HostRoot:   // 容器 dom 节点
           {
+            // 容器 dom 节点
             var parentContainer = returnFiber.stateNode.containerInfo;
 
             switch (fiber.tag) {
-              case HostComponent:
+              case HostComponent:  // dom 节点类型的 fiber node
                 var type = fiber.type;
                 var props = fiber.pendingProps;
+                // 没有找到可注水的 dom 节点，警告
                 didNotFindHydratableContainerInstance(parentContainer, type);
                 break;
 
-              case HostText:
+              case HostText: // 文本类型的 fiber node
                 var text = fiber.pendingProps;
+                // 没有找到可注水的文本节点，警告
                 didNotFindHydratableContainerTextInstance(parentContainer, text);
                 break;
             }
@@ -16569,25 +16607,26 @@
             break;
           }
 
-        case HostComponent:
+        case HostComponent:  // 原生的 dom 节点
           {
             var parentType = returnFiber.type;
             var parentProps = returnFiber.memoizedProps;
             var parentInstance = returnFiber.stateNode;
 
             switch (fiber.tag) {
-              case HostComponent:
+              case HostComponent:  // 原生 dom 节点类型的 fiber node
                 var _type = fiber.type;
                 var _props = fiber.pendingProps;
+                // 
                 didNotFindHydratableInstance(parentType, parentProps, parentInstance, _type);
                 break;
 
-              case HostText:
+              case HostText:  // 文本节点类型的 fiber node
                 var _text = fiber.pendingProps;
                 didNotFindHydratableTextInstance(parentType, parentProps, parentInstance, _text);
                 break;
 
-              case SuspenseComponent:
+              case SuspenseComponent: // Suspense fiber node
                 didNotFindHydratableSuspenseInstance(parentType, parentProps);
                 break;
             }
@@ -16602,18 +16641,23 @@
   }
 
   /**
-   * 
-   * @param fiber
-   * @param nextInstance
+   * 尝试给 dom 实例注水
+   * 如果 nextInstance 的类型和 fiber node 的类型一样，那就可以注水
+   * @param fiber  workInProgress fiber node
+   * @param nextInstance 要注水的 dom 实例(包括文本节点)
    */
   function tryHydrate(fiber, nextInstance) {
     switch (fiber.tag) {
-      case HostComponent:
+      case HostComponent:  // dom 节点类型的 fiber node
         {
           var type = fiber.type;
           var props = fiber.pendingProps;
+          // 判断 nextInstance 是否可以注水
+          // 如果 nextInstance 是 dom 节点，且 fiber node 的类型和 nextInstance 的类型相同，
+          // 说明 nextInstance 可以用来注水
           var instance = canHydrateInstance(nextInstance, type);
 
+          // nextInstance 可以注水，将 fiber.stateNode 指向 nextInstance
           if (instance !== null) {
             fiber.stateNode = instance;
             return true;
@@ -16622,9 +16666,10 @@
           return false;
         }
 
-      case HostText:
+      case HostText:  // 文本节点类型的 fiber node
         {
           var text = fiber.pendingProps;
+          // 判断 nextInstance 是否可以注水
           var textInstance = canHydrateTextInstance(nextInstance, text);
 
           if (textInstance !== null) {
@@ -16635,7 +16680,7 @@
           return false;
         }
 
-      case SuspenseComponent:
+      case SuspenseComponent:  // suspense fiber node
         {
 
           return false;
@@ -16655,20 +16700,23 @@
       // 如果不处于 hydrate 阶段，直接返回
       return;
     }
-
+    // 当前可注水的 dom 实例对象
     var nextInstance = nextHydratableInstance;
 
-    if (!nextInstance) {
+    if (!nextInstance) {  // 没有可注水的 dom 实例对象
       // Nothing to hydrate. Make it an insertion.
+      // fiber node 没有找到可注水的实例节点，需要 insert
       insertNonHydratedInstance(hydrationParentFiber, fiber);
+      // 不是 hydrate 模式
       isHydrating = false;
       hydrationParentFiber = fiber;
       return;
     }
 
+    // 第一个尝试注水的 dom 实例
     var firstAttemptedInstance = nextInstance;
 
-    if (!tryHydrate(fiber, nextInstance)) {
+    if (!tryHydrate(fiber, nextInstance)) {  // nextInstance 不可以注水
       // If we can't hydrate this instance let's try the next one.
       // We use this as a heuristic. It's based on intuition and not data so it
       // might be flawed or unnecessary.
@@ -16688,7 +16736,7 @@
 
       deleteHydratableInstance(hydrationParentFiber, firstAttemptedInstance);
     }
-
+    
     hydrationParentFiber = fiber;
     nextHydratableInstance = getFirstHydratableChild(nextInstance);
   }
@@ -16832,12 +16880,12 @@
   }
 
   /**
-   * 重置 hydrate
+   * 重置 hydrate 状态
    */
   function resetHydrationState() {
     // 
     hydrationParentFiber = null;
-    // 
+    // 将下一个可注水的 dom 实例置为 null
     nextHydratableInstance = null;
     // 通过 isHydrating 可以判断是否处于 hydrate 中
     isHydrating = false;
@@ -20527,7 +20575,7 @@
           disableLogs();
 
           try {
-            // 函数组件，再执行一遍， value 为函数组件对应的 react element
+            // 严格模式下，函数组件，再执行一遍， value 为函数组件对应的 react element
             value = renderWithHooks(null, workInProgress, Component, props, context, renderLanes);
           } finally {
             reenableLogs();
@@ -21784,7 +21832,7 @@
    * @param renderLanes 本次渲染要处理的更新
    */
   function beginWork(current, workInProgress, renderLanes) {
-    
+    debugger
     // workInProgress， 待处理的 fiber node， lanes 是 fiber node 对应的更新
     // 一个更新产生时，会为这个更新分配一个 lane，而这个 lane 也会合并到对应的 fiber node 上
     var updateLanes = workInProgress.lanes;

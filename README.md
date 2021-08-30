@@ -202,13 +202,15 @@ Suspense 消除 race condition
 
 #### flushDiscreteUpdates 是啥？？
 
+#### React.StrictMode
+
 #### 初次挂载 OffScreen 节点时，为什么尽管 mode="hidden", 节点依然显示？？
 
 不管是挂载阶段还是更新阶段，OffScreen 的子节点对应的 dom 节点都会添加到 dom tree 中，并且通过在 commit 阶段添加(删除) display: none 属性来控制 dom 节点的隐藏(显示)。
 
 挂载阶段，在 commit 操作的时候不会修改 display 属性。所以即使 mode="hidden", 节点依然显示。
 
-> 这个一个 react 的一个 bug？ 还是本就是这样设计的？如果是这样设计的，目的何在 ？？
+> 初次挂载的时候，设置 mode="hidden", 依旧需要 render 子节点，这会消耗一些时间，不能立刻进入 commit 阶段。
 
 ### React 的最佳实践
 
