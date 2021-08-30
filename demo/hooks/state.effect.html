@@ -14,14 +14,13 @@
     <script type="text/babel">
 
         const reducer = (state, action) => {
-            debugger
             console.log('reducer');
                 switch(action) {
                     case "INCREMENT":
                         return { ...state, count: state.count + 1 };
                     case "DECREMENT":
-                        // state.count = state.count - 1; // 注意与上面 INCREMENT 的不同
-                        return { ...state, count: state.count - 1 };
+                        state.count = state.count - 1; // 注意与上面 INCREMENT 的不同
+                        return { ...state };
                     case "RESET":
                         return { count: 0 };
                     default:
@@ -30,62 +29,62 @@
             }
         function Component() {
             const [state, dispatch] = React.useReducer(reducer, { count: 0 });
-            const myRef = React.useRef(null);
+            // const myRef = React.useRef(null);
 
-            const handleClick = () => {
-                setTimeout(() => {
-                    // dispatch('INCREMENT');
-                    // dispatch('INCREMENT');
-                    // dispatch('INCREMENT');
-                    // dispatch('INCREMENT');
-                    myRef.current.click();
-                    myRef.current.click();
-                    // myRef.current.click();
-                    // myRef.current.click();
-                });
-                // dispatch('INCREMENT');
-                // myRef.current.click();
-                // myRef.current.click();
-                // myRef.current.click();
-                // myRef.current.click();
+            // const handleClick = () => {
+            //     setTimeout(() => {
+            //         // dispatch('INCREMENT');
+            //         // dispatch('INCREMENT');
+            //         // dispatch('INCREMENT');
+            //         // dispatch('INCREMENT');
+            //         myRef.current.click();
+            //         myRef.current.click();
+            //         // myRef.current.click();
+            //         // myRef.current.click();
+            //     });
+            //     // dispatch('INCREMENT');
+            //     // myRef.current.click();
+            //     // myRef.current.click();
+            //     // myRef.current.click();
+            //     // myRef.current.click();
 
-                // setTimeout(() => {
-                //     dispatch('INCREMENT');
-                // });
+            //     // setTimeout(() => {
+            //     //     dispatch('INCREMENT');
+            //     // });
 
-                // setTimeout(() => {
-                //     dispatch('INCREMENT');
-                // });
-                // setTimeout(() => {
-                //     dispatch('INCREMENT');
-                // });
-                // setTimeout(() => {
-                //     dispatch('INCREMENT');
-                // });
-                // setTimeout(() => {
-                //     dispatch('INCREMENT');
-                // });
-                // setTimeout(() => {
-                //     dispatch('INCREMENT');
-                // });
-                // setTimeout(() => {
-                //     dispatch('INCREMENT');
-                // });
-                // setTimeout(() => {
-                //     dispatch('INCREMENT');
-                // });
-            }
+            //     // setTimeout(() => {
+            //     //     dispatch('INCREMENT');
+            //     // });
+            //     // setTimeout(() => {
+            //     //     dispatch('INCREMENT');
+            //     // });
+            //     // setTimeout(() => {
+            //     //     dispatch('INCREMENT');
+            //     // });
+            //     // setTimeout(() => {
+            //     //     dispatch('INCREMENT');
+            //     // });
+            //     // setTimeout(() => {
+            //     //     dispatch('INCREMENT');
+            //     // });
+            //     // setTimeout(() => {
+            //     //     dispatch('INCREMENT');
+            //     // });
+            //     // setTimeout(() => {
+            //     //     dispatch('INCREMENT');
+            //     // });
+            // }
 
             return (
                     <div style={{marginTop: 200}}>
-                        <button onClick={() => handleClick()}>+</button> / <button ref={myRef} onClick={() => dispatch('DECREMENT')}>-</button>
+                        <button onClick={() => dispatch('INCREMENT')}>+</button> / <button onClick={() => dispatch('DECREMENT')}>-</button>
                         <div>{state.count}</div> 
                     </div>
             )
         }
 
-        // ReactDOM.render(<Component />, document.getElementById('app'));
-        new ReactDOM.createRoot(document.getElementById('app')).render(<Component />);
+        ReactDOM.render(<Component />, document.getElementById('app'));
+        // new ReactDOM.createRoot(document.getElementById('app')).render(<Component />);
     
     </script>
 </body>

@@ -4461,10 +4461,10 @@
   var PassiveUnmountPendingDev =
   /*     */
   8192;
-  var Hydrating =   // 注水？？
+  var Hydrating =   // 注水标记，即 fiber node 需要注水
   /*                    */
   1024;
-  var HydratingAndUpdate =
+  var HydratingAndUpdate =  // 注水 + update， 即 Hydrating + Update = 1028
   /*           */
   1028; // Passive & Update & Callback & Ref & Snapshot
 
@@ -11446,13 +11446,15 @@
   }
 
   /**
-   * @param node
+   * 以 dom 节点为起点，找到可注水的 dom 节点
+   * dom 节点的类型为元素节点或者文本节点，才可以注水
+   * @param node  dom 节点
    */
   function getNextHydratable(node) {
     // Skip non-hydratable nodes.
     for (; node != null; node = node.nextSibling) {
       var nodeType = node.nodeType;
-
+      // 元素节点或者文本节点，才可以注水哦
       if (nodeType === ELEMENT_NODE || nodeType === TEXT_NODE) {
         break;
       }
@@ -11462,16 +11464,20 @@
   }
 
   /**
-   * @param instance
+   * 从 instance 的兄弟节点开始，获取可注水的 dom 节点
+   * @param instance  dog 节点
    */
   function getNextHydratableSibling(instance) {
     return getNextHydratable(instance.nextSibling);
   }
 
   /**
-   * @param parentInstance
+   * 获取第一个可注水的 child dom 节点
+   * @param parentInstance  parent dom 节点，一般为 container dom 节点
    */
   function getFirstHydratableChild(parentInstance) {
+    // 从第一个子节点开始，获取第一个可注水的子节点
+    // 子节点的类型是元素节点或者文本节点，才可以注水哦(comment 节点不可以哦)
     return getNextHydratable(parentInstance.firstChild);
   }
 
@@ -16479,14 +16485,21 @@
   var isHydrating = false;
 
   /**
-   * 
-   * @param fiber
+   * 进入 hydrate 模式
+   * 主要做了以下几个工作：
+   * - 从容器节点的子节点中找到第一个可注水的 dom 节点；
+   * - 全局状态 isHydrate 为 true，标志着开始 hydrate 模式；
+   * @param fiber 容器 fiber node
    */
   function enterHydrationState(fiber) {
-
+    // fiber 为 container fiber node, fiber.stateNode 为 fiber root node
+    // fiber.stateNode.containerInfo 为 container dom 节点
     var parentInstance = fiber.stateNode.containerInfo;
+    // 从容器节点的所有子节点中，找到第一个可注水的 dom 节点
     nextHydratableInstance = getFirstHydratableChild(parentInstance);
+    // 
     hydrationParentFiber = fiber;
+    // 进入 hydrate 模式
     isHydrating = true;
     return true;
   }
@@ -16589,6 +16602,7 @@
   }
 
   /**
+   * 
    * @param fiber
    * @param nextInstance
    */
@@ -16680,6 +16694,7 @@
   }
 
   /**
+   * 
    * @param fiber
    * @param rootContainerInstance
    * @param hostContext
@@ -18291,6 +18306,9 @@
     }
   }
 
+  /**
+   * 
+   */
   function mountOpaqueIdentifier() {
     var makeId =  makeClientIdInDEV.bind(null, warnOnOpaqueIdentifierAccessInDEV.bind(null, currentlyRenderingFiber$1)) ;
 
@@ -20156,7 +20174,7 @@
       // We always try to hydrate. If this isn't a hydration pass there won't
       // be any children to hydrate which is effectively the same thing as
       // not hydrating.
-      // ReactDOM.hydrate 会走这个赛道
+      // 进入 hydrate 模式，ReactDOM.hydrate 会走这个分支
       {
         var mutableSourceEagerHydrationData = root.mutableSourceEagerHydrationData;
 
@@ -20168,7 +20186,7 @@
           }
         }
       }
-
+      // hydrate 模式下的挂载逻辑
       var child = mountChildFibers(workInProgress, null, nextChildren, renderLanes);
       workInProgress.child = child;
       var node = child;
@@ -20180,13 +20198,16 @@
         // Conceptually this is similar to Placement in that a new subtree is
         // inserted into the React tree here. It just happens to not need DOM
         // mutations because it already exists.
+        // 每一个 child fiber node 去掉 Placement 标记，添加 Hydrating 标记
+        // 意味着， child fiber node 对应的 dom 节点可能已经存在了，就不要做 dom 节点的 insert、move、delete 等操作了
+        // 只需要给对应的 dom 节点添加一些事件了
         node.flags = node.flags & ~Placement | Hydrating;
         node = node.sibling;
       }
     } else {
       // Otherwise reset hydration state in case we aborted and resumed another
       // root.
-      // ReactDOM.render 会走这个赛道
+      // ReactDOM.render 会走这个分支
       // 协调容器节点的子节点
       reconcileChildren(current, workInProgress, nextChildren, renderLanes);
       resetHydrationState();
@@ -20385,11 +20406,11 @@
   }
 
   /**
-   * 挂载不确定的组件
-   * @param _current
-   * @param workInProgress
-   * @param Component
-   * @param renderLanes
+   * 挂载不确定的组件(一个组件函数，无法确定到底是类组件还是函数组件)
+   * @param _current   current fiber node，即 old fiber node
+   * @param workInProgress  workInProgress fiber node， 即 new fiber node
+   * @param Component 组件函数，无法确定是类组件，还是函数组件
+   * @param renderLanes 协调当前 fiber node 时要处理的 lanes
    */
   function mountIndeterminateComponent(_current, workInProgress, Component, renderLanes) {
     if (_current !== null) {
@@ -20417,7 +20438,7 @@
     {
       if (Component.prototype && typeof Component.prototype.render === 'function') {
         var componentName = getComponentName(Component) || 'Unknown';
-
+        // 组件有 render ，但没有继承自 React.Component，抛出异常
         if (!didWarnAboutBadClass[componentName]) {
           error("The <%s /> component appears to have a render method, but doesn't extend React.Component. " + 'This is likely to cause errors. Change %s to extend React.Component instead.', componentName, componentName);
 
@@ -20436,7 +20457,7 @@
       setIsRendering(false);
     } // React DevTools reads this flag.
 
-    // 函数组件方法执行完毕
+    // 给 fiber node 添加 PerformedWork 标记，表示 fiber node 的 begin 阶段已经完成
     workInProgress.flags |= PerformedWork;
 
     {
@@ -26734,7 +26755,7 @@
    * @param unitOfwork 待处理的 fiber node
    */
   function performUnitOfWork(unitOfWork) {
-    
+    debugger
     // The current, flushed, state of this fiber is the alternate. Ideally
     // nothing should rely on this, but relying on it here means that we don't
     // need an additional field on the work in progress.
@@ -30532,6 +30553,9 @@
     updateContainer(children, root, null, null);
   };
 
+  /**
+   * 
+   */
   ReactDOMRoot.prototype.unmount = ReactDOMBlockingRoot.prototype.unmount = function () {
     {
       if (typeof arguments[0] === 'function') {
@@ -30742,6 +30766,7 @@
       // 如果是 hydrate 模式，那么 fiber root node 的 hydrate 属性为 true
       root = container._reactRootContainer = legacyCreateRootFromDOMContainer(container, forceHydrate);
       // fiberRoot 为容器节点对应的 fiber root node
+      // 如果此时是 hydrate 模式，那么 fiberRoot.hydrate = true
       fiberRoot = root._internalRoot;
 
       if (typeof callback === 'function') {

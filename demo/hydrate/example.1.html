@@ -154,9 +154,7 @@
         document.getElementById('app').innerHTML = b;
         console.log(b);
         debugger
-        let c = ReactDOM.hydrate( <Child4 />, document.getElementById('app'), (instance) => {
-            console.log(instance);
-        });
+        let c = ReactDOM.hydrate( <Child4 />, document.getElementById('app'));
         // var c = ReactDOMServer.renderToStaticMarkup(Child4());
         // console.log(c);
         
