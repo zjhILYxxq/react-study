@@ -107,13 +107,14 @@
   var enableNewReconciler = false; // Errors that are thrown while unmounting (or after in the case of passive effects)
   var warnAboutStringRefs = false;
 
+  // 用于收集所有原生的事件
   var allNativeEvents = new Set();
 
   /**
    * Mapping from registration name to event name
+   * 建立 react 合成事件名和依赖的原生事件的对应关系
+   * key 是 react 合成事件名；value 是一个数组，依赖的原生事件
    */
-
-
   var registrationNameDependencies = {};
   /**
    * Mapping from lowercase registration names to the properly cased version,
@@ -121,42 +122,47 @@
    * only in true.
    * @type {Object}
    */
-
   var possibleRegistrationNames =  {} ; // Trust the developer to only use possibleRegistrationNames in true
   
   /**
    * 
-   * @params registrationName
-   * @params dependencies
+   * @params registrationName  react 合成事件名
+   * @params dependencies 依赖的原生事件名
    */
   function registerTwoPhaseEvent(registrationName, dependencies) {
+    // 注册 react 合成事件(冒泡)，将 react 合成事件及依赖的原生事件，收集到 registrationNameDependencies 中；
     registerDirectEvent(registrationName, dependencies);
+    // 注册 react 合成事件(捕获)
     registerDirectEvent(registrationName + 'Capture', dependencies);
   }
 
   /**
-   * 
-   * @params registrationName
-   * @params dependencies
+   * 注册 react 合成事件及依赖的原生事件，并将依赖的原生事件全部添加到  allNativeEvents 中
+   * @params registrationName  react 合成事件名
+   * @params dependencies 依赖的原生事件名
    */
   function registerDirectEvent(registrationName, dependencies) {
     {
+      // ？？
       if (registrationNameDependencies[registrationName]) {
         error('EventRegistry: More than one plugin attempted to publish the same ' + 'registration name, `%s`.', registrationName);
       }
     }
-
+    // 收集 react 合成事件名和依赖的原生事件
     registrationNameDependencies[registrationName] = dependencies;
 
     {
+      // react 合成事件的小写
       var lowerCasedName = registrationName.toLowerCase();
+      // 收集小写事件名及对应的实际 react 合成事件
+      // onclick => onClick
       possibleRegistrationNames[lowerCasedName] = registrationName;
 
       if (registrationName === 'onDoubleClick') {
         possibleRegistrationNames.ondblclick = registrationName;
       }
     }
-
+    // allNativeEvents 收集所有的原生事件
     for (var i = 0; i < dependencies.length; i++) {
       allNativeEvents.add(dependencies[i]);
     }
@@ -3832,10 +3838,13 @@
 
     warnUnknownProperties(type, props, eventRegistry);
   }
-
+  // 
   var IS_EVENT_HANDLE_NON_MANAGED_NODE = 1;  // ‘is_event_handle_non_managed_node’ ？？
+  // 
   var IS_NON_DELEGATED = 1 << 1;  // ‘is_non_delegated’ ??
+  // 
   var IS_CAPTURE_PHASE = 1 << 2; // 'is_capture_phase' ??
+  //
   var IS_REPLAYED = 1 << 4; // 'is_replayed' ??
   // set to LEGACY_FB_SUPPORT. LEGACY_FB_SUPPORT only gets set when
   // we call willDeferLaterForLegacyFBSupport, thus not bailing out
@@ -3846,13 +3855,13 @@
   var SHOULD_NOT_PROCESS_POLYFILL_EVENT_PLUGINS = IS_EVENT_HANDLE_NON_MANAGED_NODE | IS_NON_DELEGATED | IS_CAPTURE_PHASE;
 
   /**
+   * 返回触发事件的原始 dom 节点
    * Gets the target node from a native browser event by accounting for
    * inconsistencies in browser DOM APIs.
    *
    * @param {object} nativeEvent Native browser event.
    * @return {DOMEventTarget} Target node.
    */
-
   function getEventTarget(nativeEvent) {
     // Fallback to nativeEvent.srcElement for IE9
     // https://github.com/facebook/react/issues/12506
@@ -3960,18 +3969,30 @@
   };
 
   /**
-   * 
+   * 离散更新的实现
+   * @param fn dispatchEvent 函数
+   * @param a 事件名称
+   * @param b 事件标记
+   * @param c 绑定事件的 dom 节点，一般为容器节点
+   * @param d 原生的事件对象
    */
   var discreteUpdatesImpl = function (fn, a, b, c, d) {
+    // 执行 dispatchEvent 函数
     return fn(a, b, c, d);
   };
 
   var flushDiscreteUpdatesImpl = function () {};
 
   var batchedEventUpdatesImpl = batchedUpdatesImpl;
+
+  // 当前是否处于某个事件处理器内部
   var isInsideEventHandler = false;
+
   var isBatchingEventUpdates = false;
 
+  /**
+   * 
+   */
   function finishEventHandler() {
     // Here we wait until all updates have propagated, which is important
     // when using controlled components within layers:
@@ -4020,20 +4041,35 @@
       finishEventHandler();
     }
   }
+
+  /**
+   * @param fn  dispatchEvent 方法
+   * @param a 事件名称
+   * @param b 事件标记
+   * @param c 绑定事件的节点，一般为容器节点
+   * @param d 原生的 event 对象
+   */
   function discreteUpdates(fn, a, b, c, d) {
+    // 
     var prevIsInsideEventHandler = isInsideEventHandler;
     isInsideEventHandler = true;
 
     try {
+      // 执行 fn，即 dispatchEvent 方法
       return discreteUpdatesImpl(fn, a, b, c, d);
     } finally {
       isInsideEventHandler = prevIsInsideEventHandler;
 
       if (!isInsideEventHandler) {
+        // 事件结束
         finishEventHandler();
       }
     }
   }
+
+  /**
+   * @param timeStap
+   */
   function flushDiscreteUpdatesIfNeeded(timeStamp) {
     {
       if (!isInsideEventHandler) {
@@ -4041,6 +4077,14 @@
       }
     }
   }
+
+  /**
+   * 设置批处理的实现
+   * @param _batchedUpdatesImpl  批量更新的实现
+   * @param _discreteUpdatesImpl 离散更新的实现
+   * @param _flushDiscreteUpdatesImpl 刷新离散更新的实现
+   * @param _batchedEventUpdatesImpl 批量事件更新的实现
+   */
   function setBatchingImplementation(_batchedUpdatesImpl, _discreteUpdatesImpl, _flushDiscreteUpdatesImpl, _batchedEventUpdatesImpl) {
     batchedUpdatesImpl = _batchedUpdatesImpl;
     discreteUpdatesImpl = _discreteUpdatesImpl;
@@ -4048,10 +4092,21 @@
     batchedEventUpdatesImpl = _batchedEventUpdatesImpl;
   }
 
+  /**
+   * 判断一个元素是否是可交互的
+   * 如果元素是 button、input、select、textarea， 那么元素就是可交互的
+   * @param tag
+   */
   function isInteractive(tag) {
     return tag === 'button' || tag === 'input' || tag === 'select' || tag === 'textarea';
   }
 
+  /**
+   * 
+   * @param name
+   * @param type
+   * @param props
+   */
   function shouldPreventMouseEvent(name, type, props) {
     switch (name) {
       case 'onClick':
@@ -4071,13 +4126,13 @@
         return false;
     }
   }
+
   /**
+   * 
    * @param {object} inst The instance, which is the source of events.
    * @param {string} registrationName Name of listener (e.g. `onClick`).
    * @return {?function} The stored callback.
    */
-
-
   function getListener(inst, registrationName) {
     var stateNode = inst.stateNode;
 
@@ -4108,6 +4163,7 @@
     return listener;
   }
 
+  // 是否支持 passive 属性
   var passiveBrowserEventsSupported = false; // Check if browser support events with passive listeners
   // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#Safely_detecting_option_support
 
@@ -4117,6 +4173,7 @@
 
       Object.defineProperty(options, 'passive', {
         get: function () {
+          // 绑定事件时，支持 passive 属性
           passiveBrowserEventsSupported = true;
         }
       });
@@ -4449,7 +4506,7 @@
   var Update =  // 组件需要更新，如果有 componentDidUpdate， 在 commit 阶段要触发
   /*                       */
   4;
-  var PlacementAndUpdate =  // 挂载并更新 ？？
+  var PlacementAndUpdate =  // 移动并更新
   /*           */
   6;
   var Deletion = // 删除操作，即 fiber node 对应的 dom 节点要做删除操作
@@ -4507,13 +4564,20 @@
   var ReactCurrentOwner = ReactSharedInternals.ReactCurrentOwner;
 
   /**
-   * @param fiber
+   * 根据指定的 fiber node，找到离它最近的已挂载好的 fiber node
+   * fiber node 是初次挂载:
+   * - 如果 fiber node 的 flags 为 Placement 或者 Hydrating，说明 对应的 dom 节点的还有可能没有添加到 dom tree 上，此时要找对应的 dom 节点已经在 dom tree
+   * 上的 fiber node，最后有可能会找到 container fiber node；
+   * 
+   * 如果 fiber node 的 flags 不为 placement 或者 Hydrating
+   * @param fiber fiber noe
    */
   function getNearestMountedFiber(fiber) {
     var node = fiber;
     var nearestMounted = fiber;
 
     if (!fiber.alternate) {
+      // 挂载阶段
       // If there is no alternate, this might be a new tree that isn't inserted
       // yet. If it is, then it will have a pending insertion effect on it.
       var nextNode = node;
@@ -4531,6 +4595,7 @@
         nextNode = node.return;
       } while (nextNode);
     } else {
+
       while (node.return) {
         node = node.return;
       }
@@ -4546,6 +4611,12 @@
 
     return null;
   }
+
+
+  /**
+   * 
+   * @param fiber fiber node
+   */
   function getSuspenseInstanceFromFiber(fiber) {
     if (fiber.tag === SuspenseComponent) {
       var suspenseState = fiber.memoizedState;
@@ -4565,12 +4636,24 @@
 
     return null;
   }
+  /**
+   * 返回 host fiber node 对应的容器 dom 节点
+   */
   function getContainerFromFiber(fiber) {
     return fiber.tag === HostRoot ? fiber.stateNode.containerInfo : null;
   }
+  /**
+   * 判断一个 fiber node 是否是已经挂载的
+   * @param fiber node
+   */
   function isFiberMounted(fiber) {
     return getNearestMountedFiber(fiber) === fiber;
   }
+
+  /**
+   * 判断一个组件是已经挂载的
+   * @param component
+   */
   function isMounted(component) {
     {
       var owner = ReactCurrentOwner.current;
@@ -4596,6 +4679,10 @@
     return getNearestMountedFiber(fiber) === fiber;
   }
 
+  /**
+   * ??
+   * @param fiber
+   */
   function assertIsMounted(fiber) {
     if (!(getNearestMountedFiber(fiber) === fiber)) {
       {
@@ -4604,6 +4691,9 @@
     }
   }
 
+  /**
+   * @param fiber
+   */
   function findCurrentFiberUsingSlowPath(fiber) {
     var alternate = fiber.alternate;
 
@@ -4774,6 +4864,10 @@
 
     return alternate;
   }
+
+  /**
+   * @param parent
+   */
   function findCurrentHostFiber(parent) {
     var currentParent = findCurrentFiberUsingSlowPath(parent);
 
@@ -4813,6 +4907,10 @@
 
     return null;
   }
+
+  /**
+   * @param parent
+   */
   function findCurrentHostFiberWithNoPortals(parent) {
     var currentParent = findCurrentFiberUsingSlowPath(parent);
 
@@ -4868,21 +4966,38 @@
   }
 
   var attemptUserBlockingHydration;
+  /**
+   * @param fn
+   */
   function setAttemptUserBlockingHydration(fn) {
     attemptUserBlockingHydration = fn;
   }
+
   var attemptContinuousHydration;
+  /**
+   * 
+   * @param fn
+   */
   function setAttemptContinuousHydration(fn) {
     attemptContinuousHydration = fn;
   }
+
   var attemptHydrationAtCurrentPriority;
+  /**
+   * @param fn
+   */
   function setAttemptHydrationAtCurrentPriority(fn) {
     attemptHydrationAtCurrentPriority = fn;
   }
+
   var attemptHydrationAtPriority;
+  /**
+   * @param fn
+   */
   function setAttemptHydrationAtPriority(fn) {
     attemptHydrationAtPriority = fn;
-  } // TODO: Upgrade this definition once we're on a newer version of Flow that
+  } 
+  // TODO: Upgrade this definition once we're on a newer version of Flow that
   var hasScheduledReplayAttempt = false; // The queue of discrete events to be replayed.
 
   var queuedDiscreteEvents = []; // Indicates if any continuous event targets are non-null for early bailout.
@@ -4896,15 +5011,33 @@
   var queuedPointerCaptures = new Map(); // We could consider replaying selectionchange and touchmoves too.
 
   var queuedExplicitHydrationTargets = [];
+
+  /**
+   * 
+   */
   function hasQueuedDiscreteEvents() {
     return queuedDiscreteEvents.length > 0;
   }
+  // 离散的可重拨事件？？
   var discreteReplayableEvents = ['mousedown', 'mouseup', 'touchcancel', 'touchend', 'touchstart', 'auxclick', 'dblclick', 'pointercancel', 'pointerdown', 'pointerup', 'dragend', 'dragstart', 'drop', 'compositionend', 'compositionstart', 'keydown', 'keypress', 'keyup', 'input', 'textInput', // Intentionally camelCase
   'copy', 'cut', 'paste', 'click', 'change', 'contextmenu', 'reset', 'submit'];
+
+  /**
+   * 判断是否是可重拨的离散事件 ？？
+   * @eventType 事件类型
+   */
   function isReplayableDiscreteEvent(eventType) {
     return discreteReplayableEvents.indexOf(eventType) > -1;
   }
 
+  /**
+   * 
+   * @param blockedOn
+   * @param domEventName
+   * @param eventSystemFlags
+   * @param targetContainer
+   * @param nativeEvent
+   */
   function createQueuedReplayableEvent(blockedOn, domEventName, eventSystemFlags, targetContainer, nativeEvent) {
     return {
       blockedOn: blockedOn,
@@ -4915,11 +5048,24 @@
     };
   }
 
+  /**
+   * 
+   * @param blockedOn
+   * @param domEventName
+   * @param eventSystemFlags
+   * @param targetContainer
+   * @param nativeEvent
+   */
   function queueDiscreteEvent(blockedOn, domEventName, eventSystemFlags, targetContainer, nativeEvent) {
     var queuedEvent = createQueuedReplayableEvent(blockedOn, domEventName, eventSystemFlags, targetContainer, nativeEvent);
     queuedDiscreteEvents.push(queuedEvent);
   } // Resets the replaying for this type of continuous event to no event.
 
+  /**
+   * 
+   * @param domEventName
+   * @param nativeEvent
+   */
   function clearIfContinuousEvent(domEventName, nativeEvent) {
     switch (domEventName) {
       case 'focusin':
@@ -4955,6 +5101,9 @@
     }
   }
 
+  /**
+   * 
+   */
   function accumulateOrCreateContinuousQueuedReplayableEvent(existingQueuedEvent, blockedOn, domEventName, eventSystemFlags, targetContainer, nativeEvent) {
     if (existingQueuedEvent === null || existingQueuedEvent.nativeEvent !== nativeEvent) {
       var queuedEvent = createQueuedReplayableEvent(blockedOn, domEventName, eventSystemFlags, targetContainer, nativeEvent);
@@ -4985,6 +5134,13 @@
     return existingQueuedEvent;
   }
 
+  /**
+   * @param blockedOn
+   * @param domEventName
+   * @param eventSystemFlags
+   * @param targetContainer
+   * @param nativeEvent
+   */
   function queueIfContinuousEvent(blockedOn, domEventName, eventSystemFlags, targetContainer, nativeEvent) {
     // These set relatedTarget to null because the replayed event will be treated as if we
     // moved from outside the window (no target) onto the target once it hydrates.
@@ -5031,6 +5187,10 @@
     return false;
   } // Check if this target is unblocked. Returns true if it's unblocked.
 
+  /**
+   * 
+   * @param queuedTarget
+   */
   function attemptExplicitHydrationTarget(queuedTarget) {
     // TODO: This function shares a lot of logic with attemptToDispatchEvent.
     // Try to unify them. It's a bit tricky since it would require two return
@@ -5103,12 +5263,20 @@
     return true;
   }
 
+  /**
+   * @param queueEvent
+   * @param key
+   * @param map
+   */
   function attemptReplayContinuousQueuedEventInMap(queuedEvent, key, map) {
     if (attemptReplayContinuousQueuedEvent(queuedEvent)) {
       map.delete(key);
     }
   }
 
+  /**
+   * 
+   */
   function replayUnblockedEvents() {
     hasScheduledReplayAttempt = false; // First replay discrete events.
 
@@ -5180,7 +5348,11 @@
       }
     }
   }
-
+  
+  /**
+   * 
+   * @param unblocked  容器 dom 节点
+   */
   function retryIfBlockedOn(unblocked) {
     // Mark anything that was blocked on this as no longer blocked
     // and eligible for a replay.
@@ -5241,9 +5413,11 @@
       }
     }
   }
-
+  // 离散事件优先级
   var DiscreteEvent = 0;
+  // 用户阻塞事件优先级
   var UserBlockingEvent = 1;
+  // 连续事件优先级
   var ContinuousEvent = 2;
 
   /**
@@ -5253,7 +5427,6 @@
    * @param {string} eventName
    * @returns {object}
    */
-
   function makePrefixMap(styleProp, eventName) {
     var prefixes = {};
     prefixes[styleProp.toLowerCase()] = eventName.toLowerCase();
@@ -5303,14 +5476,13 @@
       delete vendorPrefixes.transitionend.transition;
     }
   }
+
   /**
    * Attempts to determine the correct vendor prefixed event name.
    *
    * @param {string} eventName
    * @returns {string}
    */
-
-
   function getVendorPrefixedEventName(eventName) {
     if (prefixedEventNames[eventName]) {
       return prefixedEventNames[eventName];
@@ -5334,8 +5506,12 @@
   var ANIMATION_START = getVendorPrefixedEventName('animationstart');
   var TRANSITION_END = getVendorPrefixedEventName('transitionend');
 
+  // map, 收集原生事件名及对一个的 react 合成事件名
   var topLevelEventsToReactNames = new Map();
-  var eventPriorities = new Map(); // We store most of the events in this module in pairs of two strings so we can re-use
+  // map, 收集原生事件名即对应的优先级
+  var eventPriorities = new Map(); 
+
+  // We store most of the events in this module in pairs of two strings so we can re-use
   // the code required to apply the same logic for event prioritization and that of the
   // SimpleEventPlugin. This complicates things slightly, but the aim is to reduce code
   // duplication (for which there would be quite a bit). For the events that are not needed
@@ -5344,15 +5520,17 @@
   // Lastly, we ignore prettier so we can keep the formatting sane.
   // prettier-ignore
 
+  // 离散事件对
   var discreteEventPairsForSimpleEventPlugin = ['cancel', 'cancel', 'click', 'click', 'close', 'close', 'contextmenu', 'contextMenu', 'copy', 'copy', 'cut', 'cut', 'auxclick', 'auxClick', 'dblclick', 'doubleClick', // Careful!
   'dragend', 'dragEnd', 'dragstart', 'dragStart', 'drop', 'drop', 'focusin', 'focus', // Careful!
   'focusout', 'blur', // Careful!
   'input', 'input', 'invalid', 'invalid', 'keydown', 'keyDown', 'keypress', 'keyPress', 'keyup', 'keyUp', 'mousedown', 'mouseDown', 'mouseup', 'mouseUp', 'paste', 'paste', 'pause', 'pause', 'play', 'play', 'pointercancel', 'pointerCancel', 'pointerdown', 'pointerDown', 'pointerup', 'pointerUp', 'ratechange', 'rateChange', 'reset', 'reset', 'seeked', 'seeked', 'submit', 'submit', 'touchcancel', 'touchCancel', 'touchend', 'touchEnd', 'touchstart', 'touchStart', 'volumechange', 'volumeChange'];
+  // 其他离散事件
   var otherDiscreteEvents = ['change', 'selectionchange', 'textInput', 'compositionstart', 'compositionend', 'compositionupdate'];
 
-
+  // 用户阻塞事件对
   var userBlockingPairsForSimpleEventPlugin = ['drag', 'drag', 'dragenter', 'dragEnter', 'dragexit', 'dragExit', 'dragleave', 'dragLeave', 'dragover', 'dragOver', 'mousemove', 'mouseMove', 'mouseout', 'mouseOut', 'mouseover', 'mouseOver', 'pointermove', 'pointerMove', 'pointerout', 'pointerOut', 'pointerover', 'pointerOver', 'scroll', 'scroll', 'toggle', 'toggle', 'touchmove', 'touchMove', 'wheel', 'wheel']; // prettier-ignore
-
+  // 连续事件，主要是 media 元素
   var continuousPairsForSimpleEventPlugin = ['abort', 'abort', ANIMATION_END, 'animationEnd', ANIMATION_ITERATION, 'animationIteration', ANIMATION_START, 'animationStart', 'canplay', 'canPlay', 'canplaythrough', 'canPlayThrough', 'durationchange', 'durationChange', 'emptied', 'emptied', 'encrypted', 'encrypted', 'ended', 'ended', 'error', 'error', 'gotpointercapture', 'gotPointerCapture', 'load', 'load', 'loadeddata', 'loadedData', 'loadedmetadata', 'loadedMetadata', 'loadstart', 'loadStart', 'lostpointercapture', 'lostPointerCapture', 'playing', 'playing', 'progress', 'progress', 'seeking', 'seeking', 'stalled', 'stalled', 'suspend', 'suspend', 'timeupdate', 'timeUpdate', TRANSITION_END, 'transitionEnd', 'waiting', 'waiting'];
   /**
    * Turns
@@ -5367,6 +5545,11 @@
    * and registers them.
    */
 
+  /**
+   * 建立原生事件和对应的 react 合成事件的依赖关系，并设置对应的事件优先级
+   * @param eventTypes 事件类型
+   * @param priority 事件优先级
+   */
   function registerSimplePluginEventsAndSetTheirPriorities(eventTypes, priority) {
     // As the event types are in pairs of two, we need to iterate
     // through in twos. The events are in pairs of two to save code
@@ -5375,33 +5558,58 @@
     // if we only use three arrays to process all the categories of
     // instead of tuples.
     for (var i = 0; i < eventTypes.length; i += 2) {
+      // 原生的顶级: click、change、mouseover 等
       var topEvent = eventTypes[i];
       var event = eventTypes[i + 1];
+      // event 名首字母大写
       var capitalizedEvent = event[0].toUpperCase() + event.slice(1);
+      // react 合成事件名
       var reactName = 'on' + capitalizedEvent;
+      // 原生事件名及对应的优先级
       eventPriorities.set(topEvent, priority);
+      // 原生事件名及对应的 react 合成事件名
       topLevelEventsToReactNames.set(topEvent, reactName);
+      // 建立 react 合成事件及其依赖的原生事件的关联关系
       registerTwoPhaseEvent(reactName, [topEvent]);
     }
   }
 
+  /**
+   * 使用一个 map，保存原生事件及对应的优先级
+   * @param eventTypes  原生事件
+   * @param priotiry 优先级
+   */
   function setEventPriorities(eventTypes, priority) {
     for (var i = 0; i < eventTypes.length; i++) {
       eventPriorities.set(eventTypes[i], priority);
     }
   }
 
+  /**
+   * 获取原生事件的优先级
+   * @param domEventName 原生事件的名称
+   */
   function getEventPriorityForPluginSystem(domEventName) {
+    console.log(eventPriorities);
+    // 从 eventPriorities 中获取原生事件的优先级： DiscreteEvent 0,  UserBlockingEvent: 1,  ContinuousEvent: 2
     var priority = eventPriorities.get(domEventName); // Default to a ContinuousEvent. Note: we might
     // want to warn if we can't detect the priority
     // for the event.
-
+    // 没有拿到优先级，默认为连续优先级 2
     return priority === undefined ? ContinuousEvent : priority;
   }
+
+  /**
+   * 建立原生事件和 react 合成事件的关联关系，设置原生事件的优先级
+   */
   function registerSimpleEvents() {
+    // 建立原生离散事件与对应的 react 合成事件的关联关系，设置离散事件的优先级为 1
     registerSimplePluginEventsAndSetTheirPriorities(discreteEventPairsForSimpleEventPlugin, DiscreteEvent);
+    // 建立原生阻塞事件与对应的 react 合成事件的关联关系，设置阻塞事件的优先级为 2
     registerSimplePluginEventsAndSetTheirPriorities(userBlockingPairsForSimpleEventPlugin, UserBlockingEvent);
+    // 建立原生连续事件与对应的 react 合成事件的关联关系，设置连续事件的优先级为 3
     registerSimplePluginEventsAndSetTheirPriorities(continuousPairsForSimpleEventPlugin, ContinuousEvent);
+    // 设置其他离散事件： 'change', 'selectionchange', 'textInput', 'compositionstart', 'compositionend', 'compositionupdate' 优先级为 1
     setEventPriorities(otherDiscreteEvents, DiscreteEvent);
   }
 
@@ -6608,51 +6816,53 @@
   }
 
   /**
-   * 
-   * @param targetContainer
-   * @param domEventName
-   * @param eventSystemFlags
+   * 创建一个使用优先级包装的事件监听器
+   * @param targetContainer  目标元素
+   * @param domEventName 事件名称
+   * @param eventSystemFlags 事件标记
    */
   function createEventListenerWrapperWithPriority(targetContainer, domEventName, eventSystemFlags) {
-    // 事件优先级
+    // 获取原生事件优先级
     var eventPriority = getEventPriorityForPluginSystem(domEventName);
     var listenerWrapper;
 
     switch (eventPriority) {
-      case DiscreteEvent: // 离散事件
+      case DiscreteEvent: // 离散事件优先级: 0
         listenerWrapper = dispatchDiscreteEvent;
         break;
 
-      case UserBlockingEvent: // 用户阻塞事件
+      case UserBlockingEvent: // 用户阻塞事件优先级: 1
         listenerWrapper = dispatchUserBlockingUpdate;
         break;
 
-      case ContinuousEvent: // 连续事件
+      case ContinuousEvent: // 连续事件优先级: 2
       default:
         listenerWrapper = dispatchEvent;
         break;
     }
-
+    // 返回使用优先级包装的事件监听器
     return listenerWrapper.bind(null, domEventName, eventSystemFlags, targetContainer);
   }
 
   /**
-   * 派发离散类型的事件 ？？
-   * @param domEventName
-   * @param eventSystemFlags
-   * @param container
-   * @param nativeEvent
+   * 派发离散类型的事件，如 click、change、input、doubleclick、forcein、forceout，优先级为 0，最高
+   * @param domEventName  事件名称
+   * @param eventSystemFlags 事件标记
+   * @param container 容器节点
+   * @param nativeEvent 原生的事件对象
    */
   function dispatchDiscreteEvent(domEventName, eventSystemFlags, container, nativeEvent) {
+    debugger
     {
+      // 
       flushDiscreteUpdatesIfNeeded(nativeEvent.timeStamp);
     }
-
+    // 离散更新
     discreteUpdates(dispatchEvent, domEventName, eventSystemFlags, container, nativeEvent);
   }
 
   /**
-   * 派发用户阻塞事件 ？？
+   * 派发用户阻塞事件，如 drag、mouseover、mousemove、touch、wheel、scroll ，优先级为1， 较高
    * @param domEventName
    * @param eventSystemFlags
    * @param container
@@ -6665,13 +6875,15 @@
   }
 
   /**
-   * 派发事件 ？？
-   * @param domEventName
-   * @param eventSystemFlags
-   * @param targetContainer
-   * @param nativeEvent
+   * 派发事件
+   * @param domEventName  事件名称
+   * @param eventSystemFlags 事件标记
+   * @param targetContainer 绑定事件的容器节点
+   * @param nativeEvent 原生的事件对象
    */
   function dispatchEvent(domEventName, eventSystemFlags, targetContainer, nativeEvent) {
+    debugger
+    // 
     if (!_enabled) {
       return;
     }
@@ -6685,13 +6897,16 @@
       // In eager mode, we attach capture listeners early, so we need
       // to filter them out until we fix the logic to handle them correctly.
       // This could've been outside the flag but I put it inside to reduce risk.
+      // ？？
       allowReplay = (eventSystemFlags & IS_CAPTURE_PHASE) === 0;
     }
 
     if (allowReplay && hasQueuedDiscreteEvents() && isReplayableDiscreteEvent(domEventName)) {
+      // ??
       // If we already have a queue of discrete events, and this is another discrete
       // event, then we can't dispatch it regardless of its target, since they
       // need to dispatch in order.
+      // 如果我们已经有了一个离线事件队列，而当前是另外一个离散事件，无论目标如何，我们都无法调度他，因为我们需要按顺序调度他
       queueDiscreteEvent(null, // Flags that we're not actually blocked on anything as far as we know.
       domEventName, eventSystemFlags, targetContainer, nativeEvent);
       return;
@@ -6725,25 +6940,38 @@
     } // This is not replayable so we'll invoke it but without a target,
     // in case the event system needs to trace it.
 
-
+    // 
     dispatchEventForPluginEventSystem(domEventName, eventSystemFlags, nativeEvent, null, targetContainer);
   } // Attempt dispatching an event. Returns a SuspenseInstance or Container if it's blocked.
 
+  /**
+   * 派发事件
+   * @param domEventName 事件名称
+   * @param eventSystemFlags 事件标记
+   * @param targetContainer 绑定事件的 dom 节点
+   * @param nativeEvent 事件对象
+   */
   function attemptToDispatchEvent(domEventName, eventSystemFlags, targetContainer, nativeEvent) {
     // TODO: Warn if _enabled is false.
+    // 触发事件的原始 dom 节点
     var nativeEventTarget = getEventTarget(nativeEvent);
+    // 返回 dom 节点对应的 fiber node
     var targetInst = getClosestInstanceFromNode(nativeEventTarget);
 
     if (targetInst !== null) {
+      // 找到离 targetInst 最近的已经挂载好的 fiber node(一般是 targetInst 本身，也可能是 targetInst 的 parent fiber node)
       var nearestMounted = getNearestMountedFiber(targetInst);
 
       if (nearestMounted === null) {
         // This tree has been unmounted already. Dispatch without a target.
+        // 没有找到，说明对应的 fiber node 已经卸载掉了
         targetInst = null;
       } else {
+        // 获取对应的类型
         var tag = nearestMounted.tag;
 
         if (tag === SuspenseComponent) {
+          // Suspense fiber node
           var instance = getSuspenseInstanceFromFiber(nearestMounted);
 
           if (instance !== null) {
@@ -6759,16 +6987,19 @@
 
           targetInst = null;
         } else if (tag === HostRoot) {
-          var root = nearestMounted.stateNode;
+          // container fiber node
+          var root = nearestMounted.stateNode;  // fiber root node
 
           if (root.hydrate) {
             // If this happens during a replay something went wrong and it might block
             // the whole system.
+            // 返回容器 dom 节点
             return getContainerFromFiber(nearestMounted);
           }
 
           targetInst = null;
         } else if (nearestMounted !== targetInst) {
+          // 
           // If we get an event (ex: img onload) before committing that
           // component's mount, ignore it for now (that is, treat it as if it was an
           // event on a non-React tree). We might also consider queueing events and
@@ -6778,26 +7009,54 @@
       }
     }
 
+    // 
     dispatchEventForPluginEventSystem(domEventName, eventSystemFlags, nativeEvent, targetInst, targetContainer); // We're not blocked on anything.
 
     return null;
   }
 
+  /**
+   * 使用 addEventListener 以冒泡的方式给目标元素添加事件
+   * @param target 目标元素
+   * @param eventType 事件类型
+   * @param listener 监听器(callack)
+   */
   function addEventBubbleListener(target, eventType, listener) {
+    // 第三个参数， false 为冒泡
     target.addEventListener(eventType, listener, false);
     return listener;
   }
+
+  /**
+   * 使用 addEventListener 以捕获的方式给目标元素添加事件
+   * @param target 目标元素
+   * @param eventType 事件类型
+   * @param listener 监听器(callback)
+   */
   function addEventCaptureListener(target, eventType, listener) {
+    // 第三个参数， true 为捕获
     target.addEventListener(eventType, listener, true);
     return listener;
   }
+
+  /**
+   * 以捕获的形式添加事件时，添加 passive 标记
+   * @param target  目标元素
+   * @param eventType 事件名称
+   * @param listener
+   * @param passive
+   */
   function addEventCaptureListenerWithPassiveFlag(target, eventType, listener, passive) {
     target.addEventListener(eventType, listener, {
       capture: true,
-      passive: passive
+      passive: passive  // 设置为 true，则 listener 永远不会调用 preventDefault()
     });
     return listener;
   }
+
+  /**
+   * 以冒泡的形式添加事件时，添加 passive 标记
+   */
   function addEventBubbleListenerWithPassiveFlag(target, eventType, listener, passive) {
     target.addEventListener(eventType, listener, {
       passive: passive
@@ -7450,6 +7709,9 @@
   var SPACEBAR_CODE = 32;
   var SPACEBAR_CHAR = String.fromCharCode(SPACEBAR_CODE);
 
+  /**
+   * 
+   */
   function registerEvents() {
     registerTwoPhaseEvent('onBeforeInput', ['compositionend', 'keypress', 'textInput', 'paste']);
     registerTwoPhaseEvent('onCompositionEnd', ['compositionend', 'focusout', 'keydown', 'keypress', 'keyup', 'mousedown']);
@@ -8979,11 +9241,26 @@
 
   // TODO: remove top-level side effect.
   registerSimpleEvents();
+  // 建立 react 合成事件：onMouseEnter、onMouseLeave、onPointerEnter、onPointerLeave 与依赖的原生事件的关联关系
+  // 合成事件：onMouseEnter、onMouseLeave、onPointerEnter、onPointerLeave 是离散事件
   registerEvents$2();
+  // 建立 react 合成事件 onChange 与依赖的原生事件：'change', 'click', 'focusin', 'focusout', 'input', 'keydown', 'keyup', 'selectionchange' 的关联关系
   registerEvents$1();
+  // 建立 react 合成事件 onSelect 与依赖的原生事件：'onSelect', ['focusout', 'contextmenu', 'dragend', 'focusin', 'keydown', 'keyup', 'mousedown', 'mouseup', 'selectionchange' 的关联关系
   registerEvents$3();
+  // 建立 react 合成事件 onBeforeInput、onCompositionEnd、onCompositionStart、onCompositionUpdate 与依赖的原生事件的关联关系
   registerEvents();
 
+  /**
+   * 
+   * @param dispatchQueue
+   * @param domEventName
+   * @param targetInst
+   * @param nativeEvent
+   * @param nativeEventTarget
+   * @param eventSystemFlags
+   * @param targetContainer
+   */
   function extractEvents$5(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags, targetContainer) {
     // TODO: we should remove the concept of a "SimpleEventPlugin".
     // This is the basic functionality of the event system. All
@@ -9019,12 +9296,20 @@
   } // List of events that need to be individually attached to media elements.
 
 
+  // media 元素的事件，是连续事件
   var mediaEventTypes = ['abort', 'canplay', 'canplaythrough', 'durationchange', 'emptied', 'encrypted', 'ended', 'error', 'loadeddata', 'loadedmetadata', 'loadstart', 'pause', 'play', 'playing', 'progress', 'ratechange', 'seeked', 'seeking', 'stalled', 'suspend', 'timeupdate', 'volumechange', 'waiting']; // We should not delegate these events to the container, but rather
   // set them on the actual target element itself. This is primarily
   // because these events do not consistently bubble in the DOM.
 
+  // 不可代理的事件
   var nonDelegatedEvents = new Set(['cancel', 'close', 'invalid', 'load', 'scroll', 'toggle'].concat(mediaEventTypes));
 
+  /**
+   * 
+   * @param event
+   * @param listener
+   * @param currentTarget
+   */
   function executeDispatch(event, listener, currentTarget) {
     var type = event.type || 'unknown-event';
     event.currentTarget = currentTarget;
@@ -9032,6 +9317,12 @@
     event.currentTarget = null;
   }
 
+  /**
+   * 
+   * @param event
+   * @param dispatchListeners
+   * @param inCapturePhase
+   */
   function processDispatchQueueItemsInOrder(event, dispatchListeners, inCapturePhase) {
     var previousInstance;
 
@@ -9066,6 +9357,11 @@
     }
   }
 
+  /**
+   * 
+   * @param dispatchQueue
+   * @param eventSystemFlags
+   */
   function processDispatchQueue(dispatchQueue, eventSystemFlags) {
     var inCapturePhase = (eventSystemFlags & IS_CAPTURE_PHASE) !== 0;
 
@@ -9093,7 +9389,7 @@
   /**
    * 监听非委派的事件 ？？
    * @param domEventName  事件名称
-   * @param targetElement 监听非
+   * @param targetElement 目标元素
    */
   function listenToNonDelegatedEvent(domEventName, targetElement) {
     // 不是捕获阶段侦听器？？
@@ -9113,7 +9409,7 @@
   var listeningMarker = '_reactListening' + Math.random().toString(36).slice(2);
 
   /**
-   * 容器节点监听所有支持的事件？？
+   * 容器节点监通过代理的方式监听所有支持的事件
    * @params rootContainerElement 容器节点
    */
   function listenToAllSupportedEvents(rootContainerElement) {
@@ -9128,12 +9424,14 @@
       }
       
       rootContainerElement[listeningMarker] = true;
-      // 
+      // 不能被代理的事件，以捕获的形式绑定事件
+      // 可以被代理的事件，以捕获、冒泡的形式绑定事件  ？？ (为什么代理、冒泡的形式都要绑定一次)
       allNativeEvents.forEach(function (domEventName) {
         if (!nonDelegatedEvents.has(domEventName)) {
+          // 可以代理的事件，已冒泡的方式绑定事件
           listenToNativeEvent(domEventName, false, rootContainerElement, null);
         }
-
+        // 不可以代理的事件，以捕获的方式绑定事件
         listenToNativeEvent(domEventName, true, rootContainerElement, null);
       });
     }
@@ -9142,12 +9440,13 @@
   /**
    * 监听原生的事件
    * @params domEventName 事件名称
-   * @params isCapturePhaseListener ？？
+   * @params isCapturePhaseListener 冒泡？？捕获 ？？
    * @params rootContainerElement 注册事件的 dom 节点，一般为容器 dom 节点，portals 节点
-   * @params targetElement
+   * @params targetElement 目标元素
    */
   function listenToNativeEvent(domEventName, isCapturePhaseListener, rootContainerElement, targetElement) {
     var eventSystemFlags = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+    // 绑定事件的目标元素
     var target = rootContainerElement; // selectionchange needs to be attached to the document
     // otherwise it won't capture incoming events that are only
     // triggered on the document directly.
@@ -9174,37 +9473,41 @@
       if (domEventName !== 'scroll') {
         return;
       }
-
+      // 给事件添加不能代理的标记
       eventSystemFlags |= IS_NON_DELEGATED;
       target = targetElement;
     }
-
+    // 获取目标元素事件监听器集合，是一个 set 对象，有啥用？？
     var listenerSet = getEventListenerSet(target);
+    // 根据捕获/冒泡情况，获取加后缀的事件名，如 click__bubble、click__capture
     var listenerSetKey = getListenerSetKey(domEventName, isCapturePhaseListener); // If the listener entry is empty or we should upgrade, then
     // we need to trap an event listener onto the target.
 
-    if (!listenerSet.has(listenerSetKey)) {
+    if (!listenerSet.has(listenerSetKey)) {   // listenerSet 中不包含 listenerSetKey
       if (isCapturePhaseListener) {
+        // 给事件添加捕获标记
         eventSystemFlags |= IS_CAPTURE_PHASE;
       }
-
+      // 给目标元素绑定事件
       addTrappedEventListener(target, domEventName, eventSystemFlags, isCapturePhaseListener);
+      // listenerSet 中不存在 listenerSetKey 时，将 listenerSetKey 保存到 listenerSet 中
       listenerSet.add(listenerSetKey);
     }
   }
 
   /**
-   * 
-   * @param targetContainer
-   * @param domEventName
-   * @param eventSystemFlags
-   * @param isCapturePhaseListener
+   * 添加陷阱事件监听器？？ 陷阱？？
+   * @param targetContainer   目标元素
+   * @param domEventName 事件名称
+   * @param eventSystemFlags  事件标记
+   * @param isCapturePhaseListener 是否是捕获？？
    * @param isDeferredListenerForLegacyFBSupport
    */
   function addTrappedEventListener(targetContainer, domEventName, eventSystemFlags, isCapturePhaseListener, isDeferredListenerForLegacyFBSupport) {
+    // 根据事件的优先级，创建一个使用事件优先级包装的事件监听器
     var listener = createEventListenerWrapperWithPriority(targetContainer, domEventName, eventSystemFlags); // If passive option is not supported, then the event will be
     // active and not passive.
-
+    // 是否是被动的监听器？？
     var isPassiveListener = undefined;
 
     if (passiveBrowserEventsSupported) {
@@ -9215,21 +9518,25 @@
       // the existing behavior manually on the roots now.
       // https://github.com/facebook/react/issues/19651
       if (domEventName === 'touchstart' || domEventName === 'touchmove' || domEventName === 'wheel') {
+        // touch 时间 和 wheel 事件
         isPassiveListener = true;
       }
     }
-
+    // 目标节点
     targetContainer =  targetContainer;
     var unsubscribeListener; // When legacyFBSupport is enabled, it's for when we
 
+  
 
-    if (isCapturePhaseListener) {
+    if (isCapturePhaseListener) {  // 捕获
       if (isPassiveListener !== undefined) {
+        // 使用原生的 addEventListener 在 targetContainer 上以捕获的方式绑定事件
         unsubscribeListener = addEventCaptureListenerWithPassiveFlag(targetContainer, domEventName, listener, isPassiveListener);
       } else {
         unsubscribeListener = addEventCaptureListener(targetContainer, domEventName, listener);
       }
-    } else {
+    } else {  // 冒泡
+      // 使用原生的 addEventListener 在 targetContainer 上以冒泡的方式绑定事件
       if (isPassiveListener !== undefined) {
         unsubscribeListener = addEventBubbleListenerWithPassiveFlag(targetContainer, domEventName, listener, isPassiveListener);
       } else {
@@ -9239,19 +9546,28 @@
   }
 
   /**
-   * 
+   * @param grandContainer
+   * @param targetContainer
    */
   function isMatchingRootContainer(grandContainer, targetContainer) {
     return grandContainer === targetContainer || grandContainer.nodeType === COMMENT_NODE && grandContainer.parentNode === targetContainer;
   }
 
   /**
-   * 
+   *
+   *
+   * @param domEventName  事件名称
+   * @param eventSystemFlags 事件标记
+   * @param nativeEvent 原生的事件对象
+   * @param targetInst 触发事件的原始 dom 节点对应的 fiber node
+   * @param targetContainer 容器 dom 节点
    */
   function dispatchEventForPluginEventSystem(domEventName, eventSystemFlags, nativeEvent, targetInst, targetContainer) {
+    // 实际触发事件的 dom 节点对应的 fiber node
     var ancestorInst = targetInst;
 
     if ((eventSystemFlags & IS_EVENT_HANDLE_NON_MANAGED_NODE) === 0 && (eventSystemFlags & IS_NON_DELEGATED) === 0) {
+      // 容器 dom 节点
       var targetContainerNode = targetContainer; // If we are using the legacy FB support flag, we
 
       if (targetInst !== null) {
@@ -9340,6 +9656,12 @@
     });
   }
 
+  /**
+   * 
+   * @param instance
+   * @param listener
+   * @param currentTarget
+   */
   function createDispatchListener(instance, listener, currentTarget) {
     return {
       instance: instance,
@@ -9348,6 +9670,9 @@
     };
   }
 
+  /**
+   * 
+   */
   function accumulateSinglePhaseListeners(targetFiber, reactName, nativeEventType, inCapturePhase, accumulateTargetOnly) {
     var captureName = reactName !== null ? reactName + 'Capture' : null;
     var reactEventName = inCapturePhase ? captureName : reactName;
@@ -9392,6 +9717,11 @@
   // in the bubble phase, so we need to accumulate two
   // phase event listeners (via emulation).
 
+  /**
+   * 
+   * @param targetFiber
+   * @param reactName
+   */
   function accumulateTwoPhaseListeners(targetFiber, reactName) {
     var captureName = reactName + 'Capture';
     var listeners = [];
@@ -9490,6 +9820,14 @@
     return null;
   }
 
+  /**
+   * 
+   * @param dispatchQueue
+   * @param event
+   * @param target
+   * @param common
+   * @param inCapturePhase
+   */
   function accumulateEnterLeaveListenersForEvent(dispatchQueue, event, target, common, inCapturePhase) {
     var registrationName = event._reactName;
     var listeners = [];
@@ -9543,6 +9881,14 @@
   // phase event listeners.
 
 
+  /**
+   * 
+   * @param dispatchQueue
+   * @param leaveEvent
+   * @param enterEvent
+   * @param from
+   * @param to
+   */
   function accumulateEnterLeaveTwoPhaseListeners(dispatchQueue, leaveEvent, enterEvent, from, to) {
     var common = from && to ? getLowestCommonAncestor(from, to) : null;
 
@@ -11617,7 +11963,7 @@
 
   /**
    * 
-   * @param container
+   * @param container 容器 dom 节点
    */
   function commitHydratedContainer(container) {
     // Retry if any event replaying was blocked on this.
@@ -11750,8 +12096,10 @@
       valueOf: attemptToReadValue
     };
   }
+
   /**
    * 
+   * @param portalInstance
    */
   function preparePortalMount(portalInstance) {
     {
@@ -18027,7 +18375,7 @@
     var hook = mountWorkInProgressHook();
     //  
     var nextDeps = deps === undefined ? null : deps;
-    // 更细 fiber node 的 flags
+    // 更新 fiber node 的 flags
     currentlyRenderingFiber$1.flags |= fiberFlags;
     // 
     hook.memoizedState = pushEffect(HasEffect | hookFlags, create, undefined, nextDeps);
@@ -24991,10 +25339,13 @@
       case HostRoot:  // 容器 dom 节点
         {
           {
+            debugger
+            // fiber root node 
             var _root = finishedWork.stateNode;
 
             if (_root.hydrate) {
               // We've just hydrated. No need to hydrate again.
+              // 注水过一次以后，就不再注水了
               _root.hydrate = false;
               commitHydratedContainer(_root.containerInfo);
             }
@@ -25669,7 +26020,6 @@
       priorityLevel === UserBlockingPriority$2 || priorityLevel === ImmediatePriority$1)) {
         // This is the result of a discrete event. Track the lowest priority
         // discrete update per root so we can flush them early, if needed.
-        console.log('xxxx');
         if (rootsWithPendingDiscreteUpdates === null) {
           rootsWithPendingDiscreteUpdates = new Set([root]);
         } else {
@@ -26324,15 +26674,21 @@
   }
 
   /**
-   * 离散更新(click 事件触发的更新)
+   * 离散更新(click、change、input、forcein、forceout 等事件触发的更新)
+   * @param fn dispatchEvent
+   * @param a 事件名称
+   * @param b 事件标记
+   * @param c 绑定事件的 dom 节点
+   * @param d event 对象
    */
   function discreteUpdates$1(fn, a, b, c, d) {
     var prevExecutionContext = executionContext;
-    // 当前执行上下文为 离散事件上下文 ？？
+    // 当前执行上下文为 离散事件上下文
     executionContext |= DiscreteEventContext;
 
     {
       try {
+        // 离散事件，触发的更新的优先级是 UserBlockingPriority$2: 98
         return runWithPriority$1(UserBlockingPriority$2, fn.bind(null, a, b, c, d));
       } finally {
         executionContext = prevExecutionContext;
@@ -27578,7 +27934,7 @@
             // inserted, before any life-cycles like componentDidMount gets called.
             // TODO: findDOMNode doesn't rely on this any more but isMounted does
             // and isMounted is deprecated anyway so we should be able to kill this.
-
+            // 移除 Placement 标记
             nextEffect.flags &= ~Placement;
             break;
           }
@@ -27589,6 +27945,7 @@
             commitPlacement(nextEffect); // Clear the "placement" from effect tag so that we know that this is
             // inserted, before any life-cycles like componentDidMount gets called.
 
+            // Placement 动作以后， Placement 标记会移除掉
             nextEffect.flags &= ~Placement; // Update
 
             var _current = nextEffect.alternate;
@@ -27599,6 +27956,7 @@
 
         case Hydrating:  // ？？
           {
+            // commit 动作以后， Hydrating 标记会被移除掉
             nextEffect.flags &= ~Hydrating;
             break;
           }
@@ -30690,11 +31048,13 @@
    * fiber root node 的实现
    * 即创建一个 fiber root node 及对应的 fiber node，建立容器节点和 fiber node 的关联关系
    *   并给容器节点绑定所有支持的事件(react 的事件机制？？)
+   * legacy
    * @param container react 应用的容器节点
    * @param tag fiber root node 的类型，LegacyRoot: 0, BlockingRoot: 1, ConcurrentRoot: 2
    * @param options 配置项 { hydrate: boolean, }
    */
   function createRootImpl(container, tag, options) {
+    debugger
     // Tag is either LegacyRoot or Concurrent Root
     // 是否开启 hydrate 功能
     var hydrate = options != null && options.hydrate === true;
@@ -30716,7 +31076,7 @@
       // 给容器节点绑定所有支持的事件 (react 的事件机制？？)
       listenToAllSupportedEvents(rootContainerElement);
     }
-    // mutableSources 是什么东东？？
+    // TODO: mutableSources 是什么东东？？
     if (mutableSources) {
       for (var i = 0; i < mutableSources.length; i++) {
         var mutableSource = mutableSources[i];
@@ -31085,10 +31445,13 @@
       return false;
     }
   }
-
+  // 
   setAttemptUserBlockingHydration(attemptUserBlockingHydration$1);
+  // 
   setAttemptContinuousHydration(attemptContinuousHydration$1);
+  // 
   setAttemptHydrationAtCurrentPriority(attemptHydrationAtCurrentPriority$1);
+  // 
   setAttemptHydrationAtPriority(runWithPriority$2);
   var didWarnAboutUnstableCreatePortal = false;
 
@@ -31099,8 +31462,9 @@
       error('React depends on Map and Set built-in types. Make sure that you load a ' + 'polyfill in older browsers. https://reactjs.org/link/react-polyfills');
     }
   }
-
+  //
   setRestoreImplementation(restoreControlledState$3);
+  // 重新设置批量更新、离散更新、刷新离散更新、批量事件更新的实现
   setBatchingImplementation(batchedUpdates$1, discreteUpdates$1, flushDiscreteUpdates, batchedEventUpdates$1);
 
   /**
