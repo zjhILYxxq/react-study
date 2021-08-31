@@ -229,30 +229,34 @@
   }
 
   /**
-   * 
-   * @param name
-   * @param propertyInfo
-   * @param isCustomComponentTag
+   * 判断属性是否应该忽略
+   * 如果返回 true， ； 返回 false， 
+   * @param name 属性名
+   * @param propertyInfo  ？？
+   * @param isCustomComponentTag 对应的标签是否是用户自定义标签
    */
   function shouldIgnoreAttribute(name, propertyInfo, isCustomComponentTag) {
     if (propertyInfo !== null) {
-      return propertyInfo.type === RESERVED;
+      return propertyInfo.type === RESERVED;  // reserved？？ 预订的 ？？
     }
 
+    // 自定义标签的属性自动忽略
     if (isCustomComponentTag) {
       return false;
     }
 
+    // onXxxx 类型的属性忽略？？不忽略 ？？
     if (name.length > 2 && (name[0] === 'o' || name[0] === 'O') && (name[1] === 'n' || name[1] === 'N')) {
       return true;
     }
-
+    // 
     return false;
   }
 
   /**
-   * @param name
-   * @param value
+   * 移除属性警告
+   * @param name  属性名
+   * @param value 属性值
    * @param propertyInfo
    * @param isCustomComponentTag
    */
@@ -288,13 +292,15 @@
   }
 
   /**
-   * 
-   * @param name
-   * @param value
+   * 是否应该移除属性
+   * 返回 true， 移除； 返回 false，不移除
+   * @param name  属性名
+   * @param value 属性值
    * @param propertyInfo
-   * @param isCustomComponentTag
+   * @param isCustomComponentTag 是否是用户自定义的标签
    */
   function shouldRemoveAttribute(name, value, propertyInfo, isCustomComponentTag) {
+    // 如果没有属性值，直接移除属性
     if (value === null || typeof value === 'undefined') {
       return true;
     }
@@ -303,6 +309,7 @@
       return true;
     }
 
+    // 如果是自定义标签，不可以移除
     if (isCustomComponentTag) {
       return false;
     }
@@ -323,7 +330,7 @@
           return isNaN(value) || value < 1;
       }
     }
-
+    // 不可以移除
     return false;
   }
 
@@ -621,6 +628,12 @@
    * attributes have multiple equivalent values.
    */
 
+  /**
+   * 获取属性值
+   * @param node dom 节点
+   * @param name 属性名
+   * @param expected 期望的属性值， fiber node 的 pendingProps 中的属性值
+   */
   function getValueForAttribute(node, name, expected) {
     {
       if (!isAttributeNameSafe(name)) {
@@ -634,16 +647,19 @@
         return expected;
       }
 
+      // 如果 dom 节点上没有指定属性，那么返回空
       if (!node.hasAttribute(name)) {
         return expected === undefined ? undefined : null;
       }
-
+      // dom 节点上原来的属性值
       var value = node.getAttribute(name);
 
+      // 如果属性值相等，返回 pendingProps 中的属性值
       if (value === '' + expected) {
         return expected;
       }
 
+      // 如果不相等，直接返回 dom 节点上的属性值
       return value;
     }
   }
@@ -10301,11 +10317,13 @@
    * @param rootContainerElement
    */
   function diffHydratedProperties(domElement, tag, rawProps, parentNamespace, rootContainerElement) {
+    debugger
     var isCustomComponentTag;
     var extraAttributeNames;
 
     {
       suppressHydrationWarning = rawProps[SUPPRESS_HYDRATION_WARNING] === true;
+      // 需要判断一下 tag 是否是用户自定义的标签类型
       isCustomComponentTag = isCustomComponent(tag, rawProps);
       validatePropertiesInDevelopment(tag, rawProps);
     } // TODO: Make sure that we check isMounted before firing any of these events.
@@ -10426,7 +10444,7 @@
       if (!rawProps.hasOwnProperty(propKey)) {
         continue;
       }
-
+      // propKey 是属性名， nextProp 为属性值
       var nextProp = rawProps[propKey];
 
       if (propKey === CHILDREN) {  // "children"
@@ -10506,6 +10524,7 @@
             warnForPropDifference(propKey, serverValue, nextProp);
           }
         } else if (!shouldIgnoreAttribute(propKey, propertyInfo, isCustomComponentTag) && !shouldRemoveAttribute(propKey, nextProp, propertyInfo, isCustomComponentTag)) {
+          // 属性不可以忽略，也不可以移除
           var isMismatchDueToBadCasing = false;
 
           if (propertyInfo !== null) {
@@ -10521,6 +10540,7 @@
 
             if (ownNamespace === HTML_NAMESPACE$1) {
               // $FlowFixMe - Should be inferred as not undefined.
+              // 为什么要删除 ？？
               extraAttributeNames.delete(propKey.toLowerCase());
             } else {
               var standardName = getPossibleStandardName(propKey);
@@ -11495,7 +11515,7 @@
   }
 
   /**
-   * 
+   * 向 dom 节点注水
    * @param instance  要注水的 dom 节点
    * @param type dom 元素的类型
    * @param props  fiber node 的 pendignProps
@@ -11515,7 +11535,7 @@
       var hostContextDev = hostContext;
       parentNamespace = hostContextDev.namespace;
     }
-
+    // 比较要注水的 dom 节点和 fiber node 的 pendingProps
     return diffHydratedProperties(instance, type, props, parentNamespace);
   }
 
@@ -16775,7 +16795,7 @@
   function prepareToHydrateHostInstance(fiber, rootContainerInstance, hostContext) {
     // 要注水的 dom 节点
     var instance = fiber.stateNode;
-    // 
+    // 判断是否需要在 commit 节点更新 dom 节点
     var updatePayload = hydrateInstance(instance, fiber.type, fiber.memoizedProps, rootContainerInstance, hostContext, fiber); // TODO: Type this specific to this type of component.
 
     fiber.updateQueue = updatePayload; // If the update payload indicates that there is a change or if there
@@ -22600,6 +22620,7 @@
               if (prepareToHydrateHostInstance(workInProgress, rootContainerInstance, currentHostContext)) {
                 // If changes to the hydrated node need to be applied at the
                 // commit-phase we mark this as such.
+                // 如果要在更新 dom 节点，就需要在 commit 阶段更新 dom 节点
                 markUpdate(workInProgress);
               }
             } else {
@@ -25421,7 +25442,7 @@
     var mode = fiber.mode;
 
     if ((mode & BlockingMode) === NoMode) {  // 如果 fiber node 的 mode 不包含 BlockingMode，对应的赛道Wie SyncLane = 1
-      // 阻塞模式下，为 fiber node 分配一个 SyncLane 赛道
+      // 阻塞模式下，永远为 fiber node 分配一个 SyncLane 赛道
       return SyncLane;
     } else if ((mode & ConcurrentMode) === NoMode) { 
       // 如果 fiber node 的 mode 不包含 ConcurrentMode， 即不是非阻塞渲染

@@ -86,6 +86,10 @@ fiber root node 的 current 指针指向 current fiber tree，更新完成以后
 - 开始 begin / complete 流程；
 - 开始 commit 流程；
 
+#### legency 模式任务调度
+
+#### concurrent 模式任务调度
+
 
 #### Concurrent
 
