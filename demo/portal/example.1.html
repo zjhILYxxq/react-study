@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="../../react.development.js"></script>
-    <script src="../../react-dom.development.js"></script>
+    <script src="../react.development.js"></script>
+    <script src="../react-dom.development.js"></script>
     <script src="../../react-dom-server.browser.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
     <title>Document</title>
@@ -16,15 +16,15 @@
     
         function Parent() {
             return <React.Fragment>
-                <div onClick={() => alert('parent')}>
-                    <div>parent</div>
+                <div>
+                    <div onClick={() => alert('parent')}>parent</div>
                     {ReactDOM.createPortal(<Child />, document.getElementById('portal'))}
                 </div>
             </React.Fragment>
         }
 
         function Child() {
-            return <div>child</div>
+            return <div onClick={() => alert('child')} >child</div>
         }
 
         ReactDOM.render(<Parent />, document.getElementById('app'));

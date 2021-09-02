@@ -6854,10 +6854,12 @@
    * @param nativeEvent 原生的事件对象
    */
   function dispatchDiscreteEvent(domEventName, eventSystemFlags, container, nativeEvent) {
+    debugger
     {
       // 
       flushDiscreteUpdatesIfNeeded(nativeEvent.timeStamp);
     }
+    if (['pointerover'].indexOf(domEventName) >= 0) return;
     // 离散更新
     discreteUpdates(dispatchEvent, domEventName, eventSystemFlags, container, nativeEvent);
   }
@@ -9548,6 +9550,7 @@
   }
 
   /**
+   * 判断绑定事件的 dom 节点和 容器节点是否匹配
    * @param grandContainer
    * @param targetContainer
    */
@@ -9592,6 +9595,7 @@
          */
         var node = targetInst;
 
+        // 
         mainLoop: while (true) {
           if (node === null) {
             return;
@@ -9599,24 +9603,30 @@
 
           var nodeTag = node.tag;
 
-          if (nodeTag === HostRoot || nodeTag === HostPortal) {
+          if (nodeTag === HostRoot || nodeTag === HostPortal) {  
+            // 如果 fiber node 的类型为 HostRoot 或者 HostPortal， 即 container fiber node
+            // container，容器 dom 节点
             var container = node.stateNode.containerInfo;
 
+            // container 是 portal / react 应用挂载的节点， targetContainerNode 是绑定事件的节点
+            // 要判断两者是否匹配
             if (isMatchingRootContainer(container, targetContainerNode)) {
               break;
             }
 
-            if (nodeTag === HostPortal) {
+            if (nodeTag === HostPortal) {  // fiber node 为 HostPortal
               // The target is a portal, but it's not the rootContainer we're looking for.
               // Normally portals handle their own events all the way down to the root.
               // So we should be able to stop now. However, we don't know if this portal
               // was part of *our* root.
+              // portal fiber node 的 parent fiber node
               var grandNode = node.return;
 
               while (grandNode !== null) {
                 var grandTag = grandNode.tag;
 
                 if (grandTag === HostRoot || grandTag === HostPortal) {
+                  // 容器 dom 节点
                   var grandContainer = grandNode.stateNode.containerInfo;
 
                   if (isMatchingRootContainer(grandContainer, targetContainerNode)) {
@@ -9634,9 +9644,10 @@
             // need to validate that the fiber is a host instance, otherwise
             // we need to traverse up through the DOM till we find the correct
             // node that is from the other tree.
-
-
+            
+            // fiber node 是 HostRoot 类型
             while (container !== null) {
+              // 根据 dom 节点返回 fiber node
               var parentNode = getClosestInstanceFromNode(container);
 
               if (parentNode === null) {
@@ -9659,6 +9670,7 @@
       }
     }
 
+    // ??
     batchedEventUpdates(function () {
       return dispatchEventsForPlugins(domEventName, eventSystemFlags, nativeEvent, ancestorInst);
     });
@@ -10671,7 +10683,6 @@
    * @param rootContainerElement
    */
   function diffHydratedProperties(domElement, tag, rawProps, parentNamespace, rootContainerElement) {
-    debugger
     var isCustomComponentTag;
     var extraAttributeNames;
 
@@ -12162,11 +12173,17 @@
   // HostRoot back. To get to the HostRoot, you need to pass a child of it.
   // The same thing applies to Suspense boundaries.
 
+  /**
+   * 根据给定的 dom 节点返回最近的 fiber node
+   * @param targetNode dom 节点
+   */
   function getClosestInstanceFromNode(targetNode) {
+    // dom 节点是否有对应的 fiber node
     var targetInst = targetNode[internalInstanceKey];
 
     if (targetInst) {
       // Don't return HostRoot or SuspenseComponent here.
+      // 如果 dom 节点有 fiber node，直接返回
       return targetInst;
     } // If the direct event target isn't a React owned DOM node, we need to look
     // to see if one of its parents is a React owned DOM node.
@@ -12243,6 +12260,8 @@
   /**
    * Given a DOM node, return the ReactDOMComponent or ReactDOMTextComponent
    * instance, or null if the node was not rendered by this React.
+   * 根据 dom 节点返回对应的 fiber node
+   * @param node dom 节点
    */
 
   function getInstanceFromNode(node) {
@@ -18847,7 +18866,6 @@
         error("State updates from the useState() and useReducer() Hooks don't support the " + 'second callback argument. To execute a side effect after ' + 'rendering, declare it in the component body with useEffect().');
       }
     }
-    debugger
     // 记录 setState 发生的时间
     var eventTime = requestEventTime();
     // 根据当前更新的优先级，为更新分配一个 lane
@@ -19125,7 +19143,6 @@
        * 
        */
       useTransition: function () {
-        debugger
         currentHookNameInDev = 'useTransition';
         mountHookTypesDev();
         return mountTransition();
@@ -20155,7 +20172,6 @@
    * @param rendrLanes 本次渲染要处理的更新
    */
   function updateOffscreenComponent(current, workInProgress, renderLanes) {
-    debugger
     // { mode: 'visible', children: xxxx}
     // mode 的值为 visible， 意味着 OffScreen 类型的 fiber node 的子元素要显示？？
     var nextProps = workInProgress.pendingProps;
@@ -20685,7 +20701,6 @@
    * @param renderLanes
    */
   function updateHostComponent(current, workInProgress, renderLanes) {
-    debugger
     pushHostContext(workInProgress);
     
     if (current === null) {
@@ -21135,7 +21150,6 @@
    * @param renderLanes 本次渲染的优先级
    */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
-    debugger
     // workInProgress 是正在处理 React.Suspense 类型的 fiber node
     // nexProps 中包含 fallback、children
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
@@ -21988,7 +22002,6 @@
    * @param renderLanes 渲染 portal fiber node 时的 lanes
    */
   function updatePortalComponent(current, workInProgress, renderLanes) {
-    debugger
     // 更新容器节点上下文
     pushHostContainer(workInProgress, workInProgress.stateNode.containerInfo);
     // 
@@ -23151,13 +23164,13 @@
         }
 
       case HostPortal:  // React.portal 的 complete 阶段
-        debugger
         popHostContainer(workInProgress);
         // 更新容器节点，其实容器节点没有啥要更新的，updateHostContainer 函数体是空的
         updateHostContainer(workInProgress);
 
         if (current === null) {
           // 挂载阶段
+          // portal 容器节点也要代理事件，不然 portal 内部绑定的事件无法触发
           preparePortalMount(workInProgress.stateNode.containerInfo);
         }
 
