@@ -15680,6 +15680,13 @@ function ChildReconciler(shouldTrackSideEffects) {
     }
   }
 
+  /**
+   * 挂载/更新 protal
+   * @param returnFiber
+   * @param current$$1
+   * @param portal
+   * @param expirtaionTime
+   */
   function updatePortal(returnFiber, current$$1, portal, expirationTime) {
     if (current$$1 === null || current$$1.tag !== HostPortal || current$$1.stateNode.containerInfo !== portal.containerInfo || current$$1.stateNode.implementation !== portal.implementation) {
       // Insert
@@ -15694,6 +15701,9 @@ function ChildReconciler(shouldTrackSideEffects) {
     }
   }
 
+  /**
+   * 挂载/更新 React.Fragment
+   */
   function updateFragment(returnFiber, current$$1, fragment, expirationTime, key) {
     if (current$$1 === null || current$$1.tag !== Fragment) {
       // Insert
@@ -21341,7 +21351,7 @@ function beginWork$1(current$$1, workInProgress, renderExpirationTime) {
     case SuspenseComponent: // 需要挂起的组件 组件懒加载的时候用到
       return updateSuspenseComponent(current$$1, workInProgress, renderExpirationTime);
 
-    case HostPortal: // portal 
+    case HostPortal: // 挂载/更新 portal
       return updatePortalComponent(current$$1, workInProgress, renderExpirationTime);
 
     case ForwardRef: // refs 转发

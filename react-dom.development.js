@@ -3962,7 +3962,9 @@
   // Defaults
 
   /**
-   * 
+   * 批量更新的实现
+   * @param fn
+   * @param bookkeeping
    */
   var batchedUpdatesImpl = function (fn, bookkeeping) {
     return fn(bookkeeping);
@@ -3970,7 +3972,7 @@
 
   /**
    * 离散更新的实现
-   * @param fn dispatchEvent 函数
+   * @param fn 
    * @param a 事件名称
    * @param b 事件标记
    * @param c 绑定事件的 dom 节点，一般为容器节点
@@ -6852,7 +6854,6 @@
    * @param nativeEvent 原生的事件对象
    */
   function dispatchDiscreteEvent(domEventName, eventSystemFlags, container, nativeEvent) {
-    debugger
     {
       // 
       flushDiscreteUpdatesIfNeeded(nativeEvent.timeStamp);
@@ -6882,7 +6883,6 @@
    * @param nativeEvent 原生的事件对象
    */
   function dispatchEvent(domEventName, eventSystemFlags, targetContainer, nativeEvent) {
-    debugger
     // 
     if (!_enabled) {
       return;
@@ -6911,9 +6911,10 @@
       domEventName, eventSystemFlags, targetContainer, nativeEvent);
       return;
     }
-
+    //
     var blockedOn = attemptToDispatchEvent(domEventName, eventSystemFlags, targetContainer, nativeEvent);
 
+    // 
     if (blockedOn === null) {
       // We successfully dispatched this event.
       if (allowReplay) {
@@ -6923,6 +6924,7 @@
       return;
     }
 
+    // 
     if (allowReplay) {
       if (isReplayableDiscreteEvent(domEventName)) {
         // This this to be replayed later once the target is available.
@@ -9582,6 +9584,12 @@
         // root boundaries that match that of our current "rootContainer".
         // If we find that "rootContainer", we find the parent fiber
         // sub-tree for that root and make that our ancestor instance.
+
+        /**
+         * 如果我们想要把目标 fiber node 移动到一个不同的祖先 fiber node 下？？，下面的逻辑可能会帮助我们。
+         * 我们在 legacy 事件系统中有相似的逻辑，除了系统之间的最大区别：现代事件系统会给 fiber root 和 react portal root 附加一个事件监听？？
+         * 代表这些根节点的 dom 节点就是容器 dom 节点。为了找出哪个我们应该使用祖先实例，我们从目标 fiber node 开始向上遍历 fiber tree 找到匹配的容器节点
+         */
         var node = targetInst;
 
         mainLoop: while (true) {
@@ -12098,11 +12106,12 @@
   }
 
   /**
-   * 
-   * @param portalInstance
+   * 给 portal 容器节点绑定时间
+   * @param portalInstance portal 容器节点
    */
   function preparePortalMount(portalInstance) {
     {
+      // 给 portal 容器节点绑定时间
       listenToAllSupportedEvents(portalInstance);
     }
   }
@@ -15707,6 +15716,7 @@
 
           case REACT_PORTAL_TYPE: // portal
             {
+              // 创建 portal 类型的 fiber node
               var _created2 = createFiberFromPortal(newChild, returnFiber.mode, lanes);
 
               _created2.return = returnFiber;
@@ -16439,7 +16449,7 @@
 
         child = child.sibling;
       }
-
+      // 创建 portal 类型的 fiber node
       var created = createFiberFromPortal(portal, returnFiber.mode, lanes);
       created.return = returnFiber;
       return created;
@@ -16626,8 +16636,8 @@
   }
 
   /**
-   * 
-   * @param fiber
+   * 将容器节点添加到栈中，即指定渲染 portal 时的容器节点
+   * @param fiber   fiber node
    * @param nextRootInstance
    */
   function pushHostContainer(fiber, nextRootInstance) {
@@ -21972,16 +21982,20 @@
   }
 
   /**
-   * 
-   * @param current
-   * @param workInProgress
-   * @param renderLanes
+   * 挂载/更新 portal
+   * @param current  current fiber node
+   * @param workInProgress workINnProgress fiber node
+   * @param renderLanes 渲染 portal fiber node 时的 lanes
    */
   function updatePortalComponent(current, workInProgress, renderLanes) {
+    debugger
+    // 更新容器节点上下文
     pushHostContainer(workInProgress, workInProgress.stateNode.containerInfo);
+    // 
     var nextChildren = workInProgress.pendingProps;
 
     if (current === null) {
+      // 挂载阶段
       // Portals are special because we don't append the children during mount
       // but at commit. Therefore we need to track insertions which the normal
       // flow doesn't do during mount. This doesn't happen at the root because
@@ -21989,6 +22003,7 @@
       // TODO: Consider unifying this with how the root works.
       workInProgress.child = reconcileChildFibers(workInProgress, null, nextChildren, renderLanes);
     } else {
+      // 更新阶段
       reconcileChildren(current, workInProgress, nextChildren, renderLanes);
     }
 
@@ -22509,7 +22524,7 @@
         return updateSuspenseComponent(current, workInProgress, renderLanes);
 
       case HostPortal: // React.portal
-        // 
+        // 挂载/更新 React.portal 
         return updatePortalComponent(current, workInProgress, renderLanes);
 
       case ForwardRef: // React.ForwardRef
@@ -23135,11 +23150,14 @@
           return null;
         }
 
-      case HostPortal:  // portal ？
+      case HostPortal:  // React.portal 的 complete 阶段
+        debugger
         popHostContainer(workInProgress);
+        // 更新容器节点，其实容器节点没有啥要更新的，updateHostContainer 函数体是空的
         updateHostContainer(workInProgress);
 
         if (current === null) {
+          // 挂载阶段
           preparePortalMount(workInProgress.stateNode.containerInfo);
         }
 
@@ -24918,7 +24936,7 @@
   }
 
   /**
-   * 判断 fiber 是否对应原生的 parent dom 节点
+   * 判断作为 parent fiber node 的 fiber node 是不是 host 类型
    * @param fiber 判断 fiber node 是否是原生的父 dom 节点
    */
   function isHostParent(fiber) {
@@ -25361,7 +25379,6 @@
 
       case SuspenseComponent: // 在 commit 阶段处理 Suspense fiber node 收集的类 promise 对象
         {
-          debugger
           commitSuspenseComponent(finishedWork);
           // // 给类 promise 对象注册对应的 onFullfilled、onRejected，对应创建异步任务重新渲染
           attachSuspenseRetryListeners(finishedWork);
@@ -25369,7 +25386,6 @@
         }
 
       case SuspenseListComponent:  
-        debugger
         {
           // 在 commit 阶段处理 SuspenseList fiber node 收集的类 promise 对象
           // 在 render 过程中，SuspenseList fiber node 的类 promise 对象是 child Suspense fiber node 收集的类 promise 对象
@@ -30102,15 +30118,17 @@
   }
 
   /**
-   * 
-   * @param portal
+   * 创建 portal 类型的 fiber node
+   * @param portal  portal 类型的 fiber node
    * @param mode
    * @param lanes
    */
   function createFiberFromPortal(portal, mode, lanes) {
     var pendingProps = portal.children !== null ? portal.children : [];
+    // 创建 portal 类型的 fiber node
     var fiber = createFiber(HostPortal, pendingProps, portal.key, mode);
     fiber.lanes = lanes;
+    // portal.stateNode.containerInfo 指向 portal 的容器节点
     fiber.stateNode = {
       containerInfo: portal.containerInfo,
       pendingChildren: null,
@@ -30283,13 +30301,14 @@
 
   /**
    * 创建 portals
-   * @params children
-   * @params containerInfo
+   * @params children   react element
+   * @params containerInfo  容器节点
    * @params implementation
    */
   function createPortal(children, containerInfo, // TODO: figure out the API for cross-renderer implementation.
   implementation) {
     var key = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
+    // 返回一个 protal 类型的 react element
     return {
       // This tag allow us to uniquely identify this as a React Portal
       $$typeof: REACT_PORTAL_TYPE,
@@ -31468,9 +31487,9 @@
   setBatchingImplementation(batchedUpdates$1, discreteUpdates$1, flushDiscreteUpdates, batchedEventUpdates$1);
 
   /**
-   * 
-   * @param  children
-   * @param container
+   * 创建 portal
+   * @param children  react element
+   * @param container portal 容器节点
    */
   function createPortal$1(children, container) {
     var key = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
@@ -31499,9 +31518,9 @@
   }
 
   /**
-   * 
-   * @param children
-   * @param container
+   * 不稳定的 createPortal， 在 React18 废弃
+   * @param children  react element
+   * @param container 容器节点
    */
   function unstable_createPortal(children, container) {
     var key = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
@@ -31513,7 +31532,7 @@
         warn('The ReactDOM.unstable_createPortal() alias has been deprecated, ' + 'and will be removed in React 18+. Update your code to use ' + 'ReactDOM.createPortal() instead. It has the exact same API, ' + 'but without the "unstable_" prefix.');
       }
     }
-
+    // 创建 portal
     return createPortal$1(children, container, key);
   }
 
