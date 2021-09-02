@@ -3990,6 +3990,7 @@
   // 当前是否处于某个事件处理器内部
   var isInsideEventHandler = false;
 
+  // 批量事件更新是否已经完成
   var isBatchingEventUpdates = false;
 
   /**
@@ -4011,6 +4012,11 @@
     }
   }
 
+  /**
+   *
+   * @param fn
+   * @param bookkeeping
+   */
   function batchedUpdates(fn, bookkeeping) {
     if (isInsideEventHandler) {
       // If we are currently inside another batch, we need to wait until it
@@ -4021,30 +4027,43 @@
     isInsideEventHandler = true;
 
     try {
+      // 
       return batchedUpdatesImpl(fn, bookkeeping);
     } finally {
       isInsideEventHandler = false;
       finishEventHandler();
     }
   }
+
+  /**
+   * 批量事件更新
+   * @param fn
+   * @param a
+   * @param b
+   */
   function batchedEventUpdates(fn, a, b) {
     if (isBatchingEventUpdates) {
       // If we are currently inside another batch, we need to wait until it
       // fully completes before restoring state.
       return fn(a, b);
     }
-
+    // 标记者已经在批量事件更新过程中
     isBatchingEventUpdates = true;
 
     try {
+      // 批量事件更新的实现
       return batchedEventUpdatesImpl(fn, a, b);
     } finally {
+      // 批量事件更新结束
       isBatchingEventUpdates = false;
+      // ？？
       finishEventHandler();
     }
   }
 
   /**
+   * 离散更新的实现，即离散事件的触发导致的更新
+   * 离散更新 DiscreteEventContext: 4,  UserBlockingPriority$2: 98
    * @param fn  dispatchEvent 方法
    * @param a 事件名称
    * @param b 事件标记
@@ -4057,7 +4076,7 @@
     isInsideEventHandler = true;
 
     try {
-      // 执行 fn，即 dispatchEvent 方法
+      // discreteUpdatesImpl 为 discreteUpdates$1
       return discreteUpdatesImpl(fn, a, b, c, d);
     } finally {
       isInsideEventHandler = prevIsInsideEventHandler;
@@ -4104,10 +4123,11 @@
   }
 
   /**
-   * 
-   * @param name
-   * @param type
-   * @param props
+   * 是否应该阻止鼠标事件
+   * 如果 dom 节点的类型为 button、input、select、textarea，且有 disable 属性，那么就要阻止鼠标事件，否则不阻止
+   * @param name react 合成事件名称
+   * @param type dom 节点标签类型：div、input 等
+   * @param props fiber node 的 pendingProps
    */
   function shouldPreventMouseEvent(name, type, props) {
     switch (name) {
@@ -4130,12 +4150,13 @@
   }
 
   /**
-   * 
-   * @param {object} inst The instance, which is the source of events.
-   * @param {string} registrationName Name of listener (e.g. `onClick`).
+   * 从 fiber node 的 pendingProps 中获取定义的时间监听器
+   * @param {object} inst 触发事件的 dom 节点对应的 fiber node The instance, which is the source of events.
+   * @param {string} registrationName react 合成事件名称 Name of listener (e.g. `onClick`).
    * @return {?function} The stored callback.
    */
   function getListener(inst, registrationName) {
+    // 触发事件的 dom 节点
     var stateNode = inst.stateNode;
 
     if (stateNode === null) {
@@ -4143,6 +4164,7 @@
       return null;
     }
 
+    // 从 dom 节点上获取缓存的 fiber node 的 pendingProps
     var props = getFiberCurrentPropsFromNode(stateNode);
 
     if (props === null) {
@@ -4150,18 +4172,21 @@
       return null;
     }
 
+    // 对应事件的监听器
     var listener = props[registrationName];
 
+    // 如果元素是 disabled, 那么直接返回 null，
     if (shouldPreventMouseEvent(registrationName, inst.type, props)) {
       return null;
     }
 
+    // listener 必须是一个函数，否则抛出异常
     if (!(!listener || typeof listener === 'function')) {
       {
         throw Error( "Expected `" + registrationName + "` listener to be a function, instead got a value of `" + typeof listener + "` type." );
       }
     }
-
+    // 从 pendingProps 中获取定义的事件监听器
     return listener;
   }
 
@@ -4386,6 +4411,7 @@
     caughtError = null;
     invokeGuardedCallbackImpl$1.apply(reporter, arguments);
   }
+
   /**
    * Same as invokeGuardedCallback, but instead of returning an error, it stores
    * it in a global so it can be rethrown by `rethrowCaughtError` later.
@@ -6830,10 +6856,12 @@
 
     switch (eventPriority) {
       case DiscreteEvent: // 离散事件优先级: 0
+        // 离散更新，DiscreteEventContext: 4,  UserBlockingPriority$2: 98
         listenerWrapper = dispatchDiscreteEvent;
         break;
 
       case UserBlockingEvent: // 用户阻塞事件优先级: 1
+        // 用户阻塞事件，
         listenerWrapper = dispatchUserBlockingUpdate;
         break;
 
@@ -6858,7 +6886,7 @@
       // 
       flushDiscreteUpdatesIfNeeded(nativeEvent.timeStamp);
     }
-    // 离散更新
+    // 离散更新，DiscreteEventContext: 4,  UserBlockingPriority$2: 98
     discreteUpdates(dispatchEvent, domEventName, eventSystemFlags, container, nativeEvent);
   }
 
@@ -6911,6 +6939,7 @@
       domEventName, eventSystemFlags, targetContainer, nativeEvent);
       return;
     }
+
     //
     var blockedOn = attemptToDispatchEvent(domEventName, eventSystemFlags, targetContainer, nativeEvent);
 
@@ -6942,7 +6971,7 @@
     } // This is not replayable so we'll invoke it but without a target,
     // in case the event system needs to trace it.
 
-    // 
+    // 派发事件
     dispatchEventForPluginEventSystem(domEventName, eventSystemFlags, nativeEvent, null, targetContainer);
   } // Attempt dispatching an event. Returns a SuspenseInstance or Container if it's blocked.
 
@@ -7011,7 +7040,7 @@
       }
     }
 
-    // 
+    // 派发事件
     dispatchEventForPluginEventSystem(domEventName, eventSystemFlags, nativeEvent, targetInst, targetContainer); // We're not blocked on anything.
 
     return null;
@@ -7178,20 +7207,39 @@
   // If we had a single constructor, it would be megamorphic and engines would deopt.
 
 
+  /**
+   * 根据传入的 interface， 返回一个合成事件构建方法
+   * @param Interface 接口
+   */
   function createSyntheticEvent(Interface) {
     /**
      * Synthetic events are dispatched by event plugins, typically in response to a
      * top-level event delegation handler.
+     * 合成事件由 event plugins 调度，通常是为了响应顶级事件委托处理程序
      *
      * These systems should generally use pooling to reduce the frequency of garbage
      * collection. The system should check `isPersistent` to determine whether the
      * event should be released into the pool after being dispatched. Users that
      * need a persisted event should invoke `persist`.
-     *
+     * 
+     * 这些系统通常使用池(什么池)来减少垃圾收集的频率。
+     * 系统应该通过检查 'isPersistent' 以确定事件在完成调度以后是否应该被释放到池中。
+     * 需要持久事件的用户应该调用 'persist'.
+     * 
      * Synthetic events (and subclasses) implement the DOM Level 3 Events API by
      * normalizing browser quirks. Subclasses do not necessarily have to implement a
      * DOM interface; custom application-specific events can also subclass this.
+     * 合成事件通过规范浏览器怪癖来实现 DOM3.
      */
+
+     /**
+      * 构造函数，返回一个 react 合成事件 event
+      * @param reactName  react 事件名称
+      * @param reactEventType 
+      * @param targetInst
+      * @param nativeEvent
+      * @param nativeEventTarget
+      */
     function SyntheticBaseEvent(reactName, reactEventType, targetInst, nativeEvent, nativeEventTarget) {
       this._reactName = reactName;
       this._targetInst = targetInst;
@@ -7223,10 +7271,12 @@
       }
 
       this.isPropagationStopped = functionThatReturnsFalse;
+
       return this;
     }
-
+    // 添加 preventDefault、stopPropagation 等方法
     _assign(SyntheticBaseEvent.prototype, {
+      // 阻止默认行为
       preventDefault: function () {
         this.defaultPrevented = true;
         var event = this.nativeEvent;
@@ -7243,6 +7293,7 @@
 
         this.isDefaultPrevented = functionThatReturnsTrue;
       },
+      // 阻止冒泡
       stopPropagation: function () {
         var event = this.nativeEvent;
 
@@ -7279,7 +7330,7 @@
        */
       isPersistent: functionThatReturnsTrue
     });
-
+    // 返回一个合成事件构建方法
     return SyntheticBaseEvent;
   }
   /**
@@ -7287,24 +7338,37 @@
    * @see http://www.w3.org/TR/DOM-Level-3-Events/
    */
 
-
+  // 事件接口
   var EventInterface = {
-    eventPhase: 0,
+    // 表示事件流当前处于哪个阶段 
+    // 0: none; 1: CAPTURING_PHASE(捕获阶段); 2: AT_TARGET(事件流处于目标阶段); 3: BUBBLING_PHASE(事件处于冒泡阶段);
+    eventPhase: 0, 
+    // 返回当前事件是否为冒泡事件
     bubbles: 0,
+    // 返回事件是否可以阻止其默认操作
     cancelable: 0,
+    // 返回事件创建的时间
     timeStamp: function (event) {
       return event.timeStamp || Date.now();
     },
+    // 检查是否为该事件调用了 preventDefault 方法，属性值为布尔值。true，调用 preventDefault; false，没有调用 preventDefault;
     defaultPrevented: 0,
+    // 返回事件是否受信任
     isTrusted: 0
   };
+  // 返回一个基础合成事件构造函数
   var SyntheticEvent = createSyntheticEvent(EventInterface);
 
+  // UIEvent 表示简单的用户界面事件，有 Event 派生
+  // UIEvent 的直接或者间接后代： MouseEvent、InputEvent、FocusEvent、keyboardEvent、TouchEvent 等
   var UIEventInterface = _assign({}, EventInterface, {
+    // 发生事件的视图，window 对象？？
     view: 0,
+    // 事件的详细信息
     detail: 0
   });
 
+  // UI合成事件构造函数
   var SyntheticUIEvent = createSyntheticEvent(UIEventInterface);
   var lastMovementX;
   var lastMovementY;
@@ -7328,7 +7392,7 @@
    * @see http://www.w3.org/TR/DOM-Level-3-Events/
    */
 
-
+  // 鼠标事件 interface
   var MouseEventInterface = _assign({}, UIEventInterface, {
     screenX: 0,
     screenY: 0,
@@ -7367,26 +7431,31 @@
     }
   });
 
+  // 鼠标合成事件构造函数
   var SyntheticMouseEvent = createSyntheticEvent(MouseEventInterface);
   /**
    * @interface DragEvent
    * @see http://www.w3.org/TR/DOM-Level-3-Events/
    */
 
+  // 拖动事件 interface
   var DragEventInterface = _assign({}, MouseEventInterface, {
     dataTransfer: 0
   });
 
+  // 鼠标拖动事件合成事件构造函数
   var SyntheticDragEvent = createSyntheticEvent(DragEventInterface);
   /**
    * @interface FocusEvent
    * @see http://www.w3.org/TR/DOM-Level-3-Events/
    */
 
+  // input force 事件 interface
   var FocusEventInterface = _assign({}, UIEventInterface, {
     relatedTarget: 0
   });
 
+  // input force 合成事件构造函数
   var SyntheticFocusEvent = createSyntheticEvent(FocusEventInterface);
   /**
    * @interface Event
@@ -7394,34 +7463,40 @@
    * @see https://developer.mozilla.org/en-US/docs/Web/API/AnimationEvent
    */
 
+  // 动画事件 interface
   var AnimationEventInterface = _assign({}, EventInterface, {
     animationName: 0,
     elapsedTime: 0,
     pseudoElement: 0
   });
 
+  // 动画合成事件构造函数
   var SyntheticAnimationEvent = createSyntheticEvent(AnimationEventInterface);
   /**
    * @interface Event
    * @see http://www.w3.org/TR/clipboard-apis/
    */
 
+  // Clipboard 事件 interface
   var ClipboardEventInterface = _assign({}, EventInterface, {
     clipboardData: function (event) {
       return 'clipboardData' in event ? event.clipboardData : window.clipboardData;
     }
   });
 
+  // Clipboard 合成事件构造函数
   var SyntheticClipboardEvent = createSyntheticEvent(ClipboardEventInterface);
   /**
    * @interface Event
    * @see http://www.w3.org/TR/DOM-Level-3-Events/#events-compositionevents
    */
 
+  // Composition 事件 interface
   var CompositionEventInterface = _assign({}, EventInterface, {
     data: 0
   });
 
+  // Composition 合成事件构造函数
   var SyntheticCompositionEvent = createSyntheticEvent(CompositionEventInterface);
   /**
    * @interface Event
@@ -7494,11 +7569,12 @@
     '145': 'ScrollLock',
     '224': 'Meta'
   };
+
+
   /**
    * @param {object} nativeEvent Native browser event.
    * @return {string} Normalized `key` property.
    */
-
   function getEventKey(nativeEvent) {
     if (nativeEvent.key) {
       // Normalize inconsistent values reported by browsers due to
@@ -7564,6 +7640,7 @@
    */
 
 
+  // 键盘事件 interface
   var KeyboardEventInterface = _assign({}, UIEventInterface, {
     key: getEventKey,
     code: 0,
@@ -7615,12 +7692,14 @@
     }
   });
 
+  // 键盘合成事件构造函数
   var SyntheticKeyboardEvent = createSyntheticEvent(KeyboardEventInterface);
   /**
    * @interface PointerEvent
    * @see http://www.w3.org/TR/pointerevents/
    */
 
+  // 鼠标 pointer 事件 interface
   var PointerEventInterface = _assign({}, MouseEventInterface, {
     pointerId: 0,
     width: 0,
@@ -7634,12 +7713,14 @@
     isPrimary: 0
   });
 
+  // 鼠标 pointer 合成事件构造方法
   var SyntheticPointerEvent = createSyntheticEvent(PointerEventInterface);
   /**
    * @interface TouchEvent
    * @see http://www.w3.org/TR/touch-events/
    */
 
+  // touch 事件 interface
   var TouchEventInterface = _assign({}, UIEventInterface, {
     touches: 0,
     targetTouches: 0,
@@ -7651,6 +7732,7 @@
     getModifierState: getEventModifierState
   });
 
+  // touch 合成事件构造方法
   var SyntheticTouchEvent = createSyntheticEvent(TouchEventInterface);
   /**
    * @interface Event
@@ -7658,18 +7740,21 @@
    * @see https://developer.mozilla.org/en-US/docs/Web/API/TransitionEvent
    */
 
+  // transition 过渡事件 interface
   var TransitionEventInterface = _assign({}, EventInterface, {
     propertyName: 0,
     elapsedTime: 0,
     pseudoElement: 0
   });
 
+  // transition 合成事件构造函数
   var SyntheticTransitionEvent = createSyntheticEvent(TransitionEventInterface);
   /**
    * @interface WheelEvent
    * @see http://www.w3.org/TR/DOM-Level-3-Events/
    */
 
+  // 鼠标滚轮事件 interface
   var WheelEventInterface = _assign({}, MouseEventInterface, {
     deltaX: function (event) {
       return 'deltaX' in event ? event.deltaX : // Fallback to `wheelDeltaX` for Webkit and normalize (right is positive).
@@ -7688,6 +7773,7 @@
     deltaMode: 0
   });
 
+  // 鼠标滚轮合成事件构造函数
   var SyntheticWheelEvent = createSyntheticEvent(WheelEventInterface);
 
   var END_KEYCODES = [9, 13, 27, 32]; // Tab, Return, Esc, Space
@@ -7723,21 +7809,24 @@
 
 
   var hasSpaceKeypress = false;
+
   /**
    * Return whether a native keypress event is assumed to be a command.
    * This is required because Firefox fires `keypress` events for key commands
    * (cut, copy, select-all, etc.) even though no character is inserted.
+   * 
+   * @param nativeEvent
    */
-
   function isKeypressCommand(nativeEvent) {
     return (nativeEvent.ctrlKey || nativeEvent.altKey || nativeEvent.metaKey) && // ctrlKey && altKey is equivalent to AltGr, and is not a command.
     !(nativeEvent.ctrlKey && nativeEvent.altKey);
   }
+
   /**
+
    * Translate native top level events into event types.
+   * @param domEventName
    */
-
-
   function getCompositionEventType(domEventName) {
     switch (domEventName) {
       case 'compositionstart':
@@ -7823,10 +7912,16 @@
 
 
   var isComposing = false;
+
   /**
+   * 
+   * @param dispatchQueue
+   * @param domEventName
+   * @param targetInst
+   * @param nativeEvent
+   * @param nativeEventTarget
    * @return {?object} A SyntheticCompositionEvent.
    */
-
   function extractCompositionEvent(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget) {
     var eventType;
     var fallbackData;
@@ -7880,6 +7975,11 @@
     }
   }
 
+  /**
+   * 
+   * @param domEventName
+   * @param nativeEvent
+   */
   function getNativeBeforeInputChars(domEventName, nativeEvent) {
     switch (domEventName) {
       case 'compositionend':
@@ -7926,12 +8026,14 @@
         return null;
     }
   }
+
   /**
    * For browsers that do not provide the `textInput` event, extract the
    * appropriate string to use for SyntheticInputEvent.
+   * 
+   * @param domEvent
+   * @param nativeEvent
    */
-
-
   function getFallbackBeforeInputChars(domEventName, nativeEvent) {
     // If we are currently composing (IME) and using a fallback to do so,
     // try to extract the composed characters from the fallback object.
@@ -7994,14 +8096,13 @@
         return null;
     }
   }
+
   /**
    * Extract a SyntheticInputEvent for `beforeInput`, based on either native
    * `textInput` or fallback behavior.
    *
    * @return {?object} A SyntheticInputEvent.
    */
-
-
   function extractBeforeInputEvent(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget) {
     var chars;
 
@@ -8028,6 +8129,7 @@
       event.data = chars;
     }
   }
+
   /**
    * Create an `onBeforeInput` event to match
    * http://www.w3.org/TR/2013/WD-DOM-Level-3-Events-20131105/#events-inputevents.
@@ -8046,8 +8148,6 @@
    * allowing us to share composition fallback code for both `beforeInput` and
    * `composition` event types.
    */
-
-
   function extractEvents(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags, targetContainer) {
     extractCompositionEvent(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget);
     extractBeforeInputEvent(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget);
@@ -8056,6 +8156,8 @@
   /**
    * @see http://www.whatwg.org/specs/web-apps/current-work/multipage/the-input-element.html#input-type-attr-summary
    */
+
+   // input 支持的 type 类型
   var supportedInputTypes = {
     color: true,
     date: true,
@@ -8074,6 +8176,10 @@
     week: true
   };
 
+  /**
+   * 判断 dom 节点的元素累心为 input(且 type 是支持的类型) 或者 textarea
+   * @param elem dom 节点
+   */
   function isTextInputElement(elem) {
     var nodeName = elem && elem.nodeName && elem.nodeName.toLowerCase();
 
@@ -8119,10 +8225,20 @@
     return isSupported;
   }
 
+  /**
+   * 
+   */
   function registerEvents$1() {
     registerTwoPhaseEvent('onChange', ['change', 'click', 'focusin', 'focusout', 'input', 'keydown', 'keyup', 'selectionchange']);
   }
 
+  /**
+   * 
+   * @param dispatchQueue
+   * @param inst
+   * @param nativeEvent
+   * @param target
+   */
   function createAndAccumulateChangeEvent(dispatchQueue, inst, nativeEvent, target) {
     // Flag this event loop as needing state restore.
     enqueueStateRestore(target);
@@ -8152,6 +8268,10 @@
     return nodeName === 'select' || nodeName === 'input' && elem.type === 'file';
   }
 
+  /**
+   * 
+   * @param nativeEvent
+   */
   function manualDispatchChangeEvent(nativeEvent) {
     var dispatchQueue = [];
     createAndAccumulateChangeEvent(dispatchQueue, activeElementInst, nativeEvent, getEventTarget(nativeEvent)); // If change and propertychange bubbled, we'd just bind to it like all the
@@ -8169,10 +8289,18 @@
     batchedUpdates(runEventInBatch, dispatchQueue);
   }
 
+  /**
+   * @param dispatchQueue
+   */
   function runEventInBatch(dispatchQueue) {
+    // 处理事件派发队列
     processDispatchQueue(dispatchQueue, 0);
   }
 
+  /**
+   * 
+   * @param targetInst
+   */
   function getInstIfValueChanged(targetInst) {
     var targetNode = getNodeFromInstance(targetInst);
 
@@ -8181,6 +8309,11 @@
     }
   }
 
+  /**
+   * 
+   * @param domEventName
+   * @param targetInst
+   */
   function getTargetInstForChangeEvent(domEventName, targetInst) {
     if (domEventName === 'change') {
       return targetInst;
@@ -8955,13 +9088,15 @@
   var activeElementInst$1 = null;
   var lastSelection = null;
   var mouseDown = false;
+
+
   /**
    * Get an object which is a unique representation of the current selection.
    *
    * The return value will not be consistent across nodes or browsers, but
    * two identical selections on the same node will return identical objects.
+   * @param node 
    */
-
   function getSelection$1(node) {
     if ('selectionStart' in node && hasSelectionCapabilities(node)) {
       return {
@@ -8979,11 +9114,11 @@
       };
     }
   }
+
+
   /**
    * Get document associated with the event target.
    */
-
-
   function getEventTargetDocument(eventTarget) {
     return eventTarget.window === eventTarget ? eventTarget.document : eventTarget.nodeType === DOCUMENT_NODE ? eventTarget : eventTarget.ownerDocument;
   }
@@ -8996,6 +9131,12 @@
    */
 
 
+  /**
+   * 
+   * @param dispatchQueue
+   * @param nativeEvent
+   * @param nativeEventTarget
+   */
   function constructSelectEvent(dispatchQueue, nativeEvent, nativeEventTarget) {
     // Ensure we have the right element, and that the user is not dragging a
     // selection (this matches native `select` event behavior). In HTML5, select
@@ -9024,6 +9165,7 @@
       }
     }
   }
+
   /**
    * This plugin creates an `onSelect` event that normalizes select events
    * across form elements.
@@ -9096,14 +9238,32 @@
     }
   }
 
+  /**
+   * 根据原生事件，获取对应的合成事件及事件监听器，收集到 dispatchQueue 中
+   * @param dispatchQueue 合成事件派发队列
+   * @param domEventName  事件名称
+   * @param targetInst 触发事件的 dom 节点对应的 fiber node
+   * @param nativeEvent 原生的时间对象
+   * @param nativeEventTarget 触发事件的 dom 节点
+   * @param eventSystemFlags 事件标记
+   * @param targetContainer 绑定事件的容器节点
+   */
   function extractEvents$4(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags, targetContainer) {
+    // 根据原生的事件名称，返回对应的 react 合成事件名称
     var reactName = topLevelEventsToReactNames.get(domEventName);
 
+    // 没有找到 react 合成事件，直接退出
     if (reactName === undefined) {
       return;
     }
 
+    if (reactName === 'onClick') {
+      console.log('123');
+    }
+
+    // 合成事件构造方法
     var SyntheticEventCtor = SyntheticEvent;
+    // react 合成事件的类型(名称)
     var reactEventType = domEventName;
 
     switch (domEventName) {
@@ -9119,11 +9279,13 @@
 
       case 'keydown':
       case 'keyup':
+        // Keyboard 合成事件构造方法
         SyntheticEventCtor = SyntheticKeyboardEvent;
         break;
 
       case 'focusin':
         reactEventType = 'focus';
+        // input force 合成事件构造方法
         SyntheticEventCtor = SyntheticFocusEvent;
         break;
 
@@ -9157,6 +9319,7 @@
       case 'mouseout':
       case 'mouseover':
       case 'contextmenu':
+        // 鼠标合成事件构造方法
         SyntheticEventCtor = SyntheticMouseEvent;
         break;
 
@@ -9168,6 +9331,7 @@
       case 'dragover':
       case 'dragstart':
       case 'drop':
+        // 鼠标拖动合成事件构造方法
         SyntheticEventCtor = SyntheticDragEvent;
         break;
 
@@ -9175,30 +9339,36 @@
       case 'touchend':
       case 'touchmove':
       case 'touchstart':
+        // touch 合成事件构造方法
         SyntheticEventCtor = SyntheticTouchEvent;
         break;
 
       case ANIMATION_END:
       case ANIMATION_ITERATION:
       case ANIMATION_START:
+        // 动画合成事件构造方法
         SyntheticEventCtor = SyntheticAnimationEvent;
         break;
 
       case TRANSITION_END:
+        // 过渡合成事件构造方法
         SyntheticEventCtor = SyntheticTransitionEvent;
         break;
 
       case 'scroll':
+        // UI 合成事件构造方法
         SyntheticEventCtor = SyntheticUIEvent;
         break;
 
       case 'wheel':
+        // 鼠标滚轮合成事件构造方法
         SyntheticEventCtor = SyntheticWheelEvent;
         break;
 
       case 'copy':
       case 'cut':
       case 'paste':
+        // Clipboard 合成事件构造方法
         SyntheticEventCtor = SyntheticClipboardEvent;
         break;
 
@@ -9210,10 +9380,12 @@
       case 'pointerout':
       case 'pointerover':
       case 'pointerup':
+        // 鼠标 Pointer 合成事件构造方法
         SyntheticEventCtor = SyntheticPointerEvent;
         break;
     }
 
+    // 是否是捕获阶段
     var inCapturePhase = (eventSystemFlags & IS_CAPTURE_PHASE) !== 0;
 
     {
@@ -9221,18 +9393,21 @@
       // In the past, React has always bubbled them, but this can be surprising.
       // We're going to try aligning closer to the browser behavior by not bubbling
       // them in React either. We'll start by not bubbling onScroll, and then expand.
+      // ？？
       var accumulateTargetOnly = !inCapturePhase && // TODO: ideally, we'd eventually add all events from
       // nonDelegatedEvents list in DOMPluginEventSystem.
       // Then we can remove this special list.
       // This is a breaking change that can wait until React 18.
       domEventName === 'scroll';
 
+      // 收集事件监听器
       var _listeners = accumulateSinglePhaseListeners(targetInst, reactName, nativeEvent.type, inCapturePhase, accumulateTargetOnly);
 
       if (_listeners.length > 0) {
         // Intentionally create event lazily.
+        // 创建一个合成事件对象(对照原生的事件对象)
         var _event = new SyntheticEventCtor(reactName, reactEventType, null, nativeEvent, nativeEventTarget);
-
+        // 将合成事件对象及对应的事件监听器收集到 dispatchQueue 队列中
         dispatchQueue.push({
           event: _event,
           listeners: _listeners
@@ -9254,14 +9429,14 @@
   registerEvents();
 
   /**
-   * 
-   * @param dispatchQueue
-   * @param domEventName
-   * @param targetInst
-   * @param nativeEvent
-   * @param nativeEventTarget
-   * @param eventSystemFlags
-   * @param targetContainer
+   * 根据原生事件名，获取对应的合成事件对象及事件监听器，收集到 dispatchQueue 中
+   * @param dispatchQueue 收集合成事件对象及对应的事件监听器
+   * @param domEventName  原生的事件名称
+   * @param targetInst 触发事件的 fiber node
+   * @param nativeEvent 原生的事件对象
+   * @param nativeEventTarget 触发事件的 dom 节点
+   * @param eventSystemFlags 事件标记
+   * @param targetContainer 绑定事件监听器的容器节点
    */
   function extractEvents$5(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags, targetContainer) {
     // TODO: we should remove the concept of a "SimpleEventPlugin".
@@ -9270,7 +9445,9 @@
     // should probably be inlined somewhere and have its logic
     // be core the to event system. This would potentially allow
     // us to ship builds of React without the polyfilled plugins below.
+    // 提取合成事件及对应的事件监听器
     extractEvents$4(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags);
+    // 
     var shouldProcessPolyfillPlugins = (eventSystemFlags & SHOULD_NOT_PROCESS_POLYFILL_EVENT_PLUGINS) === 0; // We don't process these events unless we are in the
     // event's native "bubble" phase, which means that we're
     // not in the capture phase. That's because we emulate
@@ -9307,42 +9484,49 @@
   var nonDelegatedEvents = new Set(['cancel', 'close', 'invalid', 'load', 'scroll', 'toggle'].concat(mediaEventTypes));
 
   /**
-   * 
-   * @param event
-   * @param listener
-   * @param currentTarget
+   * 触发事件监听器
+   * @param event   react 合成事件对象
+   * @param listener 事件监听器
+   * @param currentTarget 触发事件的 dom 节点
    */
   function executeDispatch(event, listener, currentTarget) {
     var type = event.type || 'unknown-event';
     event.currentTarget = currentTarget;
+    // 
     invokeGuardedCallbackAndCatchFirstError(type, listener, undefined, event);
     event.currentTarget = null;
   }
 
   /**
-   * 
-   * @param event
-   * @param dispatchListeners
-   * @param inCapturePhase
+   * 按序派发事件
+   * @param eventreact 合成事件对象
+   * @param dispatchListeners 事件监听器
+   * @param inCapturePhase 是否是捕获阶段
    */
   function processDispatchQueueItemsInOrder(event, dispatchListeners, inCapturePhase) {
     var previousInstance;
 
     if (inCapturePhase) {
-      for (var i = dispatchListeners.length - 1; i >= 0; i--) {
-        var _dispatchListeners$i = dispatchListeners[i],
+      // 捕获阶段
+      for (var i = dispatchListeners.length - 1; i >= 0; i--) {  // 遍历事件监听器
+        // 事件监听器对象
+        var _dispatchListeners$i = dispatchListeners[i],  
+            // 触发事件的 dom 节点对应的 fiber nod
             instance = _dispatchListeners$i.instance,
+            // 触发事件的 dom 节点
             currentTarget = _dispatchListeners$i.currentTarget,
+            // 事件监听器
             listener = _dispatchListeners$i.listener;
 
         if (instance !== previousInstance && event.isPropagationStopped()) {
           return;
         }
-
+        // 触发事件监听器
         executeDispatch(event, listener, currentTarget);
         previousInstance = instance;
       }
     } else {
+      // 冒泡阶段
       for (var _i = 0; _i < dispatchListeners.length; _i++) {
         var _dispatchListeners$_i = dispatchListeners[_i],
             _instance = _dispatchListeners$_i.instance,
@@ -9352,7 +9536,7 @@
         if (_instance !== previousInstance && event.isPropagationStopped()) {
           return;
         }
-
+        // 触发事件监听器
         executeDispatch(event, _listener, _currentTarget);
         previousInstance = _instance;
       }
@@ -9360,17 +9544,21 @@
   }
 
   /**
-   * 
-   * @param dispatchQueue
-   * @param eventSystemFlags
+   * 处理事件派发队列
+   * @param dispatchQueue  事件派发队列
+   * @param eventSystemFlags 事件标记
    */
   function processDispatchQueue(dispatchQueue, eventSystemFlags) {
+    // 判断是否是捕获阶段
     var inCapturePhase = (eventSystemFlags & IS_CAPTURE_PHASE) !== 0;
 
-    for (var i = 0; i < dispatchQueue.length; i++) {
+    for (var i = 0; i < dispatchQueue.length; i++) {  // 遍历事件派发队列
       var _dispatchQueue$i = dispatchQueue[i],
+          // react 合成事件对象
           event = _dispatchQueue$i.event,
+          // 事件监听器
           listeners = _dispatchQueue$i.listeners;
+      // 按序派发事件
       processDispatchQueueItemsInOrder(event, listeners, inCapturePhase); //  event system doesn't use pooling.
     } // This would be a good time to rethrow if any of the event handlers threw.
 
@@ -9380,11 +9568,20 @@
 
   /**
    * 
+   * @param domEventName  事件名称
+   * @param eventSystemFlags 事件标记
+   * @param nativeEvent 事件对象
+   * @param targetInst 触发事件的 dom 节点对应的 fiber node
+   * @param targetContainer 绑定事件的容器
    */
   function dispatchEventsForPlugins(domEventName, eventSystemFlags, nativeEvent, targetInst, targetContainer) {
+    // 获取触发事件的 dom 节点
     var nativeEventTarget = getEventTarget(nativeEvent);
+    // 构建一个事件派发队列
     var dispatchQueue = [];
+    // 根据原生事件名，获取对应的合成事件对象及事件监听器，收集到 dispatchQueue 中
     extractEvents$5(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags);
+    // 处理事件派发队列
     processDispatchQueue(dispatchQueue, eventSystemFlags);
   }
 
@@ -9548,6 +9745,7 @@
   }
 
   /**
+   * 判断绑定事件的 dom 节点和 容器节点是否匹配
    * @param grandContainer
    * @param targetContainer
    */
@@ -9556,8 +9754,7 @@
   }
 
   /**
-   *
-   *
+   * 派发事件
    * @param domEventName  事件名称
    * @param eventSystemFlags 事件标记
    * @param nativeEvent 原生的事件对象
@@ -9568,6 +9765,7 @@
     // 实际触发事件的 dom 节点对应的 fiber node
     var ancestorInst = targetInst;
 
+    // 这块儿的逻辑，不是很能理解
     if ((eventSystemFlags & IS_EVENT_HANDLE_NON_MANAGED_NODE) === 0 && (eventSystemFlags & IS_NON_DELEGATED) === 0) {
       // 容器 dom 节点
       var targetContainerNode = targetContainer; // If we are using the legacy FB support flag, we
@@ -9592,6 +9790,7 @@
          */
         var node = targetInst;
 
+        // 
         mainLoop: while (true) {
           if (node === null) {
             return;
@@ -9599,24 +9798,37 @@
 
           var nodeTag = node.tag;
 
-          if (nodeTag === HostRoot || nodeTag === HostPortal) {
+          if (nodeTag === HostRoot || nodeTag === HostPortal) {  
+            // 主要是用来判断 node 是否是容器 dom 节点对应的 fiber node
+            // 如果 fiber node 的类型为 HostRoot 或者 HostPortal， 即 container fiber node
+            // container，容器 dom 节点
             var container = node.stateNode.containerInfo;
-
+            // container 是 portal / react 应用挂载的节点， targetContainerNode 是绑定事件的节点
+            // 要判断两者是否匹配
+            // 这里很关键， 子节点的事件要冒泡到对应的容器节点，否则是无法触发的
             if (isMatchingRootContainer(container, targetContainerNode)) {
+              // 匹配，跳出循环
               break;
             }
 
-            if (nodeTag === HostPortal) {
+            if (nodeTag === HostPortal) {  // fiber node 为 HostPortal
               // The target is a portal, but it's not the rootContainer we're looking for.
               // Normally portals handle their own events all the way down to the root.
               // So we should be able to stop now. However, we don't know if this portal
               // was part of *our* root.
+              // portal fiber node 的 parent fiber node
+
+              // 我们需要找一个 HostRoot fiber node，但找到的却是 HostPortal fiber node
+
+              // 找到 HostPortal fiber node 的 parent fiber node
               var grandNode = node.return;
 
               while (grandNode !== null) {
+                // 继续向上遍历，知道找到匹配的容器节点为止
                 var grandTag = grandNode.tag;
 
                 if (grandTag === HostRoot || grandTag === HostPortal) {
+                  // 容器 dom 节点
                   var grandContainer = grandNode.stateNode.containerInfo;
 
                   if (isMatchingRootContainer(grandContainer, targetContainerNode)) {
@@ -9629,14 +9841,17 @@
 
                 grandNode = grandNode.return;
               }
-            } // Now we need to find it's corresponding host fiber in the other
+            } 
+            
+            // Now we need to find it's corresponding host fiber in the other
             // tree. To do this we can use getClosestInstanceFromNode, but we
             // need to validate that the fiber is a host instance, otherwise
             // we need to traverse up through the DOM till we find the correct
             // node that is from the other tree.
-
-
+            
+            // fiber node 是 HostRoot 类型
             while (container !== null) {
+              // 根据 dom 节点返回 fiber node
               var parentNode = getClosestInstanceFromNode(container);
 
               if (parentNode === null) {
@@ -9653,53 +9868,64 @@
               container = container.parentNode;
             }
           }
-
+          // 如果 fiber node 不是 HostRoot / HostPortal 类型的 fiber node，要一直向上遍历，知道找到 container fiber node 为止
           node = node.return;
         }
       }
     }
-
+    // 批量事件更新
     batchedEventUpdates(function () {
       return dispatchEventsForPlugins(domEventName, eventSystemFlags, nativeEvent, ancestorInst);
     });
   }
 
   /**
-   * 
-   * @param instance
-   * @param listener
-   * @param currentTarget
+   * 创建一个派发的监听器
+   * @param instance  fiber node
+   * @param listener  pendingProps 定义的事件监听器
+   * @param currentTarget  fiber node 对应的 dom 节点
    */
   function createDispatchListener(instance, listener, currentTarget) {
     return {
-      instance: instance,
-      listener: listener,
-      currentTarget: currentTarget
+      instance: instance,  // fiber node
+      listener: listener, // 事件监听器
+      currentTarget: currentTarget  // 触发事件对应的 dom 节点
     };
   }
 
   /**
+   * 收集事件监听器
+   * @param targetFiber 触发事件的 dom 节点对应的 fiber node
+   * @param reactName react 合成事件的名称
+   * @param nvativeEventType 原生事件的类型
+   * @param inCapturePhase  事件是否处于捕获阶段 
+   * @param accumulateTargetOnly  是否只是为触发事件的 dom 节点收集监听器
    * 
    */
   function accumulateSinglePhaseListeners(targetFiber, reactName, nativeEventType, inCapturePhase, accumulateTargetOnly) {
     var captureName = reactName !== null ? reactName + 'Capture' : null;
+    // 根据 inCapturePhase 捕获标记，确定 react 合成事件的名称
     var reactEventName = inCapturePhase ? captureName : reactName;
     var listeners = [];
+    // 触发事件的 dom 节点对应的 fiber node
     var instance = targetFiber;
+    // 
     var lastHostComponent = null; // Accumulate all instances and listeners via the target -> root path.
 
     while (instance !== null) {
-      var _instance2 = instance,
-          stateNode = _instance2.stateNode,
-          tag = _instance2.tag; // Handle listeners that are on HostComponents (i.e. <div>)
+      var _instance2 = instance,  // 触发事件的 dom 节点对应的 fiber node
+          stateNode = _instance2.stateNode,  // 触发事件的 dom 节点
+          tag = _instance2.tag; // 触发事件的 dom 节点的标签类型 Handle listeners that are on HostComponents (i.e. <div>)
 
-      if (tag === HostComponent && stateNode !== null) {
+      if (tag === HostComponent && stateNode !== null) {  // 原生的 dom 节点
+        // 触发事件的原生 dom 节点
         lastHostComponent = stateNode; // createEventHandle listeners
 
 
         if (reactEventName !== null) {
+          // 获取自定义的事件监听器
           var listener = getListener(instance, reactEventName);
-
+          // 如果 dom 节点定义了事件监听器，那么创建一个派发的 listener
           if (listener != null) {
             listeners.push(createDispatchListener(instance, listener, lastHostComponent));
           }
@@ -9708,16 +9934,17 @@
       // continue to propagate through the React fiber tree to find other
       // listeners.
 
-
+      // 只是为触发事件的 dom 节点收集监听器
       if (accumulateTargetOnly) {
         break;
       }
 
       instance = instance.return;
     }
-
+    // 返回收集的 listeners
     return listeners;
-  } // We should only use this function for:
+  } 
+  // We should only use this function for:
   // - BeforeInputEventPlugin
   // - ChangeEventPlugin
   // - SelectEventPlugin
@@ -9742,12 +9969,13 @@
 
       if (tag === HostComponent && stateNode !== null) {
         var currentTarget = stateNode;
+        // 获取自定义的事件监听器
         var captureListener = getListener(instance, captureName);
 
         if (captureListener != null) {
           listeners.unshift(createDispatchListener(instance, captureListener, currentTarget));
         }
-
+        // 获取自定义的事件监听器
         var bubbleListener = getListener(instance, reactName);
 
         if (bubbleListener != null) {
@@ -9761,6 +9989,10 @@
     return listeners;
   }
 
+  /**
+   *
+   * @param inst
+   */
   function getParent(inst) {
     if (inst === null) {
       return null;
@@ -9859,12 +10091,14 @@
         var currentTarget = stateNode;
 
         if (inCapturePhase) {
+          // 获取自定义的事件监听器
           var captureListener = getListener(instance, registrationName);
 
           if (captureListener != null) {
             listeners.unshift(createDispatchListener(instance, captureListener, currentTarget));
           }
         } else if (!inCapturePhase) {
+          // 获取自定义的事件监听器
           var bubbleListener = getListener(instance, registrationName);
 
           if (bubbleListener != null) {
@@ -10671,7 +10905,6 @@
    * @param rootContainerElement
    */
   function diffHydratedProperties(domElement, tag, rawProps, parentNamespace, rootContainerElement) {
-    debugger
     var isCustomComponentTag;
     var extraAttributeNames;
 
@@ -12162,11 +12395,17 @@
   // HostRoot back. To get to the HostRoot, you need to pass a child of it.
   // The same thing applies to Suspense boundaries.
 
+  /**
+   * 根据给定的 dom 节点返回最近的 fiber node
+   * @param targetNode dom 节点
+   */
   function getClosestInstanceFromNode(targetNode) {
+    // dom 节点是否有对应的 fiber node
     var targetInst = targetNode[internalInstanceKey];
 
     if (targetInst) {
       // Don't return HostRoot or SuspenseComponent here.
+      // 如果 dom 节点有 fiber node，直接返回
       return targetInst;
     } // If the direct event target isn't a React owned DOM node, we need to look
     // to see if one of its parents is a React owned DOM node.
@@ -12243,6 +12482,8 @@
   /**
    * Given a DOM node, return the ReactDOMComponent or ReactDOMTextComponent
    * instance, or null if the node was not rendered by this React.
+   * 根据 dom 节点返回对应的 fiber node
+   * @param node dom 节点
    */
 
   function getInstanceFromNode(node) {
@@ -18847,7 +19088,6 @@
         error("State updates from the useState() and useReducer() Hooks don't support the " + 'second callback argument. To execute a side effect after ' + 'rendering, declare it in the component body with useEffect().');
       }
     }
-    debugger
     // 记录 setState 发生的时间
     var eventTime = requestEventTime();
     // 根据当前更新的优先级，为更新分配一个 lane
@@ -19125,7 +19365,6 @@
        * 
        */
       useTransition: function () {
-        debugger
         currentHookNameInDev = 'useTransition';
         mountHookTypesDev();
         return mountTransition();
@@ -20155,7 +20394,6 @@
    * @param rendrLanes 本次渲染要处理的更新
    */
   function updateOffscreenComponent(current, workInProgress, renderLanes) {
-    debugger
     // { mode: 'visible', children: xxxx}
     // mode 的值为 visible， 意味着 OffScreen 类型的 fiber node 的子元素要显示？？
     var nextProps = workInProgress.pendingProps;
@@ -20685,7 +20923,6 @@
    * @param renderLanes
    */
   function updateHostComponent(current, workInProgress, renderLanes) {
-    debugger
     pushHostContext(workInProgress);
     
     if (current === null) {
@@ -21135,7 +21372,6 @@
    * @param renderLanes 本次渲染的优先级
    */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
-    debugger
     // workInProgress 是正在处理 React.Suspense 类型的 fiber node
     // nexProps 中包含 fallback、children
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
@@ -21988,7 +22224,6 @@
    * @param renderLanes 渲染 portal fiber node 时的 lanes
    */
   function updatePortalComponent(current, workInProgress, renderLanes) {
-    debugger
     // 更新容器节点上下文
     pushHostContainer(workInProgress, workInProgress.stateNode.containerInfo);
     // 
@@ -23151,13 +23386,14 @@
         }
 
       case HostPortal:  // React.portal 的 complete 阶段
-        debugger
         popHostContainer(workInProgress);
         // 更新容器节点，其实容器节点没有啥要更新的，updateHostContainer 函数体是空的
         updateHostContainer(workInProgress);
 
         if (current === null) {
           // 挂载阶段
+          // portal 容器节点也要代理事件，不然 portal 内部绑定的事件无法触发
+          // 原先的 react 16 版本，所有的时间都代理到 document，现在都代理到了容器节点
           preparePortalMount(workInProgress.stateNode.containerInfo);
         }
 
@@ -25591,7 +25827,7 @@
   var BatchedContext = // 批量处理上下文
   /*               */
   1;
-  var EventContext =  // 连续事件上下文 ？？
+  var EventContext =  // 事件上下文 ？？
   /*                 */
   2;
   var DiscreteEventContext =  // 离散事件上下文 ？？
@@ -26036,6 +26272,7 @@
       priorityLevel === UserBlockingPriority$2 || priorityLevel === ImmediatePriority$1)) {
         // This is the result of a discrete event. Track the lowest priority
         // discrete update per root so we can flush them early, if needed.
+        // 离散事件要特殊处理
         if (rootsWithPendingDiscreteUpdates === null) {
           rootsWithPendingDiscreteUpdates = new Set([root]);
         } else {
@@ -26670,10 +26907,12 @@
   }
 
   /**
-   * 
+   * 批量事件更新的实现
+   * 对应的事件：离散事件、
    */
   function batchedEventUpdates$1(fn, a) {
     var prevExecutionContext = executionContext;
+    // 当前上下文为 EventContext: 2
     executionContext |= EventContext;
 
     try {
@@ -26750,7 +26989,7 @@
   }
 
   /**
-   * 
+   * 刷新同步队列
    * @params fn
    * @params a
    */

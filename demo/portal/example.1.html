@@ -16,15 +16,15 @@
     
         function Parent() {
             return <React.Fragment>
-                <div onClick={() => alert('parent')}>
-                    <div>parent</div>
+                <div>
+                    <div onClick={() => alert('click parent')} onPointerDownCapture={() => alert('pointerdown parent')}>parent</div>
                     {ReactDOM.createPortal(<Child />, document.getElementById('portal'))}
                 </div>
             </React.Fragment>
         }
 
         function Child() {
-            return <div>child</div>
+            return <div onClick={() => alert('click child')} onPointerDownCapture={() => alert('pointerdown child')}>child</div>
         }
 
         ReactDOM.render(<Parent />, document.getElementById('app'));
