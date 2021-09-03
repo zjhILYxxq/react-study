@@ -3990,6 +3990,7 @@
   // 当前是否处于某个事件处理器内部
   var isInsideEventHandler = false;
 
+  // 批量事件更新是否已经完成
   var isBatchingEventUpdates = false;
 
   /**
@@ -4011,6 +4012,10 @@
     }
   }
 
+  /**
+   * @param fn
+   * @param bookkeeping
+   */
   function batchedUpdates(fn, bookkeeping) {
     if (isInsideEventHandler) {
       // If we are currently inside another batch, we need to wait until it
@@ -4027,19 +4032,29 @@
       finishEventHandler();
     }
   }
+
+  /**
+   * 批量事件更新
+   * @param fn
+   * @param a
+   * @param b
+   */
   function batchedEventUpdates(fn, a, b) {
     if (isBatchingEventUpdates) {
       // If we are currently inside another batch, we need to wait until it
       // fully completes before restoring state.
       return fn(a, b);
     }
-
+    // 标记者已经在批量事件更新过程中
     isBatchingEventUpdates = true;
 
     try {
+      // 批量事件更新的实现
       return batchedEventUpdatesImpl(fn, a, b);
     } finally {
+      // 批量事件更新结束
       isBatchingEventUpdates = false;
+      // ？？
       finishEventHandler();
     }
   }
@@ -7180,20 +7195,39 @@
   // If we had a single constructor, it would be megamorphic and engines would deopt.
 
 
+  /**
+   * 根据传入的 interface， 返回一个合成事件构建方法
+   * @param Interface 接口
+   */
   function createSyntheticEvent(Interface) {
     /**
      * Synthetic events are dispatched by event plugins, typically in response to a
      * top-level event delegation handler.
+     * 合成事件由 event plugins 调度，通常是为了响应顶级事件委托处理程序
      *
      * These systems should generally use pooling to reduce the frequency of garbage
      * collection. The system should check `isPersistent` to determine whether the
      * event should be released into the pool after being dispatched. Users that
      * need a persisted event should invoke `persist`.
-     *
+     * 
+     * 这些系统通常使用池(什么池)来减少垃圾收集的频率。
+     * 系统应该通过检查 'isPersistent' 以确定事件在完成调度以后是否应该被释放到池中。
+     * 需要持久事件的用户应该调用 'persist'.
+     * 
      * Synthetic events (and subclasses) implement the DOM Level 3 Events API by
      * normalizing browser quirks. Subclasses do not necessarily have to implement a
      * DOM interface; custom application-specific events can also subclass this.
+     * 合成事件通过规范浏览器怪癖来实现 DOM3.
      */
+
+     /**
+      * 构造函数，返回一个 react 合成事件 event
+      * @param reactName
+      * @param reactEventType
+      * @param targetInst
+      * @param nativeEvent
+      * @param nativeEventTarget
+      */
     function SyntheticBaseEvent(reactName, reactEventType, targetInst, nativeEvent, nativeEventTarget) {
       this._reactName = reactName;
       this._targetInst = targetInst;
@@ -7225,10 +7259,12 @@
       }
 
       this.isPropagationStopped = functionThatReturnsFalse;
+
       return this;
     }
 
     _assign(SyntheticBaseEvent.prototype, {
+      // 阻止默认行为
       preventDefault: function () {
         this.defaultPrevented = true;
         var event = this.nativeEvent;
@@ -7245,6 +7281,7 @@
 
         this.isDefaultPrevented = functionThatReturnsTrue;
       },
+      // 阻止冒泡
       stopPropagation: function () {
         var event = this.nativeEvent;
 
@@ -7281,7 +7318,7 @@
        */
       isPersistent: functionThatReturnsTrue
     });
-
+    // 返回一个合成事件构建方法
     return SyntheticBaseEvent;
   }
   /**
@@ -9098,9 +9135,20 @@
     }
   }
 
+  /**
+   * @param dispatchQueue
+   * @param domEventName  事件名称
+   * @param targetInst
+   * @param nativeEvent
+   * @param nativeEventTarget
+   * @param eventSystemFlags
+   * @param targetContainer
+   */
   function extractEvents$4(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags, targetContainer) {
+    // 根据原生的事件名称，返回对应的 react 合成事件名称
     var reactName = topLevelEventsToReactNames.get(domEventName);
 
+    // 没有找到 react 合成事件，直接退出
     if (reactName === undefined) {
       return;
     }
@@ -9256,7 +9304,7 @@
   registerEvents();
 
   /**
-   * 
+   * 提取事件 ？？
    * @param dispatchQueue
    * @param domEventName
    * @param targetInst
@@ -9382,11 +9430,20 @@
 
   /**
    * 
+   * @param domEventName  事件名称
+   * @param eventSystemFlags 事件标记
+   * @param nativeEvent 事件对象
+   * @param targetInst 触发事件的 dom 节点
+   * @param targetContainer 绑定事件的容器
    */
   function dispatchEventsForPlugins(domEventName, eventSystemFlags, nativeEvent, targetInst, targetContainer) {
+    // 获取触发事件的 dom 节点
     var nativeEventTarget = getEventTarget(nativeEvent);
+    // 
     var dispatchQueue = [];
+    // 
     extractEvents$5(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags);
+    // 
     processDispatchQueue(dispatchQueue, eventSystemFlags);
   }
 
@@ -9571,6 +9628,7 @@
     // 实际触发事件的 dom 节点对应的 fiber node
     var ancestorInst = targetInst;
 
+    // 这块儿的逻辑，不是很能理解
     if ((eventSystemFlags & IS_EVENT_HANDLE_NON_MANAGED_NODE) === 0 && (eventSystemFlags & IS_NON_DELEGATED) === 0) {
       // 容器 dom 节点
       var targetContainerNode = targetContainer; // If we are using the legacy FB support flag, we
@@ -9604,13 +9662,15 @@
           var nodeTag = node.tag;
 
           if (nodeTag === HostRoot || nodeTag === HostPortal) {  
+            // 主要是用来判断 node 是否是容器 dom 节点对应的 fiber node
             // 如果 fiber node 的类型为 HostRoot 或者 HostPortal， 即 container fiber node
             // container，容器 dom 节点
             var container = node.stateNode.containerInfo;
-
             // container 是 portal / react 应用挂载的节点， targetContainerNode 是绑定事件的节点
             // 要判断两者是否匹配
+            // 这里很关键， 子节点的事件要冒泡到对应的容器节点，否则是无法触发的
             if (isMatchingRootContainer(container, targetContainerNode)) {
+              // 匹配，跳出循环
               break;
             }
 
@@ -9620,9 +9680,14 @@
               // So we should be able to stop now. However, we don't know if this portal
               // was part of *our* root.
               // portal fiber node 的 parent fiber node
+
+              // 我们需要找一个 HostRoot fiber node，但找到的却是 HostPortal fiber node
+
+              // 找到 HostPortal fiber node 的 parent fiber node
               var grandNode = node.return;
 
               while (grandNode !== null) {
+                // 继续向上遍历，知道找到匹配的容器节点为止
                 var grandTag = grandNode.tag;
 
                 if (grandTag === HostRoot || grandTag === HostPortal) {
@@ -9639,7 +9704,9 @@
 
                 grandNode = grandNode.return;
               }
-            } // Now we need to find it's corresponding host fiber in the other
+            } 
+            
+            // Now we need to find it's corresponding host fiber in the other
             // tree. To do this we can use getClosestInstanceFromNode, but we
             // need to validate that the fiber is a host instance, otherwise
             // we need to traverse up through the DOM till we find the correct
@@ -9664,13 +9731,13 @@
               container = container.parentNode;
             }
           }
-
+          // 如果 fiber node 不是 HostRoot / HostPortal 类型的 fiber node，要一直向上遍历，知道找到 container fiber node 为止
           node = node.return;
         }
       }
     }
-
-    // ??
+    debugger
+    // 
     batchedEventUpdates(function () {
       return dispatchEventsForPlugins(domEventName, eventSystemFlags, nativeEvent, ancestorInst);
     });
@@ -23171,6 +23238,7 @@
         if (current === null) {
           // 挂载阶段
           // portal 容器节点也要代理事件，不然 portal 内部绑定的事件无法触发
+          // 原先的 react 16 版本，所有的时间都代理到 document，现在都代理到了容器节点
           preparePortalMount(workInProgress.stateNode.containerInfo);
         }
 
@@ -25604,7 +25672,7 @@
   var BatchedContext = // 批量处理上下文
   /*               */
   1;
-  var EventContext =  // 连续事件上下文 ？？
+  var EventContext =  // 事件上下文 ？？
   /*                 */
   2;
   var DiscreteEventContext =  // 离散事件上下文 ？？
@@ -26683,10 +26751,12 @@
   }
 
   /**
-   * 
+   * 批量事件更新的实现
+   * 对应的事件：离散事件、
    */
   function batchedEventUpdates$1(fn, a) {
     var prevExecutionContext = executionContext;
+    // 当前上下文为 EventContext: 2
     executionContext |= EventContext;
 
     try {
