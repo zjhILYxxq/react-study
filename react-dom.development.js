@@ -7222,8 +7222,8 @@
 
      /**
       * 构造函数，返回一个 react 合成事件 event
-      * @param reactName
-      * @param reactEventType
+      * @param reactName  react 事件名称
+      * @param reactEventType 
       * @param targetInst
       * @param nativeEvent
       * @param nativeEventTarget
@@ -7262,7 +7262,7 @@
 
       return this;
     }
-
+    // 添加 preventDefault、stopPropagation 等方法
     _assign(SyntheticBaseEvent.prototype, {
       // 阻止默认行为
       preventDefault: function () {
@@ -7326,21 +7326,33 @@
    * @see http://www.w3.org/TR/DOM-Level-3-Events/
    */
 
-
+  // 事件接口
   var EventInterface = {
-    eventPhase: 0,
+    // 表示事件流当前处于哪个阶段 
+    // 0: none; 1: CAPTURING_PHASE(捕获阶段); 2: AT_TARGET(事件流处于目标阶段); 3: BUBBLING_PHASE(事件处于冒泡阶段);
+    eventPhase: 0, 
+    // 返回当前事件是否为冒泡事件
     bubbles: 0,
+    // 返回事件是否可以阻止其默认操作
     cancelable: 0,
+    // 返回事件创建的时间
     timeStamp: function (event) {
       return event.timeStamp || Date.now();
     },
+    // 检查是否为该事件调用了 preventDefault 方法，属性值为布尔值。true，调用 preventDefault; false，没有调用 preventDefault;
     defaultPrevented: 0,
+    // 返回事件是否受信任
     isTrusted: 0
   };
+  // 
   var SyntheticEvent = createSyntheticEvent(EventInterface);
 
+  // UIEvent 表示简单的用户界面事件，有 Event 派生
+  // UIEvent 的直接或者间接后代： MouseEvent、InputEvent、FocusEvent、keyboardEvent、TouchEvent 等
   var UIEventInterface = _assign({}, EventInterface, {
+    // 发生事件的视图，window 对象？？
     view: 0,
+    // 事件的详细信息
     detail: 0
   });
 
