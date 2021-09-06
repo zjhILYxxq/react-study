@@ -4089,6 +4089,7 @@
   }
 
   /**
+   * 处理
    * @param timeStap
    */
   function flushDiscreteUpdatesIfNeeded(timeStamp) {
@@ -6736,7 +6737,7 @@
   }
 
   /**
-   * 
+   * 标记离散更新已过期，需要赶紧处理
    * @param
    */
   function markDiscreteUpdatesExpired(root) {
@@ -6744,7 +6745,7 @@
   }
 
   /**
-   * 
+   * 判断 lanes 中是否包含离散更新
    * @param lanes
    */
   function hasDiscreteLanes(lanes) {
@@ -13289,9 +13290,11 @@
    * 处理同步任务队列中的任务
    */
   function flushSyncCallbackQueue() {
+    // 
     if (immediateQueueCallbackNode !== null) {
       var node = immediateQueueCallbackNode;
       immediateQueueCallbackNode = null;
+      // 取消调度任务
       Scheduler_cancelCallback(node);
     }
 
@@ -25965,7 +25968,7 @@
   var pendingPassiveHookEffectsMount = [];
   // ??
   var pendingPassiveHookEffectsUnmount = [];
-  // ??
+  // 处于等待的离散更新
   var rootsWithPendingDiscreteUpdates = null; // Use these to prevent an infinite loop of nested updates
   // 嵌套的更新，最多允许 50 个
   var NESTED_UPDATE_LIMIT = 50;
@@ -26261,6 +26264,7 @@
           // without immediately flushing it. We only do this for user-initiated
           // updates, to preserve historical behavior of legacy mode.
           resetRenderTimer();
+          // 立即处理同步回调队列，因此 legency 模式下，setTimeout 中不能批量处理更新
           flushSyncCallbackQueue();
         }
       }
@@ -26530,6 +26534,7 @@
         // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
         prepareFreshStack(root, NoLanes);
         markRootSuspended$1(root, lanes);
+        // 任务调度，处理更新
         ensureRootIsScheduled(root, now());
         throw fatalError;
       } // We now have a consistent tree. The next step is either to commit it,
@@ -26811,6 +26816,7 @@
       // 重置渲染过程中的全局变量： workInProgressRoot、workInProgress 以及与渲染相关的赛道
       prepareFreshStack(root, NoLanes);
       markRootSuspended$1(root, lanes);
+      // 任务调度，处理更新
       ensureRootIsScheduled(root, now());
       throw fatalError;
     } // We now have a consistent tree. Because this is a sync render, we
@@ -26831,7 +26837,8 @@
   }
 
   /**
-   * 
+   * 处理等待中的离散更新
+   * 等待中的离散更新，要优先处理
    */
   function flushDiscreteUpdates() {
     // console.log('flushDiscreteUpdates');
@@ -26848,10 +26855,10 @@
       // This is probably a nested event dispatch triggered by a lifecycle/effect,
       // like `el.focus()`. Exit.
 
-
+      // 批处理、渲染阶段、commit 阶段不能刷新离散更新
       return;
     }
-
+    // 处理未处理的离散更新
     flushPendingDiscreteUpdates(); // If the discrete updates scheduled passive effects, flush them now so that
     // they fire before the next serial event.
     // 上一次渲染的 useEffect 未处理，新的渲染开始时，要优先处理
@@ -26859,21 +26866,24 @@
   }
 
   /**
-   * 
+   * 处理未处理的离散更新
    */
   function flushPendingDiscreteUpdates() {
     if (rootsWithPendingDiscreteUpdates !== null) {
       // For each root with pending discrete updates, schedule a callback to
       // immediately flush them.
+      // 为处理的离散更新
       var roots = rootsWithPendingDiscreteUpdates;
       rootsWithPendingDiscreteUpdates = null;
       roots.forEach(function (root) {
+        // 标记 fiber node 的处于等待状态的 InputDiscreteLane 已经过期了
         markDiscreteUpdatesExpired(root);
+        // 任务调度，处理更新
         ensureRootIsScheduled(root, now());
       });
     } // Now flush the immediate queue.
 
-
+    // 处理同步回调队列
     flushSyncCallbackQueue();
   }
 
@@ -26923,6 +26933,7 @@
       if (executionContext === NoContext) {
         // Flush the immediate callbacks that were scheduled during this batch
         resetRenderTimer();
+        // 处理同步回调队列
         flushSyncCallbackQueue();
       }
     }
@@ -26951,6 +26962,7 @@
         if (executionContext === NoContext) {
           // Flush the immediate callbacks that were scheduled during this batch
           resetRenderTimer();
+          // 处理同步回调队列
           flushSyncCallbackQueue();
         }
       }
@@ -26983,6 +26995,7 @@
       if (executionContext === NoContext) {
         // Flush the immediate callbacks that were scheduled during this batch
         resetRenderTimer();
+        // 处理同步回调队列
         flushSyncCallbackQueue();
       }
     }
@@ -27017,7 +27030,7 @@
         executionContext = prevExecutionContext; // Flush the immediate callbacks that were scheduled during this batch.
         // Note that this will happen even if batchedUpdates is higher up
         // the stack.
-
+        // 处理同步回调队列
         flushSyncCallbackQueue();
       }
     }
@@ -27821,6 +27834,7 @@
     // `flushDiscreteUpdates` starts a useless render pass which may cancels
     // a scheduled timeout.
 
+    // 清除掉已经完成的离散更新
     if (rootsWithPendingDiscreteUpdates !== null) {
       if (!hasDiscreteLanes(remainingLanes) && rootsWithPendingDiscreteUpdates.has(root)) {
         rootsWithPendingDiscreteUpdates.delete(root);
@@ -28068,7 +28082,7 @@
       onCommitRoot$1();
     } // Always call this before exiting `commitRoot`, to ensure that any
     // additional work on this root is scheduled.
-
+    // 
     ensureRootIsScheduled(root, now());
 
     if (hasUncaughtError) {
@@ -28087,7 +28101,7 @@
       return null;
     } // If layout work was scheduled, flush it now.
 
-
+    // 处理同步回调队列
     flushSyncCallbackQueue();
 
     return null;
@@ -28495,6 +28509,7 @@
     }
 
     executionContext = prevExecutionContext;
+    // 处理同步回调队列
     flushSyncCallbackQueue(); // If additional passive effects were scheduled, increment a counter. If this
     // exceeds the limit, we'll fire a warning.
 
@@ -28533,7 +28548,7 @@
   var onUncaughtError = prepareToThrowUncaughtError;
 
   /**
-   * 
+   * 捕获 commit 阶段的异常
    * @param rootFiber
    * @param sourceFiber
    * @param error
@@ -28551,6 +28566,7 @@
     if (root !== null) {
       // 标记 fiber tree 需要更新
       markRootUpdated(root, SyncLane, eventTime);
+      // 异步任务调度，处理更新
       ensureRootIsScheduled(root, eventTime);
       schedulePendingInteractions(root, SyncLane);
     }
@@ -28591,6 +28607,7 @@
           if (root !== null) {
             // 标记 fiber tree 需要更新
             markRootUpdated(root, SyncLane, eventTime);
+            // 异步任务调度，处理更新
             ensureRootIsScheduled(root, eventTime);
             schedulePendingInteractions(root, SyncLane);
           } else {
@@ -30789,6 +30806,7 @@
   }
 
   /**
+   * 
    * @param fiber
    */
   function attemptUserBlockingHydration$1(fiber) {
@@ -30801,6 +30819,7 @@
     }
 
     var eventTime = requestEventTime();
+    // 分配 InputDiscreteHydrationLane
     var lane = InputDiscreteHydrationLane;
     // 为 fiber node 的更新， 安排一个调度任务
     scheduleUpdateOnFiber(fiber, lane, eventTime);
