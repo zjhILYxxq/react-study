@@ -7344,7 +7344,7 @@
     // 返回事件是否受信任
     isTrusted: 0
   };
-  // 
+  // 返回一个基础合成事件构造函数
   var SyntheticEvent = createSyntheticEvent(EventInterface);
 
   // UIEvent 表示简单的用户界面事件，有 Event 派生
@@ -7356,6 +7356,7 @@
     detail: 0
   });
 
+  // UI合成事件构造函数
   var SyntheticUIEvent = createSyntheticEvent(UIEventInterface);
   var lastMovementX;
   var lastMovementY;
@@ -7379,7 +7380,7 @@
    * @see http://www.w3.org/TR/DOM-Level-3-Events/
    */
 
-
+  // 鼠标事件 interface
   var MouseEventInterface = _assign({}, UIEventInterface, {
     screenX: 0,
     screenY: 0,
@@ -7418,26 +7419,31 @@
     }
   });
 
+  // 鼠标合成事件构造函数
   var SyntheticMouseEvent = createSyntheticEvent(MouseEventInterface);
   /**
    * @interface DragEvent
    * @see http://www.w3.org/TR/DOM-Level-3-Events/
    */
 
+  // 拖动事件 interface
   var DragEventInterface = _assign({}, MouseEventInterface, {
     dataTransfer: 0
   });
 
+  // 鼠标拖动事件合成事件构造函数
   var SyntheticDragEvent = createSyntheticEvent(DragEventInterface);
   /**
    * @interface FocusEvent
    * @see http://www.w3.org/TR/DOM-Level-3-Events/
    */
 
+  // input force 事件 interface
   var FocusEventInterface = _assign({}, UIEventInterface, {
     relatedTarget: 0
   });
 
+  // input force 合成事件构造函数
   var SyntheticFocusEvent = createSyntheticEvent(FocusEventInterface);
   /**
    * @interface Event
@@ -7445,34 +7451,40 @@
    * @see https://developer.mozilla.org/en-US/docs/Web/API/AnimationEvent
    */
 
+  // 动画事件 interface
   var AnimationEventInterface = _assign({}, EventInterface, {
     animationName: 0,
     elapsedTime: 0,
     pseudoElement: 0
   });
 
+  // 动画合成事件构造函数
   var SyntheticAnimationEvent = createSyntheticEvent(AnimationEventInterface);
   /**
    * @interface Event
    * @see http://www.w3.org/TR/clipboard-apis/
    */
 
+  // Clipboard 事件 interface
   var ClipboardEventInterface = _assign({}, EventInterface, {
     clipboardData: function (event) {
       return 'clipboardData' in event ? event.clipboardData : window.clipboardData;
     }
   });
 
+  // Clipboard 合成事件构造函数
   var SyntheticClipboardEvent = createSyntheticEvent(ClipboardEventInterface);
   /**
    * @interface Event
    * @see http://www.w3.org/TR/DOM-Level-3-Events/#events-compositionevents
    */
 
+  // Composition 事件 interface
   var CompositionEventInterface = _assign({}, EventInterface, {
     data: 0
   });
 
+  // Composition 合成事件构造函数
   var SyntheticCompositionEvent = createSyntheticEvent(CompositionEventInterface);
   /**
    * @interface Event
@@ -7545,11 +7557,12 @@
     '145': 'ScrollLock',
     '224': 'Meta'
   };
+
+
   /**
    * @param {object} nativeEvent Native browser event.
    * @return {string} Normalized `key` property.
    */
-
   function getEventKey(nativeEvent) {
     if (nativeEvent.key) {
       // Normalize inconsistent values reported by browsers due to
@@ -7615,6 +7628,7 @@
    */
 
 
+  // 键盘事件 interface
   var KeyboardEventInterface = _assign({}, UIEventInterface, {
     key: getEventKey,
     code: 0,
@@ -7666,12 +7680,14 @@
     }
   });
 
+  // 键盘合成事件构造函数
   var SyntheticKeyboardEvent = createSyntheticEvent(KeyboardEventInterface);
   /**
    * @interface PointerEvent
    * @see http://www.w3.org/TR/pointerevents/
    */
 
+  // 鼠标 pointer 事件 interface
   var PointerEventInterface = _assign({}, MouseEventInterface, {
     pointerId: 0,
     width: 0,
@@ -7685,12 +7701,14 @@
     isPrimary: 0
   });
 
+  // 鼠标 pointer 合成事件构造方法
   var SyntheticPointerEvent = createSyntheticEvent(PointerEventInterface);
   /**
    * @interface TouchEvent
    * @see http://www.w3.org/TR/touch-events/
    */
 
+  // touch 事件 interface
   var TouchEventInterface = _assign({}, UIEventInterface, {
     touches: 0,
     targetTouches: 0,
@@ -7702,6 +7720,7 @@
     getModifierState: getEventModifierState
   });
 
+  // touch 合成事件构造方法
   var SyntheticTouchEvent = createSyntheticEvent(TouchEventInterface);
   /**
    * @interface Event
@@ -7709,18 +7728,21 @@
    * @see https://developer.mozilla.org/en-US/docs/Web/API/TransitionEvent
    */
 
+  // transition 过渡事件 interface
   var TransitionEventInterface = _assign({}, EventInterface, {
     propertyName: 0,
     elapsedTime: 0,
     pseudoElement: 0
   });
 
+  // transition 合成事件构造函数
   var SyntheticTransitionEvent = createSyntheticEvent(TransitionEventInterface);
   /**
    * @interface WheelEvent
    * @see http://www.w3.org/TR/DOM-Level-3-Events/
    */
 
+  // 鼠标滚轮事件 interface
   var WheelEventInterface = _assign({}, MouseEventInterface, {
     deltaX: function (event) {
       return 'deltaX' in event ? event.deltaX : // Fallback to `wheelDeltaX` for Webkit and normalize (right is positive).
@@ -7739,6 +7761,7 @@
     deltaMode: 0
   });
 
+  // 鼠标滚轮合成事件构造函数
   var SyntheticWheelEvent = createSyntheticEvent(WheelEventInterface);
 
   var END_KEYCODES = [9, 13, 27, 32]; // Tab, Return, Esc, Space
@@ -7774,21 +7797,24 @@
 
 
   var hasSpaceKeypress = false;
+
   /**
    * Return whether a native keypress event is assumed to be a command.
    * This is required because Firefox fires `keypress` events for key commands
    * (cut, copy, select-all, etc.) even though no character is inserted.
+   * 
+   * @param nativeEvent
    */
-
   function isKeypressCommand(nativeEvent) {
     return (nativeEvent.ctrlKey || nativeEvent.altKey || nativeEvent.metaKey) && // ctrlKey && altKey is equivalent to AltGr, and is not a command.
     !(nativeEvent.ctrlKey && nativeEvent.altKey);
   }
+
   /**
+
    * Translate native top level events into event types.
+   * @param domEventName
    */
-
-
   function getCompositionEventType(domEventName) {
     switch (domEventName) {
       case 'compositionstart':
