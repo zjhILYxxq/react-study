@@ -4013,6 +4013,7 @@
   }
 
   /**
+   *
    * @param fn
    * @param bookkeeping
    */
@@ -4026,6 +4027,7 @@
     isInsideEventHandler = true;
 
     try {
+      // 
       return batchedUpdatesImpl(fn, bookkeeping);
     } finally {
       isInsideEventHandler = false;
@@ -4060,6 +4062,8 @@
   }
 
   /**
+   * 离散更新的实现，即离散事件的触发导致的更新
+   * 离散更新 DiscreteEventContext: 4,  UserBlockingPriority$2: 98
    * @param fn  dispatchEvent 方法
    * @param a 事件名称
    * @param b 事件标记
@@ -4072,7 +4076,7 @@
     isInsideEventHandler = true;
 
     try {
-      // 执行 fn，即 dispatchEvent 方法
+      // discreteUpdatesImpl 为 discreteUpdates$1
       return discreteUpdatesImpl(fn, a, b, c, d);
     } finally {
       isInsideEventHandler = prevIsInsideEventHandler;
@@ -4407,6 +4411,7 @@
     caughtError = null;
     invokeGuardedCallbackImpl$1.apply(reporter, arguments);
   }
+
   /**
    * Same as invokeGuardedCallback, but instead of returning an error, it stores
    * it in a global so it can be rethrown by `rethrowCaughtError` later.
@@ -6851,10 +6856,12 @@
 
     switch (eventPriority) {
       case DiscreteEvent: // 离散事件优先级: 0
+        // 离散更新，DiscreteEventContext: 4,  UserBlockingPriority$2: 98
         listenerWrapper = dispatchDiscreteEvent;
         break;
 
       case UserBlockingEvent: // 用户阻塞事件优先级: 1
+        // 用户阻塞事件，
         listenerWrapper = dispatchUserBlockingUpdate;
         break;
 
@@ -6875,13 +6882,11 @@
    * @param nativeEvent 原生的事件对象
    */
   function dispatchDiscreteEvent(domEventName, eventSystemFlags, container, nativeEvent) {
-    debugger
     {
       // 
       flushDiscreteUpdatesIfNeeded(nativeEvent.timeStamp);
     }
-    if (['pointerover'].indexOf(domEventName) >= 0) return;
-    // 离散更新
+    // 离散更新，DiscreteEventContext: 4,  UserBlockingPriority$2: 98
     discreteUpdates(dispatchEvent, domEventName, eventSystemFlags, container, nativeEvent);
   }
 
@@ -6966,7 +6971,7 @@
     } // This is not replayable so we'll invoke it but without a target,
     // in case the event system needs to trace it.
 
-    // 
+    // 派发事件
     dispatchEventForPluginEventSystem(domEventName, eventSystemFlags, nativeEvent, null, targetContainer);
   } // Attempt dispatching an event. Returns a SuspenseInstance or Container if it's blocked.
 
@@ -7035,7 +7040,7 @@
       }
     }
 
-    // 
+    // 派发事件
     dispatchEventForPluginEventSystem(domEventName, eventSystemFlags, nativeEvent, targetInst, targetContainer); // We're not blocked on anything.
 
     return null;
@@ -8263,6 +8268,10 @@
     return nodeName === 'select' || nodeName === 'input' && elem.type === 'file';
   }
 
+  /**
+   * 
+   * @param nativeEvent
+   */
   function manualDispatchChangeEvent(nativeEvent) {
     var dispatchQueue = [];
     createAndAccumulateChangeEvent(dispatchQueue, activeElementInst, nativeEvent, getEventTarget(nativeEvent)); // If change and propertychange bubbled, we'd just bind to it like all the
@@ -8280,10 +8289,18 @@
     batchedUpdates(runEventInBatch, dispatchQueue);
   }
 
+  /**
+   * @param dispatchQueue
+   */
   function runEventInBatch(dispatchQueue) {
+    // 处理事件派发队列
     processDispatchQueue(dispatchQueue, 0);
   }
 
+  /**
+   * 
+   * @param targetInst
+   */
   function getInstIfValueChanged(targetInst) {
     var targetNode = getNodeFromInstance(targetInst);
 
@@ -8292,6 +8309,11 @@
     }
   }
 
+  /**
+   * 
+   * @param domEventName
+   * @param targetInst
+   */
   function getTargetInstForChangeEvent(domEventName, targetInst) {
     if (domEventName === 'change') {
       return targetInst;
@@ -9462,42 +9484,49 @@
   var nonDelegatedEvents = new Set(['cancel', 'close', 'invalid', 'load', 'scroll', 'toggle'].concat(mediaEventTypes));
 
   /**
-   * 
-   * @param event
-   * @param listener
-   * @param currentTarget
+   * 触发事件监听器
+   * @param event   react 合成事件对象
+   * @param listener 事件监听器
+   * @param currentTarget 触发事件的 dom 节点
    */
   function executeDispatch(event, listener, currentTarget) {
     var type = event.type || 'unknown-event';
     event.currentTarget = currentTarget;
+    // 
     invokeGuardedCallbackAndCatchFirstError(type, listener, undefined, event);
     event.currentTarget = null;
   }
 
   /**
-   * 
-   * @param event
-   * @param dispatchListeners
-   * @param inCapturePhase
+   * 按序派发事件
+   * @param eventreact 合成事件对象
+   * @param dispatchListeners 事件监听器
+   * @param inCapturePhase 是否是捕获阶段
    */
   function processDispatchQueueItemsInOrder(event, dispatchListeners, inCapturePhase) {
     var previousInstance;
 
     if (inCapturePhase) {
-      for (var i = dispatchListeners.length - 1; i >= 0; i--) {
-        var _dispatchListeners$i = dispatchListeners[i],
+      // 捕获阶段
+      for (var i = dispatchListeners.length - 1; i >= 0; i--) {  // 遍历事件监听器
+        // 事件监听器对象
+        var _dispatchListeners$i = dispatchListeners[i],  
+            // 触发事件的 dom 节点对应的 fiber nod
             instance = _dispatchListeners$i.instance,
+            // 触发事件的 dom 节点
             currentTarget = _dispatchListeners$i.currentTarget,
+            // 事件监听器
             listener = _dispatchListeners$i.listener;
 
         if (instance !== previousInstance && event.isPropagationStopped()) {
           return;
         }
-
+        // 触发事件监听器
         executeDispatch(event, listener, currentTarget);
         previousInstance = instance;
       }
     } else {
+      // 冒泡阶段
       for (var _i = 0; _i < dispatchListeners.length; _i++) {
         var _dispatchListeners$_i = dispatchListeners[_i],
             _instance = _dispatchListeners$_i.instance,
@@ -9507,7 +9536,7 @@
         if (_instance !== previousInstance && event.isPropagationStopped()) {
           return;
         }
-
+        // 触发事件监听器
         executeDispatch(event, _listener, _currentTarget);
         previousInstance = _instance;
       }
@@ -9515,17 +9544,21 @@
   }
 
   /**
-   * 
-   * @param dispatchQueue
-   * @param eventSystemFlags
+   * 处理事件派发队列
+   * @param dispatchQueue  事件派发队列
+   * @param eventSystemFlags 事件标记
    */
   function processDispatchQueue(dispatchQueue, eventSystemFlags) {
+    // 判断是否是捕获阶段
     var inCapturePhase = (eventSystemFlags & IS_CAPTURE_PHASE) !== 0;
 
-    for (var i = 0; i < dispatchQueue.length; i++) {
+    for (var i = 0; i < dispatchQueue.length; i++) {  // 遍历事件派发队列
       var _dispatchQueue$i = dispatchQueue[i],
+          // react 合成事件对象
           event = _dispatchQueue$i.event,
+          // 事件监听器
           listeners = _dispatchQueue$i.listeners;
+      // 按序派发事件
       processDispatchQueueItemsInOrder(event, listeners, inCapturePhase); //  event system doesn't use pooling.
     } // This would be a good time to rethrow if any of the event handlers threw.
 
@@ -9721,8 +9754,7 @@
   }
 
   /**
-   *
-   *
+   * 派发事件
    * @param domEventName  事件名称
    * @param eventSystemFlags 事件标记
    * @param nativeEvent 原生的事件对象
@@ -9841,8 +9873,7 @@
         }
       }
     }
-    debugger
-    // 
+    // 批量事件更新
     batchedEventUpdates(function () {
       return dispatchEventsForPlugins(domEventName, eventSystemFlags, nativeEvent, ancestorInst);
     });
@@ -9856,9 +9887,9 @@
    */
   function createDispatchListener(instance, listener, currentTarget) {
     return {
-      instance: instance,
-      listener: listener,
-      currentTarget: currentTarget
+      instance: instance,  // fiber node
+      listener: listener, // 事件监听器
+      currentTarget: currentTarget  // 触发事件对应的 dom 节点
     };
   }
 
@@ -26241,6 +26272,7 @@
       priorityLevel === UserBlockingPriority$2 || priorityLevel === ImmediatePriority$1)) {
         // This is the result of a discrete event. Track the lowest priority
         // discrete update per root so we can flush them early, if needed.
+        // 离散事件要特殊处理
         if (rootsWithPendingDiscreteUpdates === null) {
           rootsWithPendingDiscreteUpdates = new Set([root]);
         } else {
@@ -26957,7 +26989,7 @@
   }
 
   /**
-   * 
+   * 刷新同步队列
    * @params fn
    * @params a
    */
