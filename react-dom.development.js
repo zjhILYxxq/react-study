@@ -9217,8 +9217,8 @@
   }
 
   /**
-
-   * @param dispatchQueue
+   * 根据原生事件，获取对应的合成事件及事件监听器，收集到 dispatchQueue 中
+   * @param dispatchQueue 合成事件派发队列
    * @param domEventName  事件名称
    * @param targetInst 触发事件的 dom 节点对应的 fiber node
    * @param nativeEvent 原生的时间对象
@@ -9383,8 +9383,9 @@
 
       if (_listeners.length > 0) {
         // Intentionally create event lazily.
+        // 创建一个合成事件对象(对照原生的事件对象)
         var _event = new SyntheticEventCtor(reactName, reactEventType, null, nativeEvent, nativeEventTarget);
-
+        // 将合成事件对象及对应的事件监听器收集到 dispatchQueue 队列中
         dispatchQueue.push({
           event: _event,
           listeners: _listeners
@@ -9406,14 +9407,14 @@
   registerEvents();
 
   /**
-   * 提取事件 ？？
-   * @param dispatchQueue
-   * @param domEventName  事件的名称
-   * @param targetInst 
-   * @param nativeEvent
-   * @param nativeEventTarget
-   * @param eventSystemFlags
-   * @param targetContainer
+   * 根据原生事件名，获取对应的合成事件对象及事件监听器，收集到 dispatchQueue 中
+   * @param dispatchQueue 收集合成事件对象及对应的事件监听器
+   * @param domEventName  原生的事件名称
+   * @param targetInst 触发事件的 fiber node
+   * @param nativeEvent 原生的事件对象
+   * @param nativeEventTarget 触发事件的 dom 节点
+   * @param eventSystemFlags 事件标记
+   * @param targetContainer 绑定事件监听器的容器节点
    */
   function extractEvents$5(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags, targetContainer) {
     // TODO: we should remove the concept of a "SimpleEventPlugin".
@@ -9422,6 +9423,7 @@
     // should probably be inlined somewhere and have its logic
     // be core the to event system. This would potentially allow
     // us to ship builds of React without the polyfilled plugins below.
+    // 提取合成事件及对应的事件监听器
     extractEvents$4(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags);
     // 
     var shouldProcessPolyfillPlugins = (eventSystemFlags & SHOULD_NOT_PROCESS_POLYFILL_EVENT_PLUGINS) === 0; // We don't process these events unless we are in the
@@ -9542,11 +9544,11 @@
   function dispatchEventsForPlugins(domEventName, eventSystemFlags, nativeEvent, targetInst, targetContainer) {
     // 获取触发事件的 dom 节点
     var nativeEventTarget = getEventTarget(nativeEvent);
-    // 
+    // 构建一个事件派发队列
     var dispatchQueue = [];
-    // 
+    // 根据原生事件名，获取对应的合成事件对象及事件监听器，收集到 dispatchQueue 中
     extractEvents$5(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags);
-    // 
+    // 处理事件派发队列
     processDispatchQueue(dispatchQueue, eventSystemFlags);
   }
 
@@ -9892,7 +9894,7 @@
         if (reactEventName !== null) {
           // 获取自定义的事件监听器
           var listener = getListener(instance, reactEventName);
-          // 如果 dom 节点没有定义事件监听器，那么创建一个派发的 listener
+          // 如果 dom 节点定义了事件监听器，那么创建一个派发的 listener
           if (listener != null) {
             listeners.push(createDispatchListener(instance, listener, lastHostComponent));
           }
@@ -9908,7 +9910,7 @@
 
       instance = instance.return;
     }
-
+    // 返回收集的 listeners
     return listeners;
   } 
   // We should only use this function for:
