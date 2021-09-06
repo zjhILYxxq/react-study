@@ -6928,6 +6928,7 @@
       domEventName, eventSystemFlags, targetContainer, nativeEvent);
       return;
     }
+
     //
     var blockedOn = attemptToDispatchEvent(domEventName, eventSystemFlags, targetContainer, nativeEvent);
 
@@ -9174,6 +9175,7 @@
   }
 
   /**
+
    * @param dispatchQueue
    * @param domEventName  事件名称
    * @param targetInst
@@ -9191,7 +9193,9 @@
       return;
     }
 
+    // 合成事件构造方法
     var SyntheticEventCtor = SyntheticEvent;
+    // react 合成事件的类型(名称)
     var reactEventType = domEventName;
 
     switch (domEventName) {
@@ -9207,11 +9211,13 @@
 
       case 'keydown':
       case 'keyup':
+        // Keyboard 合成事件构造方法
         SyntheticEventCtor = SyntheticKeyboardEvent;
         break;
 
       case 'focusin':
         reactEventType = 'focus';
+        // input force 合成事件构造方法
         SyntheticEventCtor = SyntheticFocusEvent;
         break;
 
@@ -9245,6 +9251,7 @@
       case 'mouseout':
       case 'mouseover':
       case 'contextmenu':
+        // 鼠标合成事件构造方法
         SyntheticEventCtor = SyntheticMouseEvent;
         break;
 
@@ -9256,6 +9263,7 @@
       case 'dragover':
       case 'dragstart':
       case 'drop':
+        // 鼠标拖动合成事件构造方法
         SyntheticEventCtor = SyntheticDragEvent;
         break;
 
@@ -9263,30 +9271,36 @@
       case 'touchend':
       case 'touchmove':
       case 'touchstart':
+        // touch 合成事件构造方法
         SyntheticEventCtor = SyntheticTouchEvent;
         break;
 
       case ANIMATION_END:
       case ANIMATION_ITERATION:
       case ANIMATION_START:
+        // 动画合成事件构造方法
         SyntheticEventCtor = SyntheticAnimationEvent;
         break;
 
       case TRANSITION_END:
+        // 过渡合成事件构造方法
         SyntheticEventCtor = SyntheticTransitionEvent;
         break;
 
       case 'scroll':
+        // UI 合成事件构造方法
         SyntheticEventCtor = SyntheticUIEvent;
         break;
 
       case 'wheel':
+        // 鼠标滚轮合成事件构造方法
         SyntheticEventCtor = SyntheticWheelEvent;
         break;
 
       case 'copy':
       case 'cut':
       case 'paste':
+        // Clipboard 合成事件构造方法
         SyntheticEventCtor = SyntheticClipboardEvent;
         break;
 
@@ -9298,10 +9312,12 @@
       case 'pointerout':
       case 'pointerover':
       case 'pointerup':
+        // 鼠标 Pointer 合成事件构造方法
         SyntheticEventCtor = SyntheticPointerEvent;
         break;
     }
 
+    // 是否是捕获阶段
     var inCapturePhase = (eventSystemFlags & IS_CAPTURE_PHASE) !== 0;
 
     {
@@ -9309,6 +9325,7 @@
       // In the past, React has always bubbled them, but this can be surprising.
       // We're going to try aligning closer to the browser behavior by not bubbling
       // them in React either. We'll start by not bubbling onScroll, and then expand.
+      // ？？
       var accumulateTargetOnly = !inCapturePhase && // TODO: ideally, we'd eventually add all events from
       // nonDelegatedEvents list in DOMPluginEventSystem.
       // Then we can remove this special list.
@@ -9359,6 +9376,7 @@
     // be core the to event system. This would potentially allow
     // us to ship builds of React without the polyfilled plugins below.
     extractEvents$4(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags);
+    // 
     var shouldProcessPolyfillPlugins = (eventSystemFlags & SHOULD_NOT_PROCESS_POLYFILL_EVENT_PLUGINS) === 0; // We don't process these events unless we are in the
     // event's native "bubble" phase, which means that we're
     // not in the capture phase. That's because we emulate
@@ -9796,6 +9814,12 @@
   }
 
   /**
+   *
+   * @param targetFiber
+   * @param reactName
+   * @param nvativeEventType
+   * @param inCapturePhase
+   * @param accumulateTargetOnly
    * 
    */
   function accumulateSinglePhaseListeners(targetFiber, reactName, nativeEventType, inCapturePhase, accumulateTargetOnly) {
