@@ -4119,10 +4119,11 @@
   }
 
   /**
-   * 
-   * @param name
-   * @param type
-   * @param props
+   * 是否应该阻止鼠标事件
+   * 如果 dom 节点的类型为 button、input、select、textarea，且有 disable 属性，那么就要阻止鼠标事件，否则不阻止
+   * @param name react 合成事件名称
+   * @param type dom 节点标签类型：div、input 等
+   * @param props fiber node 的 pendingProps
    */
   function shouldPreventMouseEvent(name, type, props) {
     switch (name) {
@@ -4145,12 +4146,13 @@
   }
 
   /**
-   * 
-   * @param {object} inst The instance, which is the source of events.
-   * @param {string} registrationName Name of listener (e.g. `onClick`).
+   * 从 fiber node 的 pendingProps 中获取定义的时间监听器
+   * @param {object} inst 触发事件的 dom 节点对应的 fiber node The instance, which is the source of events.
+   * @param {string} registrationName react 合成事件名称 Name of listener (e.g. `onClick`).
    * @return {?function} The stored callback.
    */
   function getListener(inst, registrationName) {
+    // 触发事件的 dom 节点
     var stateNode = inst.stateNode;
 
     if (stateNode === null) {
@@ -4158,6 +4160,7 @@
       return null;
     }
 
+    // 从 dom 节点上获取缓存的 fiber node 的 pendingProps
     var props = getFiberCurrentPropsFromNode(stateNode);
 
     if (props === null) {
@@ -4165,18 +4168,21 @@
       return null;
     }
 
+    // 对应事件的监听器
     var listener = props[registrationName];
 
+    // 如果元素是 disabled, 那么直接返回 null，
     if (shouldPreventMouseEvent(registrationName, inst.type, props)) {
       return null;
     }
 
+    // listener 必须是一个函数，否则抛出异常
     if (!(!listener || typeof listener === 'function')) {
       {
         throw Error( "Expected `" + registrationName + "` listener to be a function, instead got a value of `" + typeof listener + "` type." );
       }
     }
-
+    // 从 pendingProps 中获取定义的事件监听器
     return listener;
   }
 
@@ -7901,10 +7907,16 @@
 
 
   var isComposing = false;
+
   /**
+   * 
+   * @param dispatchQueue
+   * @param domEventName
+   * @param targetInst
+   * @param nativeEvent
+   * @param nativeEventTarget
    * @return {?object} A SyntheticCompositionEvent.
    */
-
   function extractCompositionEvent(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget) {
     var eventType;
     var fallbackData;
@@ -7958,6 +7970,11 @@
     }
   }
 
+  /**
+   * 
+   * @param domEventName
+   * @param nativeEvent
+   */
   function getNativeBeforeInputChars(domEventName, nativeEvent) {
     switch (domEventName) {
       case 'compositionend':
@@ -8004,12 +8021,14 @@
         return null;
     }
   }
+
   /**
    * For browsers that do not provide the `textInput` event, extract the
    * appropriate string to use for SyntheticInputEvent.
+   * 
+   * @param domEvent
+   * @param nativeEvent
    */
-
-
   function getFallbackBeforeInputChars(domEventName, nativeEvent) {
     // If we are currently composing (IME) and using a fallback to do so,
     // try to extract the composed characters from the fallback object.
@@ -8072,14 +8091,13 @@
         return null;
     }
   }
+
   /**
    * Extract a SyntheticInputEvent for `beforeInput`, based on either native
    * `textInput` or fallback behavior.
    *
    * @return {?object} A SyntheticInputEvent.
    */
-
-
   function extractBeforeInputEvent(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget) {
     var chars;
 
@@ -8106,6 +8124,7 @@
       event.data = chars;
     }
   }
+
   /**
    * Create an `onBeforeInput` event to match
    * http://www.w3.org/TR/2013/WD-DOM-Level-3-Events-20131105/#events-inputevents.
@@ -8124,8 +8143,6 @@
    * allowing us to share composition fallback code for both `beforeInput` and
    * `composition` event types.
    */
-
-
   function extractEvents(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags, targetContainer) {
     extractCompositionEvent(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget);
     extractBeforeInputEvent(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget);
@@ -8134,6 +8151,8 @@
   /**
    * @see http://www.whatwg.org/specs/web-apps/current-work/multipage/the-input-element.html#input-type-attr-summary
    */
+
+   // input 支持的 type 类型
   var supportedInputTypes = {
     color: true,
     date: true,
@@ -8152,6 +8171,10 @@
     week: true
   };
 
+  /**
+   * 判断 dom 节点的元素累心为 input(且 type 是支持的类型) 或者 textarea
+   * @param elem dom 节点
+   */
   function isTextInputElement(elem) {
     var nodeName = elem && elem.nodeName && elem.nodeName.toLowerCase();
 
@@ -8197,10 +8220,20 @@
     return isSupported;
   }
 
+  /**
+   * 
+   */
   function registerEvents$1() {
     registerTwoPhaseEvent('onChange', ['change', 'click', 'focusin', 'focusout', 'input', 'keydown', 'keyup', 'selectionchange']);
   }
 
+  /**
+   * 
+   * @param dispatchQueue
+   * @param inst
+   * @param nativeEvent
+   * @param target
+   */
   function createAndAccumulateChangeEvent(dispatchQueue, inst, nativeEvent, target) {
     // Flag this event loop as needing state restore.
     enqueueStateRestore(target);
@@ -9033,13 +9066,15 @@
   var activeElementInst$1 = null;
   var lastSelection = null;
   var mouseDown = false;
+
+
   /**
    * Get an object which is a unique representation of the current selection.
    *
    * The return value will not be consistent across nodes or browsers, but
    * two identical selections on the same node will return identical objects.
+   * @param node 
    */
-
   function getSelection$1(node) {
     if ('selectionStart' in node && hasSelectionCapabilities(node)) {
       return {
@@ -9057,11 +9092,11 @@
       };
     }
   }
+
+
   /**
    * Get document associated with the event target.
    */
-
-
   function getEventTargetDocument(eventTarget) {
     return eventTarget.window === eventTarget ? eventTarget.document : eventTarget.nodeType === DOCUMENT_NODE ? eventTarget : eventTarget.ownerDocument;
   }
@@ -9074,6 +9109,12 @@
    */
 
 
+  /**
+   * 
+   * @param dispatchQueue
+   * @param nativeEvent
+   * @param nativeEventTarget
+   */
   function constructSelectEvent(dispatchQueue, nativeEvent, nativeEventTarget) {
     // Ensure we have the right element, and that the user is not dragging a
     // selection (this matches native `select` event behavior). In HTML5, select
@@ -9102,6 +9143,7 @@
       }
     }
   }
+
   /**
    * This plugin creates an `onSelect` event that normalizes select events
    * across form elements.
@@ -9178,11 +9220,11 @@
 
    * @param dispatchQueue
    * @param domEventName  事件名称
-   * @param targetInst
-   * @param nativeEvent
-   * @param nativeEventTarget
-   * @param eventSystemFlags
-   * @param targetContainer
+   * @param targetInst 触发事件的 dom 节点对应的 fiber node
+   * @param nativeEvent 原生的时间对象
+   * @param nativeEventTarget 触发事件的 dom 节点
+   * @param eventSystemFlags 事件标记
+   * @param targetContainer 绑定事件的容器节点
    */
   function extractEvents$4(dispatchQueue, domEventName, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags, targetContainer) {
     // 根据原生的事件名称，返回对应的 react 合成事件名称
@@ -9191,6 +9233,10 @@
     // 没有找到 react 合成事件，直接退出
     if (reactName === undefined) {
       return;
+    }
+
+    if (reactName === 'onClick') {
+      console.log('123');
     }
 
     // 合成事件构造方法
@@ -9332,6 +9378,7 @@
       // This is a breaking change that can wait until React 18.
       domEventName === 'scroll';
 
+      // 收集事件监听器
       var _listeners = accumulateSinglePhaseListeners(targetInst, reactName, nativeEvent.type, inCapturePhase, accumulateTargetOnly);
 
       if (_listeners.length > 0) {
@@ -9361,8 +9408,8 @@
   /**
    * 提取事件 ？？
    * @param dispatchQueue
-   * @param domEventName
-   * @param targetInst
+   * @param domEventName  事件的名称
+   * @param targetInst 
    * @param nativeEvent
    * @param nativeEventTarget
    * @param eventSystemFlags
@@ -9489,7 +9536,7 @@
    * @param domEventName  事件名称
    * @param eventSystemFlags 事件标记
    * @param nativeEvent 事件对象
-   * @param targetInst 触发事件的 dom 节点
+   * @param targetInst 触发事件的 dom 节点对应的 fiber node
    * @param targetContainer 绑定事件的容器
    */
   function dispatchEventsForPlugins(domEventName, eventSystemFlags, nativeEvent, targetInst, targetContainer) {
@@ -9800,10 +9847,10 @@
   }
 
   /**
-   * 创建调度监听器
-   * @param instance
-   * @param listener
-   * @param currentTarget
+   * 创建一个派发的监听器
+   * @param instance  fiber node
+   * @param listener  pendingProps 定义的事件监听器
+   * @param currentTarget  fiber node 对应的 dom 节点
    */
   function createDispatchListener(instance, listener, currentTarget) {
     return {
@@ -9814,33 +9861,38 @@
   }
 
   /**
-   * 
-   * @param targetFiber
-   * @param reactName
-   * @param nvativeEventType
-   * @param inCapturePhase
-   * @param accumulateTargetOnly
+   * 收集事件监听器
+   * @param targetFiber 触发事件的 dom 节点对应的 fiber node
+   * @param reactName react 合成事件的名称
+   * @param nvativeEventType 原生事件的类型
+   * @param inCapturePhase  事件是否处于捕获阶段 
+   * @param accumulateTargetOnly  是否只是为触发事件的 dom 节点收集监听器
    * 
    */
   function accumulateSinglePhaseListeners(targetFiber, reactName, nativeEventType, inCapturePhase, accumulateTargetOnly) {
     var captureName = reactName !== null ? reactName + 'Capture' : null;
+    // 根据 inCapturePhase 捕获标记，确定 react 合成事件的名称
     var reactEventName = inCapturePhase ? captureName : reactName;
     var listeners = [];
+    // 触发事件的 dom 节点对应的 fiber node
     var instance = targetFiber;
+    // 
     var lastHostComponent = null; // Accumulate all instances and listeners via the target -> root path.
 
     while (instance !== null) {
-      var _instance2 = instance,
-          stateNode = _instance2.stateNode,
-          tag = _instance2.tag; // Handle listeners that are on HostComponents (i.e. <div>)
+      var _instance2 = instance,  // 触发事件的 dom 节点对应的 fiber node
+          stateNode = _instance2.stateNode,  // 触发事件的 dom 节点
+          tag = _instance2.tag; // 触发事件的 dom 节点的标签类型 Handle listeners that are on HostComponents (i.e. <div>)
 
-      if (tag === HostComponent && stateNode !== null) {
+      if (tag === HostComponent && stateNode !== null) {  // 原生的 dom 节点
+        // 触发事件的原生 dom 节点
         lastHostComponent = stateNode; // createEventHandle listeners
 
 
         if (reactEventName !== null) {
+          // 获取自定义的事件监听器
           var listener = getListener(instance, reactEventName);
-
+          // 如果 dom 节点没有定义事件监听器，那么创建一个派发的 listener
           if (listener != null) {
             listeners.push(createDispatchListener(instance, listener, lastHostComponent));
           }
@@ -9849,7 +9901,7 @@
       // continue to propagate through the React fiber tree to find other
       // listeners.
 
-
+      // 只是为触发事件的 dom 节点收集监听器
       if (accumulateTargetOnly) {
         break;
       }
@@ -9858,7 +9910,8 @@
     }
 
     return listeners;
-  } // We should only use this function for:
+  } 
+  // We should only use this function for:
   // - BeforeInputEventPlugin
   // - ChangeEventPlugin
   // - SelectEventPlugin
@@ -9883,12 +9936,13 @@
 
       if (tag === HostComponent && stateNode !== null) {
         var currentTarget = stateNode;
+        // 获取自定义的事件监听器
         var captureListener = getListener(instance, captureName);
 
         if (captureListener != null) {
           listeners.unshift(createDispatchListener(instance, captureListener, currentTarget));
         }
-
+        // 获取自定义的事件监听器
         var bubbleListener = getListener(instance, reactName);
 
         if (bubbleListener != null) {
@@ -10004,12 +10058,14 @@
         var currentTarget = stateNode;
 
         if (inCapturePhase) {
+          // 获取自定义的事件监听器
           var captureListener = getListener(instance, registrationName);
 
           if (captureListener != null) {
             listeners.unshift(createDispatchListener(instance, captureListener, currentTarget));
           }
         } else if (!inCapturePhase) {
+          // 获取自定义的事件监听器
           var bubbleListener = getListener(instance, registrationName);
 
           if (bubbleListener != null) {
