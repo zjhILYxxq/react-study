@@ -9800,7 +9800,7 @@
   }
 
   /**
-   * 
+   * 创建调度监听器
    * @param instance
    * @param listener
    * @param currentTarget
@@ -9814,7 +9814,7 @@
   }
 
   /**
-   *
+   * 
    * @param targetFiber
    * @param reactName
    * @param nvativeEventType
@@ -9902,6 +9902,10 @@
     return listeners;
   }
 
+  /**
+   *
+   * @param inst
+   */
   function getParent(inst) {
     if (inst === null) {
       return null;
