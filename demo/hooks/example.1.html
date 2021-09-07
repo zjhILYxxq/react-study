@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.js"></script>
+    <script src="../../react-dom.development.js"></script>
+    <script src="../../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <div id="portal"></div>
+    <script type="text/babel">
+
+        
+    
+        function App() {
+            const [visible, setVisible] = React.useState(true);
+            const [list, setList] = React.useState(['A', 'B', 'C', 'D', 'E']);
+
+            const handleList = () => {
+                const tempList = list.sort(() => 0.5 - Math.random()).slice();
+                setList(tempList);
+            };
+            return (
+                <div>
+                <button onClick={() => setVisible(true)}>显示</button>
+                <button onClick={() => setVisible(false)}>隐藏</button>
+                <button onClick={handleList}>修改列表</button>
+                {visible && <Component list={list} />}
+                </div>
+            );
+        }
+
+        const color = ["red", "yellow", "green", "white", "gold"];
+
+        const Component = (props) => {
+            React.useEffect(() => {
+                console.log("mounted");
+                return () => {
+                    console.log("unmounted");
+                };
+            }, []);
+            return props.list.map((item, index) => (
+                <div key={item} style={{ backgroundColor: color[index] }}>{item}</div>
+            ));
+        };
+
+        var rawDocumentCreateElement = document.createElement;
+
+        document.createElement = function(tagName, options) {
+            debugger
+            console.log('创建 dom 节点');
+            const element = rawDocumentCreateElement.call(document, tagName, options);
+            return element;
+        }
+
+        ReactDOM.render(<App />, document.getElementById('app'));
+    
+    </script>
+</body>
