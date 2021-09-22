@@ -18,7 +18,7 @@
     
         function App() {
             const [visible, setVisible] = React.useState(true);
-            const [list, setList] = React.useState(['A', 'B', 'C', 'D', 'E']);
+            const [list, setList] = React.useState(['A', 'B', 'C']);
 
             const handleList = () => {
                 const tempList = list.sort(() => 0.5 - Math.random()).slice();
@@ -28,7 +28,8 @@
                 <div>
                 <button onClick={() => setVisible(true)}>显示</button>
                 <button onClick={() => setVisible(false)}>隐藏</button>
-                <button onClick={handleList}>修改列表</button>
+                <button onClick={() => setList(list.sort(() => 0.5 - Math.random()).slice(0))}>修改</button>
+                {visible && <button>按钮</button>}
                 {visible && <Component list={list} />}
                 </div>
             );
@@ -43,19 +44,55 @@
                     console.log("unmounted");
                 };
             }, []);
+            debugger
             return props.list.map((item, index) => (
-                <div key={item} style={{ backgroundColor: color[index] }}>{item}</div>
+                <div key={item}  style={{ backgroundColor: color[index] }}>{item}</div>
             ));
         };
 
         var rawDocumentCreateElement = document.createElement;
-
-        document.createElement = function(tagName, options) {
-            debugger
-            console.log('创建 dom 节点');
+        document.createElement = function (tagName, options) {
+            console.log("创建 dom 节点", );
             const element = rawDocumentCreateElement.call(document, tagName, options);
             return element;
-        }
+        };
+
+        var rawDocumentInsertBefore = HTMLDivElement.prototype.insertBefore;
+        HTMLDivElement.prototype.insertBefore = function (target, sibling) {
+            console.log(`使用 insertBefore 将 ${target.innerText} 移到 ${sibling} 之前`);
+            rawDocumentInsertBefore.call(this, target, sibling);
+        };
+
+        var rawDocumentAppendChild = HTMLDivElement.prototype.appendChild;
+        HTMLDivElement.prototype.appendChild = function (target, sibling) {
+            console.log("appendChild", target.innerText);
+            rawDocumentAppendChild.call(this, target, sibling);
+        };
+
+        var rawDocumentRemoveChild = HTMLDivElement.prototype.removeChild;
+        HTMLDivElement.prototype.removeChild = function (target) {
+            debugger
+            console.log("移除节点", target.innerText);
+            rawDocumentRemoveChild.call(this, target);
+        };
+
+
+        // function App() {
+        //     const [list, setList] = React.useState(['A', 'B', 'C']);
+        //     return (
+        //         <div>
+        //         <div>
+        //             <button onClick={() => setList(['C', 'D', 'E'])}>修改</button>
+        //             <ul>{list.map(item => <li>{item}</li>)}</ul>
+        //             <Component />
+        //         </div>
+        //         </div>
+        //     );
+        // }
+
+        // function Component() {
+        //     return <div> child component </div>
+        // }
 
         ReactDOM.render(<App />, document.getElementById('app'));
     

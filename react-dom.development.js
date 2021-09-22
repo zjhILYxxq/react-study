@@ -15539,7 +15539,7 @@
   var isArray$1 = Array.isArray;
 
   /**
-   * 
+   * 强迫 ref ？？
    * @param returnFiber
    * @param current
    * @param element
@@ -15733,8 +15733,10 @@
 
       while (existingChild !== null) {
         if (existingChild.key !== null) {
+          // 有 key 值，将 key 值作为 map 的 key 值
           existingChildren.set(existingChild.key, existingChild);
         } else {
+          // 没有 key 值，将 old fiber node 的 index 作为 key 值
           existingChildren.set(existingChild.index, existingChild);
         }
 
@@ -15803,6 +15805,7 @@
         // current fiber node 不存在， workInProgress fiber node 对应的 dom 节点需要做 insert 操作
         // This is an insertion.
         newFiber.flags = Placement;
+        // 返回的还是上一个定位的元素
         return lastPlacedIndex;
       }
     }
@@ -15862,6 +15865,7 @@
           // Move based on index
           // 复用原来的 fiber node
           var existing = useFiber(current, element.props);
+          // 强迫 ref ？？
           existing.ref = coerceRef(returnFiber, current, element);
           existing.return = returnFiber;
 
@@ -15876,6 +15880,7 @@
 
       // current fiber node 不存在，直接新建一个新的 fiber node
       var created = createFiberFromElement(element, returnFiber.mode, lanes);
+      // 强迫 ref ？？
       created.ref = coerceRef(returnFiber, current, element);
       created.return = returnFiber;
       return created;
@@ -15951,6 +15956,7 @@
               // 根据 react element，创建一个 fiber node
               var _created = createFiberFromElement(newChild, returnFiber.mode, lanes);
               // 是否有 ref
+              // 强迫 ref ？？
               _created.ref = coerceRef(returnFiber, null, newChild);
               // child fiber node 的 return 属性指向 parent fiber node
               _created.return = returnFiber;
@@ -16172,6 +16178,7 @@
       return knownKeys;
     }
     /**
+     * diff 算法 - 列表
      * 将一个列表的 react element 全部转化为 fiber node
      * @param returnFiber workInProgress fiber node(作为 parent fiber node 的存在)
      * @param currentFirstChild current fiber node 的第一个子节点
@@ -16215,8 +16222,9 @@
       
       for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
 
-        // 
+        // ??
         if (oldFiber.index > newIdx) {
+          // 什么时候会出现 oldFiber.index > newIndex 的情形
           nextOldFiber = oldFiber;
           oldFiber = null;
         } else {
@@ -16249,11 +16257,12 @@
           }
         }
 
-        
+        // 返回上一个定位的元素
         lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
 
         if (previousNewFiber === null) {
           // TODO: Move out of the loop. This only happens for the first run.
+          // 记录列表中的第一个 child fiber node
           resultingFirstChild = newFiber;
         } else {
           // TODO: Defer siblings if we're not at the right index for this slot.
@@ -16426,6 +16435,7 @@
           nextOldFiber = oldFiber.sibling;
         }
 
+        // 根据 old fiber node、 new react element，生成 new fiber node(复用或者新增)
         var newFiber = updateSlot(returnFiber, oldFiber, step.value, lanes);
 
         if (newFiber === null) {
@@ -16617,7 +16627,7 @@
 
                   // 复用原来的 fiber node
                   var _existing3 = useFiber(child, element.props);
-
+                  // 强迫 ref ？？
                   _existing3.ref = coerceRef(returnFiber, child, element);
                   _existing3.return = returnFiber;
 
@@ -30064,7 +30074,7 @@
   }
 
   /**
-   * 创建一个 fiber node
+   * 创建一个 fiber node，会根据 react element 的 type 生成 fiber node 的 tag
    * @params type react element 的类型
    * @params key react element 的 key
    * @params pendingProps react element 对应的 template 标签上的属性(除 key、ref)
@@ -30075,7 +30085,7 @@
   function createFiberFromTypeAndProps(type, // React$ElementType
   key, pendingProps, owner, mode, lanes) {
     // 不确定的类型的 fiber node
-    
+    q
     var fiberTag = IndeterminateComponent; // The resolved type is set if we know what the final type will be. I.e. it's not lazy.
     // 
     var resolvedType = type;
