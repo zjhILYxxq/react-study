@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.js"></script>
+    <script src="../../react-dom.development.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+        function App() {
+            const [visible, setVisible] = React.useState(true);
+            return <div>
+                <button onClick={() => setVisible(true)}>显示</button>
+                <button onClick={() => setVisible(false)}>隐藏</button>
+                {
+                    visible && <Component1 />
+                }
+            </div>
+        }
+
+        function Component1() {
+
+            const ref = React.useRef();
+
+            React.useEffect(() => {
+                
+                console.log('effect Component1');
+                console.log('ref', ref);
+                return () => {
+                    console.log('destory Component1')
+                }
+            });
+
+            React.useLayoutEffect(() => {
+                console.log('layoutEffect Component1');
+                return () => {
+                    console.log('layout destory Component1')
+                }
+            })
+         
+           return <div> 
+                <div>Component1</div> 
+                <Component2  ref={ref}/>
+            </div>
+        }
+
+        class Component4 extends React.Component {
+            componentDidMount() {
+                console.log('mount Component4');
+            }
+
+            componentWillUnmount() {
+                console.log('unmount Component4');
+            }
+
+            render() {
+                return <div>
+                    <div>Component4</div>
+                    <Component5 />
+                </div>
+            }
+        }
+
+        class Component5 extends React.Component {
+            componentDidMount() {
+                console.log('mount Component5');
+            }
+
+            componentWillUnmount() {
+                console.log('unmount Component5');
+            }
+
+            render() {
+                return <div>
+                    <div>Component5</div>    
+                    <Component6 />
+                </div>
+            }
+        }
+
+        class Component6 extends React.Component {
+            componentDidMount() {
+                console.log('mount Component6');
+            }
+
+            componentWillUnmount() {
+                console.log('unmount Component6');
+            }
+
+            render() {
+                return <div>
+                    <div>Component4</div>    
+                </div>
+            }
+        }
+
+        function Component2() {
+            React.useEffect(() => {
+                console.log('effect Component2');
+                return () => {
+                    console.log('destory Component2')
+                }
+            })
+            React.useLayoutEffect(() => {
+                console.log('layoutEffect Component2');
+                return () => {
+                    console.log('layout destory Component2')
+                }
+            })
+            return <div> 
+                <div>Component2</div> 
+                <Component3 />
+                <Component4 />
+            </div>
+        }
+
+        function Component3() {
+            React.useEffect(() => {
+                console.log('effect Component3');
+                return () => {
+                    console.log('destory Component3')
+                }
+            });
+            React.useLayoutEffect(() => {
+                console.log('layoutEffect Component3');
+                return () => {
+                    console.log('layout destory Component3')
+                }
+            })
+            return <div>Component3</div>
+        }
+
+        ReactDOM.render(<App/>, document.getElementById('app'));
+    </script>
+</body>

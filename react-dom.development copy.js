@@ -11314,7 +11314,7 @@
     // the next tick, or earlier if something calls `flushSyncCallbackQueue`.
     if (syncQueue === null) {
       syncQueue = [callback]; // Flush the queue in the next tick, at the earliest.
-
+      
       immediateQueueCallbackNode = Scheduler_scheduleCallback(Scheduler_ImmediatePriority, flushSyncCallbackQueueImpl);
     } else {
       // Push onto existing queue. Don't need to schedule a callback because

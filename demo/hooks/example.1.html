@@ -59,7 +59,7 @@
 
         var rawDocumentInsertBefore = HTMLDivElement.prototype.insertBefore;
         HTMLDivElement.prototype.insertBefore = function (target, sibling) {
-            console.log(`使用 insertBefore 将 ${target.innerText} 移到 ${sibling} 之前`);
+            console.log(`使用 insertBefore 将 ${target.innerText} 移到 ${sibling.innerText} 之前`);
             rawDocumentInsertBefore.call(this, target, sibling);
         };
 

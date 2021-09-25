@@ -5619,7 +5619,6 @@
    * @param domEventName 原生事件的名称
    */
   function getEventPriorityForPluginSystem(domEventName) {
-    console.log(eventPriorities);
     // 从 eventPriorities 中获取原生事件的优先级： DiscreteEvent 0,  UserBlockingEvent: 1,  ContinuousEvent: 2
     var priority = eventPriorities.get(domEventName); // Default to a ContinuousEvent. Note: we might
     // want to warn if we can't detect the priority
@@ -9256,10 +9255,6 @@
     // 没有找到 react 合成事件，直接退出
     if (reactName === undefined) {
       return;
-    }
-
-    if (reactName === 'onClick') {
-      console.log('123');
     }
 
     // 合成事件构造方法
@@ -22500,7 +22495,6 @@
    * @param renderLanes 本次渲染要处理的更新
    */
   function beginWork(current, workInProgress, renderLanes) {
-    debugger
     // workInProgress， 待处理的 fiber node， lanes 是 fiber node 对应的更新
     // 一个更新产生时，会为这个更新分配一个 lane，而这个 lane 也会合并到对应的 fiber node 上
     var updateLanes = workInProgress.lanes;
@@ -22583,7 +22577,7 @@
             }
 
             break;
-
+          // TODO: 要看
           case SuspenseComponent:  // React.Suspense
             {
               var state = workInProgress.memoizedState;
@@ -22624,7 +22618,7 @@
 
               break;
             }
-
+          // TODO： 要看
           case SuspenseListComponent: // React.SuspenseList
             {
               var didSuspendBefore = (current.flags & DidCapture) !== NoFlags;
@@ -22683,6 +22677,7 @@
               // TODO: Probably should refactor `beginWork` to split the bailout
               // path from the normal path. I'm tempted to do a labeled break here
               // but I won't :)
+              // TODO：要看
               workInProgress.lanes = NoLanes;
               return updateOffscreenComponent(current, workInProgress, renderLanes);
             }
@@ -23306,7 +23301,6 @@
          * 3. child fiber node 协调成成， Suspense complete；
          */
         {
-          debugger
           popSuspenseContext(workInProgress);
           // nextState 为 { dehydrated: null, retryLane: 0 }
           var nextState = workInProgress.memoizedState;
@@ -23361,7 +23355,6 @@
               // 在我们得到这个标记之前，我们不知道是否应该重新启动渲染，这时候已经太晚了 ？？
               // 如果此时这个渲染已经有一个 ping 或者低优先级的更新，这是我们第一次知道我们将要暂停，我们应该能够立即从
               // throwException 中启动？？
-              debugger
               var hasInvisibleChildContext = current === null && workInProgress.memoizedProps.unstable_avoidThisFallback !== true;
 
               if (hasInvisibleChildContext || hasSuspenseContext(suspenseStackCursor.current, InvisibleParentSuspenseContext)) {
@@ -23438,7 +23431,6 @@
            * - revealOrder: 'backwards'
            * - revealOrder: 'together',
            */
-          debugger
           console.log(' complete SuspenseListComponent');
           // SuspenseList context 出栈
           popSuspenseContext(workInProgress); 
@@ -23747,7 +23739,6 @@
       case OffscreenComponent:  // React.OffScreen 的 complete 阶段
       case LegacyHiddenComponent:  // ??
         {
-          debugger
           popRenderLanes(workInProgress);
           // 只有在更新阶段，才会给 fiber node 添加 update 标记
           if (current !== null) {
@@ -24598,6 +24589,7 @@
    * @param finishedWork workInProgress fiber node
    */
   function commitHookEffectListMount(tag, finishedWork) {
+    debugger
     var updateQueue = finishedWork.updateQueue;
     var lastEffect = updateQueue !== null ? updateQueue.lastEffect : null;
 
@@ -24976,8 +24968,8 @@
 
   /**
    * 处理 fiber node 删除时引发的副作用，包括：
-   * - 函数组件 useEffect 返回的 destory
-   * - 类组件 componentWillUnmount
+   * - 函数组件 useEffect 返回的 destory，先触发父节点的
+   * - 类组件 componentWillUnmount，先触发父节点的
    * - 分离 ref
    * @param finishedRoot root
    * @param current  要删除的 fiber node
@@ -25015,6 +25007,7 @@
                     enqueuePendingPassiveHookEffectUnmount(current, effect);
                   } else {
                     {
+                      // 先执行 destory 方法
                       safelyCallDestroy(current, destroy);
                     }
                   }
@@ -25399,6 +25392,7 @@
    * @param renderPriorityLevel
    */
   function unmountHostComponents(finishedRoot, current, renderPriorityLevel) {
+    debugger
     // We only have the top Fiber that was deleted but we need to recurse down its
     // children to find all the terminal nodes.
     var node = current; // Each iteration, currentParent is populated with node's host parent if not
@@ -25412,7 +25406,7 @@
     while (true) {
       if (!currentParentIsValid) {
         var parent = node.return;
-
+        // 要找到父节点
         findParent: while (true) {
           if (!(parent !== null)) {
             {
@@ -25471,7 +25465,7 @@
         }
       } else {
         commitUnmount(finishedRoot, node); // Visit children because we may find more host components below.
-
+        // 移除组件节点下的 dom 节点
         if (node.child !== null) {
           node.child.return = node;
           node = node.child;
@@ -25606,7 +25600,6 @@
       case HostRoot:  // 容器 dom 节点
         {
           {
-            debugger
             // fiber root node 
             var _root = finishedWork.stateNode;
 
@@ -26168,7 +26161,6 @@
    * @parms eventTime 时间戳
    */
   function scheduleUpdateOnFiber(fiber, lane, eventTime) {
-    debugger
     // 检查嵌套的 update 数量，不能超过 50 
     checkForNestedUpdates();
     warnAboutRenderPhaseUpdatesInDEV(fiber);
@@ -26459,7 +26451,6 @@
    * @param root fiber root node
    */
   function performConcurrentWorkOnRoot(root) {
-    debugger
     // Since we know we're in a React event, we can clear the current
     // event time. The next update will compute a new event time.
     currentEventTime = NoTimestamp;
@@ -26908,7 +26899,6 @@
    * @param a
    */
   function batchedUpdates$1(fn, a) {
-    debugger
     var prevExecutionContext = executionContext;
     // 将当前上下文变为批量处理上下文
     executionContext |= BatchedContext;
@@ -27326,7 +27316,6 @@
    * @param lanes 本次渲染处理的更新对应的 lanes
    */
   function renderRootSync(root, lanes) {
-    debugger
     // 先存储当前执行上下文
     var prevExecutionContext = executionContext;
     // 将执行上下文设置为 renderContext
@@ -27459,8 +27448,6 @@
     {
       popInteractions(prevInteractions);
     }
-
-    // debugger
     popDispatcher(prevDispatcher);
     // 退出渲染，恢复之前的执行上下文
     executionContext = prevExecutionContext;
@@ -27498,7 +27485,6 @@
    * @param unitOfwork 待处理的 fiber node
    */
   function performUnitOfWork(unitOfWork) {
-    debugger
     // The current, flushed, state of this fiber is the alternate. Ideally
     // nothing should rely on this, but relying on it here means that we don't
     // need an additional field on the work in progress.
@@ -27586,7 +27572,7 @@
 
           stopProfilerTimerIfRunningAndRecordDelta(completedWork, false);
         }
-
+        debugger
         resetCurrentFiber();
 
         if (next !== null) {
@@ -27605,6 +27591,7 @@
           // list of the parent. The completion order of the children affects the
           // side-effect order.
           // 如果 parent fiber node 的 render 阶段已经结束，将 child fiber node 的副作用添加到 parent fiber node 中
+          // firstEffect 并不是当前 fiber node 的第一个 effect，而是收集的 child fiber node 的第一个 effect
           if (returnFiber.firstEffect === null) {
             returnFiber.firstEffect = completedWork.firstEffect;
           }
@@ -27626,8 +27613,9 @@
           var flags = completedWork.flags; // Skip both NoWork and PerformedWork tags when creating the effect
           // list. PerformedWork effect is read by React DevTools but shouldn't be
           // committed.
-          // ??
+          // 
           if (flags > PerformedWork) {
+            // fiber node 的 flags > PerformedWork, 说明 fiber node 有副作用要处理
             if (returnFiber.lastEffect !== null) {
               returnFiber.lastEffect.nextEffect = completedWork;
             } else {
@@ -27791,7 +27779,6 @@
    * @param renderPriorityLevel 优先级，直接优先级，优先处理
    */
   function commitRootImpl(root, renderPriorityLevel) {
-    debugger
     console.log('commit root 实现');
 
     do {
@@ -27962,7 +27949,7 @@
       root.current = finishedWork; // The next phase is the layout phase, where we call effects that read
       // the host tree after it's been mutated. The idiomatic use case for this is
       // layout, but class component lifecycles also fire here for legacy reasons.
-
+      debugger
       nextEffect = firstEffect;
 
       // dom 操作完成以后的处理，处理 useEffect、useLayoutEffect、componentDidMount、componentDidUpdate
@@ -28719,7 +28706,7 @@
    * @param retryLane 本次渲染的更新
    */
   function retryTimedOutBoundary(boundaryFiber, retryLane) {
-    debugger
+    // debugger
     // The boundary fiber (a Suspense component or SuspenseList component)
     // previously was rendered in its fallback state. One of the promises that
     // suspended it has resolved, which means at least part of the tree was
@@ -30085,7 +30072,7 @@
   function createFiberFromTypeAndProps(type, // React$ElementType
   key, pendingProps, owner, mode, lanes) {
     // 不确定的类型的 fiber node
-    q
+    
     var fiberTag = IndeterminateComponent; // The resolved type is set if we know what the final type will be. I.e. it's not lazy.
     // 
     var resolvedType = type;
@@ -31288,7 +31275,7 @@
 
   // render 方法，将 react element 渲染为真实的 dom 节点
   ReactDOMRoot.prototype.render = ReactDOMBlockingRoot.prototype.render = function (children) {
-    debugger
+    // debugger
     // fiber root node
     var root = this._internalRoot;
 
@@ -31341,7 +31328,7 @@
    * @param options 配置项 { hydrate: boolean, }
    */
   function createRootImpl(container, tag, options) {
-    debugger
+    // debugger
     // Tag is either LegacyRoot or Concurrent Root
     // 是否开启 hydrate 功能
     var hydrate = options != null && options.hydrate === true;
@@ -31633,7 +31620,7 @@
    * @params callback 回调方法
    */
   function render(element, container, callback) {
-    debugger
+    // debugger
     if (!isValidContainer(container)) {
       {
         throw Error( "Target container is not a DOM element." );
