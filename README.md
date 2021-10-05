@@ -231,4 +231,61 @@ Suspense 消除 race condition
 
 
 
+<h2>diff 算法</h2>
+
+**workInProgress fiber tree** 在协调时，以 **current fiber tree** 为参照物。
+
+**workInProgress fiber tree** 作为一颗新树，尽管它的节点都是新建的，但是不同节点之间的创建方式还是有区别的：
+- 如果准备创建的节点，能在 **current fiber tree** 中可以找到匹配节点，那么就可以**复用 current fiber node**，通过**克隆(浅拷贝) current fiber node** 的方式来创建节点；
+
+- 相反，如果准备创建的节点，无法在 **current fiber tree** 找到匹配节点，那么就需要重新创建一个新的节点；
+
+而我们经常谈及的 **diff** 算法就是用来判断 **current fiber node** 中的节点是否可以被 **workInProgress fiber** 复用的。
+
+<h3>为什么要复用 current fiber node</h3>
+
+局部更新，提升性能。
+
+
+
+<h3>fiber node 的 key & type</h3>
+
+
+
+<h3>如何判断一个 current fiber node 是可复用的</h3>
+
+
+
+我们先来解释一下 key 和 type
+
+```
+// jsx
+<Component key="A" name="xxxx">  //  type=Component key="A"
+<div>xxx</div>  // type="div" key=undefined
+<button>按钮</button>  // type="button" key=undefined
+<React.Fragment>...</React.Fragment>  // type=React.Fragment
+```
+
+
+
+
+<h3>diff 算法的核心思想</h3>
+
+**diff** 算法的核心思想：
+
+- **同一个父节点的直接子节点**进行比较，**不跨父节点**比较；
+
+    > **注意，是同一个父节点的直接子节点进行比较，而不是同层的节点进行比较哈！！！很多文章里面写的都是同一层级的节点进行比较，这是不够准确的。**
+
+- 没有 **key** 值，通过**节点类型 - type** 判断节点是否可复用；有 **key** 值，通过 **key** 和**节点类型 - type**判断节点是否可复用；
+
+    > **key 值和节点类型 - type，key 的优先级更高。如果 key 值不相同，那么节点就完全不可复用。**
+
+
+
+
+
+react的最小更新单元将是组件。组件内有个很小的变化，整个组件都要更新，这在效率上是不可接受的，所以才有了虚拟dom这一层
+
+
 

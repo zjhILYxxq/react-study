@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="../../react.development.js"></script>
-    <script src="../../react-dom.development.js"></script>
+    <script src="../../react.development.18.js"></script>
+    <script src="../../react-dom.development.18.js"></script>
     <script src="../../react-dom-server.browser.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
     <title>Document</title>
@@ -22,7 +22,7 @@
                     resolve({
                         name: "zjh"
                     });
-                }, 30000)
+                }, 300)
             });
         }
 
@@ -112,16 +112,17 @@
 
         function ProfilePage() {
             const [visible, setVisible] = React.useState(false);
-            // const [startTransition, isPending] = React.useTransition({ timeoutMs: 3000});
+            const [isPending, startTransition] = React.useTransition();
             // const deferredVisible = React.useDeferredValue(visible, { timeoutMs: 2000});
 
             const show = () => {
-                // startTransition(() => {
-                //     resource = fetchProfileData();
-                //     setVisible(true);
-                // });
-                resource = fetchProfileData();
-                setVisible(true);
+                startTransition(() => {
+                    debugger
+                    resource = fetchProfileData();
+                    setVisible(true);
+                });
+                // resource = fetchProfileData();
+                // setVisible(true);
             }
             return (
                 <div>
