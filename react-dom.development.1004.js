@@ -5619,6 +5619,10 @@
 
     return laneMap;
   }
+
+  /**
+   * 
+   */
   function markRootUpdated(root, updateLane, eventTime) {
     root.pendingLanes |= updateLane; // If there are any suspended transitions, it's possible this new update
     // could unblock them. Clear the suspended lanes so that we can try rendering
@@ -5644,6 +5648,10 @@
 
     eventTimes[index] = eventTime;
   }
+
+  /**
+   * 
+   */
   function markRootSuspended(root, suspendedLanes) {
     root.suspendedLanes |= suspendedLanes;
     root.pingedLanes &= ~suspendedLanes; // The suspended lanes are no longer CPU-bound. Clear their expiration times.
@@ -5658,12 +5666,24 @@
       lanes &= ~lane;
     }
   }
+
+  /**
+   * 
+   */
   function markRootPinged(root, pingedLanes, eventTime) {
     root.pingedLanes |= root.suspendedLanes & pingedLanes;
   }
+
+  /**
+   * 
+   */
   function markRootMutableRead(root, updateLane) {
     root.mutableReadLanes |= updateLane & root.pendingLanes;
   }
+
+  /**
+   * 
+   */
   function markRootFinished(root, remainingLanes) {
     var noLongerPendingLanes = root.pendingLanes & ~remainingLanes;
     root.pendingLanes = remainingLanes; // Let's try everything again
@@ -5689,6 +5709,12 @@
       lanes &= ~lane;
     }
   }
+
+  /**
+   * 
+   * @param root
+   * @param entangledLanes
+   */
   function markRootEntangled(root, entangledLanes) {
     // In addition to entangling each of the given lanes with each other, we also
     // have to consider _transitive_ entanglements. For each lane that is already
@@ -5909,11 +5935,12 @@
       return ContinuousEventPriority;
     }
     
-    // 
+    // 如果 lane 是非空闲的 lane，那么优先级为默认事件优先级
     if (includesNonIdleWork(lane)) {
       return DefaultEventPriority;
     }
 
+    // 空闲事件优先级
     return IdleEventPriority;
   }
 
@@ -17234,17 +17261,33 @@
     return prevValue;
   }
 
+  /**
+   * 开始过渡类型的更新
+   * @param setPending
+   * @param callback
+   */
   function startTransition(setPending, callback) {
+    // 之前的更新优先级
     var previousPriority = getCurrentUpdatePriority();
+    // 从 previousPriority 和 ContinuousEventPriority 中选出比较优先的优先级
+    // 并设置新的更新优先级为 xxx
     setCurrentUpdatePriority(higherEventPriority(previousPriority, ContinuousEventPriority));
+    // 设置 pengding 状态为 true
+    // useTransition 会返回一个 isPending 和 start，其中 start 为 startTransition
+    // setPending 用来更新 isPending
     setPending(true);
+    // 之前的 transition 状态
     var prevTransition = ReactCurrentBatchConfig$2.transition;
+    // 标注 transition 为 1，意味着此后发生的更新都属于 transition
     ReactCurrentBatchConfig$2.transition = 1;
 
     try {
+      // 设置 isPending 为 false
       setPending(false);
+      // 修改 state，触发 react 更新，分配的 lane 都是 transition 类型
       callback();
     } finally {
+      // 恢复原来的 transition、priority
       setCurrentUpdatePriority(previousPriority);
       ReactCurrentBatchConfig$2.transition = prevTransition;
 
@@ -17262,10 +17305,13 @@
     }
   }
 
+  /**
+   * 挂载 useTransition hook
+   */
   function mountTransition() {
     var _mountState2 = mountState(false),
-        isPending = _mountState2[0],
-        setPending = _mountState2[1]; // The `start` method never changes.
+        isPending = _mountState2[0],   // state
+        setPending = _mountState2[1]; // setState The `start` method never changes.
 
 
     var start = startTransition.bind(null, setPending);
@@ -17274,6 +17320,9 @@
     return [isPending, start];
   }
 
+  /**
+   * 更新 useTransition hook
+   */
   function updateTransition() {
     var _updateState2 = updateState(),
         isPending = _updateState2[0];
@@ -17283,6 +17332,9 @@
     return [isPending, start];
   }
 
+  /**
+   * 
+   */
   function rerenderTransition() {
     var _rerenderState2 = rerenderState(),
         isPending = _rerenderState2[0];
@@ -25278,6 +25330,10 @@
     }
   }
 
+  /**
+   * @param fiber 
+   * @param lane
+   */
   function isInterleavedUpdate(fiber, lane) {
     return (// TODO: Optimize slightly by comparing to root that fiber belongs to.
       // Requires some refactoring. Not a big deal though since it's rare for
@@ -25294,6 +25350,10 @@
   // root has work on. This function is called on every update, and right before
   // exiting a task.
 
+  /**
+   * @param root
+   * @param currentTime
+   */
   function ensureRootIsScheduled(root, currentTime) {
     var existingCallbackNode = root.callbackNode; // Check if any lanes are being starved by other work. If so, mark them as
     // expired so we know to work on those next.
@@ -25371,38 +25431,49 @@
       newCallbackNode = null;
     } else {
       var schedulerPriorityLevel;
-
+      // 根据为更新分配的 lane 的优先级，确定任务调度优先级
       switch (lanesToEventPriority(nextLanes)) {
         case DiscreteEventPriority:
+          // 离散事件优先级，对应直接优先级
           schedulerPriorityLevel = ImmediatePriority;
           break;
 
         case ContinuousEventPriority:
+          // 连续事件优先级，对应用户阻塞优先级
           schedulerPriorityLevel = UserBlockingPriority;
           break;
 
         case DefaultEventPriority:
+          // 默认事件优先级， 对应普通优先级
           schedulerPriorityLevel = NormalPriority;
           break;
 
         case IdleEventPriority:
+          // 空闲事件优先级，对应空闲优先级
           schedulerPriorityLevel = IdlePriority;
           break;
 
         default:
+          // 默认情况下，选择普通优先级
           schedulerPriorityLevel = NormalPriority;
           break;
       }
-
+      // 根据优先级，进行任务调度
+      // 任务的 callback 为 performConcurrentWorkOnRoot
       newCallbackNode = scheduleCallback$1(schedulerPriorityLevel, performConcurrentWorkOnRoot.bind(null, root));
     }
-
+    // fiber root node 的异步调度优先级
     root.callbackPriority = newCallbackPriority;
+    // fiber root node 的异步调度任务
     root.callbackNode = newCallbackNode;
   } // This is the entry point for every concurrent task, i.e. anything that
   // goes through Scheduler.
 
-
+  /**
+   * 以 concurrent 模式进行 fiber tree 的协调
+   * @param root
+   * @param didiTimeout
+   */
   function performConcurrentWorkOnRoot(root, didTimeout) {
     {
       resetNestedUpdateFlag();
@@ -25523,6 +25594,11 @@
     return null;
   }
 
+  /**
+   * 
+   * @param root
+   * @param errorRetryLanes
+   */
   function recoverFromConcurrentError(root, errorRetryLanes) {
     var prevExecutionContext = executionContext;
     executionContext |= RetryAfterError; // If an error occurred during hydration, discard server response and fall
@@ -25543,6 +25619,12 @@
     return exitStatus;
   }
 
+  /**
+   * 结束 concurrent 非阻塞渲染工作
+   * @param root  fiber root node
+   * @param exitStatus 退出状态
+   * @param lanes 本次工作的 lanes
+   */
   function finishConcurrentRender(root, exitStatus, lanes) {
     switch (exitStatus) {
       case RootIncomplete:
@@ -26598,6 +26680,9 @@
     return null;
   }
 
+  /**
+   * 
+   */
   function flushPassiveEffects() {
     // Returns whether passive effects were flushed.
     // TODO: Combine this check with the one in flushPassiveEFfectsImpl. We should
@@ -26606,13 +26691,18 @@
     // `Scheduler.runWithPriority`, which accepts a function. But now we track the
     // priority within React itself, so we can mutate the variable directly.
     if (rootWithPendingPassiveEffects !== null) {
+      // 确认 pendingPassiveEffectsLanes 对应的优先级
       var renderPriority = lanesToEventPriority(pendingPassiveEffectsLanes);
+      // 从 DefaultEventPriority 和 renderPriority 中选出低优先的
       var priority = lowerEventPriority(DefaultEventPriority, renderPriority);
+      // 
       var prevTransition = ReactCurrentBatchConfig$3.transition;
+      // 
       var previousPriority = getCurrentUpdatePriority();
 
       try {
         ReactCurrentBatchConfig$3.transition = 0;
+        // 设置 currentUpdatePriotity 为 
         setCurrentUpdatePriority(priority);
         return flushPassiveEffectsImpl();
       } finally {
@@ -26623,6 +26713,10 @@
 
     return false;
   }
+
+  /**
+   * 
+   */
   function enqueuePendingPassiveProfilerEffect(fiber) {
     {
       pendingPassiveProfilerEffects.push(fiber);

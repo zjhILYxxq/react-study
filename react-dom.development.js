@@ -31358,7 +31358,7 @@
     {
       // 获取实际的容器节点(这里一般情况下应该没有什么特殊操作吧)
       var rootContainerElement = container.nodeType === COMMENT_NODE ? container.parentNode : container;
-      // 给容器节点绑定所有支持的事件 (react 的事件机制？？)
+      // 给容器节点绑定所有支持的事件 (react 的事件机制)
       listenToAllSupportedEvents(rootContainerElement);
     }
     // TODO: mutableSources 是什么东东？？
