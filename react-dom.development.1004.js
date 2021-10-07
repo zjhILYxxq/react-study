@@ -4440,6 +4440,16 @@
   var StaticMask = LayoutStatic | PassiveStatic | RefStatic;
 
   var ReactCurrentOwner = ReactSharedInternals.ReactCurrentOwner;
+
+  /**
+   * 根据指定的 fiber node，找到离它最近的已挂载好的 fiber node
+   * fiber node 是初次挂载:
+   * - 如果 fiber node 的 flags 为 Placement 或者 Hydrating，说明 对应的 dom 节点的还有可能没有添加到 dom tree 上，此时要找对应的 dom 节点已经在 dom tree
+   * 上的 fiber node，最后有可能会找到 container fiber node；
+   * 
+   * 如果 fiber node 的 flags 不为 placement 或者 Hydrating
+   * @param fiber fiber noe
+   */
   function getNearestMountedFiber(fiber) {
     var node = fiber;
     var nearestMounted = fiber;
@@ -4477,6 +4487,11 @@
 
     return null;
   }
+
+  /**
+   * 
+   * @param fiber
+   */
   function getSuspenseInstanceFromFiber(fiber) {
     if (fiber.tag === SuspenseComponent) {
       var suspenseState = fiber.memoizedState;
@@ -4496,12 +4511,25 @@
 
     return null;
   }
+
+  /**
+   * 根据 fiber node 获取容器节点
+   * @param fiber fiber node
+   */
   function getContainerFromFiber(fiber) {
     return fiber.tag === HostRoot ? fiber.stateNode.containerInfo : null;
   }
+
+  /**
+   * 判断 fiber node 是否已经挂载
+   */
   function isFiberMounted(fiber) {
     return getNearestMountedFiber(fiber) === fiber;
   }
+
+  /**
+   * 判断类组件 fiber node 是否已经挂载
+   */
   function isMounted(component) {
     {
       var owner = ReactCurrentOwner.current;
@@ -5933,13 +5961,13 @@
     return 31 - (log(lanes) / LN2 | 0) | 0;
   }
   // 离散事件优先级
-  var DiscreteEventPriority = SyncLane;
+  var DiscreteEventPriority = SyncLane;  // SyncLane 为 1
   // 连续事件优先级
-  var ContinuousEventPriority = InputContinuousLane;
+  var ContinuousEventPriority = InputContinuousLane;  // InputContinuousLane 为 4
   // 默认事件优先级
-  var DefaultEventPriority = DefaultLane;
+  var DefaultEventPriority = DefaultLane;  // DefaultLane 为 16
   // 空闲事件优先级
-  var IdleEventPriority = IdleLane;
+  var IdleEventPriority = IdleLane;  // IdleLane 为 536870912
   // 当前更新优先级
   var currentUpdatePriority = NoLane;
   /**
@@ -6244,6 +6272,7 @@
           var root = nearestMounted.stateNode;
 
           if (root.isDehydrated) {
+            // 根据 nearestMounted 获取容器节点
             queuedTarget.blockedOn = getContainerFromFiber(nearestMounted); // We don't currently have a way to increase the priority of
             // a root other than sync.
 
@@ -6441,9 +6470,10 @@
   }
 
   /**
-   * 
+   * 根据优先级，创建对应的包装监听器
    */
   function createEventListenerWrapperWithPriority(targetContainer, domEventName, eventSystemFlags) {
+    // 根据时间类型获取优先级
     var eventPriority = getEventPriority(domEventName);
     var listenerWrapper;
 
@@ -6465,12 +6495,16 @@
     return listenerWrapper.bind(null, domEventName, eventSystemFlags, targetContainer);
   }
 
+  /**
+   * 派发离散的事件
+   */
   function dispatchDiscreteEvent(domEventName, eventSystemFlags, container, nativeEvent) {
     var previousPriority = getCurrentUpdatePriority();
     var prevTransition = ReactCurrentBatchConfig.transition;
     ReactCurrentBatchConfig.transition = 0;
 
     try {
+      // 设置当前更新优先级为 DiscreteEventPriority，即 SyncLane 1
       setCurrentUpdatePriority(DiscreteEventPriority);
       dispatchEvent(domEventName, eventSystemFlags, container, nativeEvent);
     } finally {
@@ -6479,12 +6513,16 @@
     }
   }
 
+  /**
+   * 派发连续的事件
+   */
   function dispatchContinuousEvent(domEventName, eventSystemFlags, container, nativeEvent) {
     var previousPriority = getCurrentUpdatePriority();
     var prevTransition = ReactCurrentBatchConfig.transition;
     ReactCurrentBatchConfig.transition = 0;
 
     try {
+      // 设置当前的更新优先级为 ContinuousEventPriority， 即 InputContinuousLane， 为 4
       setCurrentUpdatePriority(ContinuousEventPriority);
       dispatchEvent(domEventName, eventSystemFlags, container, nativeEvent);
     } finally {
@@ -6493,6 +6531,9 @@
     }
   }
 
+  /**
+   * 派发普通事件
+   */
   function dispatchEvent(domEventName, eventSystemFlags, targetContainer, nativeEvent) {
     if (!_enabled) {
       return;
@@ -6581,6 +6622,7 @@
           if (root.isDehydrated) {
             // If this happens during a replay something went wrong and it might block
             // the whole system.
+            // 根据 nearestMounted 获取容器节点
             return getContainerFromFiber(nearestMounted);
           }
 
@@ -6599,6 +6641,10 @@
 
     return null;
   }
+
+  /**
+   * 根据事件名称获取对应的优先级
+   */
   function getEventPriority(domEventName) {
     switch (domEventName) {
       // Used by SimpleEventPlugin:
@@ -6659,7 +6705,7 @@
       case 'popstate':
       case 'select':
       case 'selectstart':
-        return DiscreteEventPriority;
+        return DiscreteEventPriority;   // 离散事件优先级， 1
 
       case 'drag':
       case 'dragenter':
@@ -6682,7 +6728,7 @@
       case 'mouseleave':
       case 'pointerenter':
       case 'pointerleave':
-        return ContinuousEventPriority;
+        return ContinuousEventPriority;  // 连续事件优先级， 4
 
       case 'message':
         {
@@ -6693,7 +6739,7 @@
 
           switch (schedulerPriority) {
             case ImmediatePriority:
-              return DiscreteEventPriority;
+              return DiscreteEventPriority;  
 
             case UserBlockingPriority:
               return ContinuousEventPriority;
@@ -6712,7 +6758,7 @@
         }
 
       default:
-        return DefaultEventPriority;
+        return DefaultEventPriority;  // 默认事件优先级， 16
     }
   }
 
@@ -11026,13 +11072,18 @@
     precacheFiberNode(internalInstanceHandle, textNode);
     return textNode;
   }
+
+  /**
+   * 获取当前事件优先级
+   */
   function getCurrentEventPriority() {
     var currentEvent = window.event;
 
+    // 没有事件，返回 默认事件优先级 16
     if (currentEvent === undefined) {
       return DefaultEventPriority;
     }
-
+    // 根据事件类型，获取优先级
     return getEventPriority(currentEvent.type);
   }
   // if a component just imports ReactDOM (e.g. for findDOMNode).
@@ -11990,6 +12041,10 @@
       flushSyncCallbacks();
     }
   }
+
+  /**
+   * 
+   */
   function flushSyncCallbacks() {
     if (!isFlushingSyncQueue && syncQueue !== null) {
       // Prevent re-entrance.
@@ -12001,7 +12056,7 @@
         var isSync = true;
         var queue = syncQueue; // TODO: Is this necessary anymore? The only user code that runs in this
         // queue is in the render or commit phases.
-
+        // 设置更新优先级为离散事件优先级，即 1
         setCurrentUpdatePriority(DiscreteEventPriority);
 
         for (; i < queue.length; i++) {
@@ -13475,7 +13530,9 @@
     }
   }
 
+  // 类组件的 updater，用于更新类组件实例的 state
   var classComponentUpdater = {
+    // 判断类组件是否已经挂载好
     isMounted: isMounted,
     /**
      * setState,修改类组件的 state，
@@ -13483,6 +13540,7 @@
     enqueueSetState: function (inst, payload, callback) {
       // 根据类组件实例获取对应的 fiber node
       var fiber = get(inst);
+      // 返回一个时间戳，标记更新发生的时间
       var eventTime = requestEventTime();
       // 为更新分为一个 lane
       var lane = requestUpdateLane(fiber);
@@ -17549,6 +17607,7 @@
       }
     }
 
+    // 为更新分配一个 lane
     var lane = requestUpdateLane(fiber);
     var update = {
       lane: lane,
@@ -25291,6 +25350,12 @@
 
   /**
    * 为更新分配一个新的 lane
+   * 分配规则:
+   * - 如果是 legency 模式，分配 SyncLane；
+   * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
+   * - 如果是 transition， 分配 transitionLane；
+   * - 根据当前事件优先级，分配对应的 lane；
+   * - 返回默认事件优先级，即 16；
    */
   function requestUpdateLane(fiber) {
     // Special cases
@@ -25356,6 +25421,9 @@
     return eventLane;
   }
 
+  /**
+   * 为更新分配 retry 类型的 lane
+   */
   function requestRetryLane(fiber) {
     // This is a fork of `requestUpdateLane` designed specifically for Suspense
     // "retries" — a special update that attempts to flip a Suspense boundary
@@ -26093,12 +26161,17 @@
       }
     }
   }
+
+  /**
+   * 离散更新
+   */
   function discreteUpdates(fn, a, b, c, d) {
     var previousPriority = getCurrentUpdatePriority();
     var prevTransition = ReactCurrentBatchConfig$3.transition;
 
     try {
       ReactCurrentBatchConfig$3.transition = 0;
+      // 设置更新优先级为 DiscreteEventPriority， 为 1
       setCurrentUpdatePriority(DiscreteEventPriority);
       return fn(a, b, c, d);
     } finally {
@@ -26113,6 +26186,9 @@
   // Warning, this opts-out of checking the function body.
 
   // eslint-disable-next-line no-redeclare
+  /**
+   * 
+   */
   function flushSync(fn) {
     // In legacy mode, we flush pending passive effects at the beginning of the
     // next event, not at the end of the previous one.
@@ -26596,6 +26672,9 @@
     }
   }
 
+  /**
+   * commit 阶段的实现
+   */
   function commitRoot(root) {
     // TODO: This no longer makes any sense. We already wrap the mutation and
     // layout phases. Should be able to remove.
