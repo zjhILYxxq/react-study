@@ -4954,111 +4954,114 @@
   var NoLane =
   /*                          */
   0;
-  var SyncLane =
+  var SyncLane =                      // 0000 0000 0000 0000 0000 0000 0000 0001
   /*                        */
   1;
-  var InputContinuousHydrationLane =
+  var InputContinuousHydrationLane =  //  0000 0000 0000 0000 0000 0000 0000 0010
   /*    */
   2;
-  var InputContinuousLane =
+  var InputContinuousLane =           //  0000 0000 0000 0000 0000 0000 0000 0100
   /*            */
   4;
-  var DefaultHydrationLane =
+  var DefaultHydrationLane =          //  0000 0000 0000 0000 0000 0000 0000 1000
   /*            */
   8;
-  var DefaultLane =
+  var DefaultLane =                   //  0000 0000 0000 0000 0000 0000 0001 0000 
   /*                    */
   16;
-  var TransitionHydrationLane =
+  var TransitionHydrationLane =       //  0000 0000 0000 0000 0000 0000 0010 0000
   /*                */
   32;
-  var TransitionLanes =
+  var TransitionLanes =               //  0000 0000 0011 1111 1111 1111 1100 0000
   /*                       */
   4194240;
-  var TransitionLane1 =
+  var TransitionLane1 =               //  0000 0000 0000 0000 0000 0000 0100 0000
   /*                        */
   64;
-  var TransitionLane2 =
+  var TransitionLane2 =               //  0000 0000 0000 0000 0000 0000 1000 0000
   /*                        */
   128;
-  var TransitionLane3 =
+  var TransitionLane3 =               //  0000 0000 0000 0000 0000 0001 0000 0000
   /*                        */
   256;
-  var TransitionLane4 =
+  var TransitionLane4 =               //  0000 0000 0000 0000 0000 0010 0000 0000
   /*                        */
   512;
-  var TransitionLane5 =
+  var TransitionLane5 =               //  0000 0000 0000 0000 0000 0100 0000 0000
   /*                        */
   1024;
-  var TransitionLane6 =
+  var TransitionLane6 =               //  0000 0000 0000 0000 0000 1000 0000 0000
   /*                        */
   2048;
-  var TransitionLane7 =
+  var TransitionLane7 =               //  0000 0000 0000 0000 0001 0000 0000 0000
   /*                        */
   4096;
-  var TransitionLane8 =
+  var TransitionLane8 =               //  0000 0000 0000 0000 0010 0000 0000 0000
   /*                        */
   8192;
-  var TransitionLane9 =
+  var TransitionLane9 =               //  0000 0000 0000 0000 0100 0000 0000 0000
   /*                        */
   16384;
-  var TransitionLane10 =
+  var TransitionLane10 =              //  0000 0000 0000 0000 1000 0000 0000 0000
   /*                       */
   32768;
-  var TransitionLane11 =
+  var TransitionLane11 =              //  0000 0000 0000 0001 0000 0000 0000 0000
   /*                       */
   65536;
-  var TransitionLane12 =
+  var TransitionLane12 =              //  0000 0000 0000 0010 0000 0000 0000 0000
   /*                       */
   131072;
-  var TransitionLane13 =
+  var TransitionLane13 =              //  0000 0000 0000 0100 0000 0000 0000 0000
   /*                       */
   262144;
-  var TransitionLane14 =
+  var TransitionLane14 =              //  0000 0000 0000 1000 0000 0000 0000 0000
   /*                       */
   524288;
-  var TransitionLane15 =
+  var TransitionLane15 =              //  0000 0000 0001 0000 0000 0000 0000 0000
   /*                       */
   1048576;
-  var TransitionLane16 =
+  var TransitionLane16 =              //  0000 0000 0010 0000 0000 0000 0000 0000
   /*                       */
   2097152;
-  var RetryLanes =
+  var RetryLanes =                    //  0000 0111 1100 0000 0000 0000 0000 0000
   /*                            */
   130023424;
-  var RetryLane1 =
+  var RetryLane1 =                    //  0000 0000 0100 0000 0000 0000 0000 0000
   /*                             */
   4194304;
-  var RetryLane2 =
+  var RetryLane2 =                    //  0000 0000 1000 0000 0000 0000 0000 0000
   /*                             */
   8388608;
-  var RetryLane3 =
+  var RetryLane3 =                    //  0000 0001 0000 0000 0000 0000 0000 0000
   /*                             */
   16777216;
-  var RetryLane4 =
+  var RetryLane4 =                    //  0000 0010 0000 0000 0000 0000 0000 0000
   /*                             */
   33554432;
-  var RetryLane5 =
+  var RetryLane5 =                    //  0000 0100 0000 0000 0000 0000 0000 0000
   /*                             */
   67108864;
-  var SomeRetryLane = RetryLane1;
-  var SelectiveHydrationLane =
+  var SomeRetryLane = RetryLane1;   
+  var SelectiveHydrationLane =        //  0000 1000 0000 0000 0000 0000 0000 0000
   /*          */
   134217728;
-  var NonIdleLanes =
+  var NonIdleLanes =                  //  0000 1111 1111 1111 1111 1111 1111 1111
   /*                                 */
   268435455;
-  var IdleHydrationLane =
+  var IdleHydrationLane =             //  0001 0000 0000 0000 0000 0000 0000 0000
   /*               */
   268435456;
-  var IdleLane =
+  var IdleLane =                      //  0010 0000 0000 0000 0000 0000 0000 0000
   /*                       */
   536870912;
-  var OffscreenLane =
+  var OffscreenLane =                 //  0100 0000 0000 0000 0000 0000 0000 0000
   /*                   */
   1073741824; // This function is used for the experimental scheduling profiler (react-devtools-scheduling-profiler)
   // It should be kept in sync with the Lanes values above.
 
+  /**
+   * 
+   */
   function getLabelForLane(lane) {
     {
       if (lane & SyncLane) {
@@ -5114,6 +5117,9 @@
   var nextTransitionLane = TransitionLane1;
   var nextRetryLane = RetryLane1;
 
+  /**
+   * 
+   */
   function getHighestPriorityLanes(lanes) {
     switch (getHighestPriorityLane(lanes)) {
       case SyncLane:
@@ -5181,6 +5187,9 @@
     }
   }
 
+  /**
+   * 
+   */
   function getNextLanes(root, wipLanes) {
     // Early bailout if there's no pending work left.
     var pendingLanes = root.pendingLanes;
@@ -5293,6 +5302,10 @@
 
     return nextLanes;
   }
+
+  /**
+   * 
+   */
   function getMostRecentEventTime(root, lanes) {
     var eventTimes = root.eventTimes;
     var mostRecentEventTime = NoTimestamp;
@@ -5312,6 +5325,9 @@
     return mostRecentEventTime;
   }
 
+  /**
+   * 计算更新的过期时间
+   */
   function computeExpirationTime(lane, currentTime) {
     switch (lane) {
       case SyncLane:
@@ -5429,28 +5445,55 @@
 
     return NoLanes;
   }
+
+  /**
+   * 判断 lanes 中是否包含非空闲的 lane
+   */
   function includesNonIdleWork(lanes) {
     return (lanes & NonIdleLanes) !== NoLanes;
   }
+
+  /**
+   * 判断 lanes 中是否只包含 retry 类型的 lane
+   */
   function includesOnlyRetries(lanes) {
     return (lanes & RetryLanes) === lanes;
   }
+
+  /**
+   * 判断 lanes 是否只包含 transition 类型的 lane
+   */
   function includesOnlyTransitions(lanes) {
     return (lanes & TransitionLanes) === lanes;
   }
+
+  /**
+   * 
+   */
   function includesBlockingLane(root, lanes) {
 
     var SyncDefaultLanes = InputContinuousHydrationLane | InputContinuousLane | DefaultHydrationLane | DefaultLane;
     return (lanes & SyncDefaultLanes) !== NoLanes;
   }
+  /**
+   * 
+   */
   function includesExpiredLane(root, lanes) {
     // This is a separate check from includesBlockingLane because a lane can
     // expire after a render has already started.
     return (lanes & root.expiredLanes) !== NoLanes;
   }
+
+  /**
+   * 
+   */
   function isTransitionLane(lane) {
     return (lane & TransitionLanes) !== 0;
   }
+
+  /**
+   * 
+   */
   function claimNextTransitionLane() {
     // Cycle through the lanes, assigning each new transition to the next lane.
     // In most cases, this means every transition gets its own lane, until we
@@ -5464,6 +5507,10 @@
 
     return lane;
   }
+
+  /**
+   * 
+   */
   function claimNextRetryLane() {
     var lane = nextRetryLane;
     nextRetryLane <<= 1;
@@ -5474,9 +5521,17 @@
 
     return lane;
   }
+
+  /**
+   * 
+   */
   function getHighestPriorityLane(lanes) {
     return lanes & -lanes;
   }
+
+  /**
+   * 
+   */
   function pickArbitraryLane(lanes) {
     // This wrapper function gets inlined. Only exists so to communicate that it
     // doesn't matter which bit is selected; you can pick any bit without
@@ -5485,38 +5540,74 @@
     return getHighestPriorityLane(lanes);
   }
 
+  /**
+   * 
+   */
   function pickArbitraryLaneIndex(lanes) {
     return 31 - clz32(lanes);
   }
 
+  /**
+   * 
+   */
   function laneToIndex(lane) {
     return pickArbitraryLaneIndex(lane);
   }
 
+  /**
+   * 
+   */
   function includesSomeLane(a, b) {
     return (a & b) !== NoLanes;
   }
+
+  /**
+   * 
+   */
   function isSubsetOfLanes(set, subset) {
     return (set & subset) === subset;
   }
+
+  /**
+   * 
+   */
   function mergeLanes(a, b) {
     return a | b;
   }
+
+  /**
+   * 
+   */
   function removeLanes(set, subset) {
     return set & ~subset;
   }
+
+  /**
+   * 
+   */
   function intersectLanes(a, b) {
     return a & b;
   } // Seems redundant, but it changes the type from a single lane (used for
   // updates) to a group of lanes (used for flushing work).
 
+  /**
+   * 
+   */
   function laneToLanes(lane) {
     return lane;
   }
+
+  /**
+   * 
+   */
   function higherPriorityLane(a, b) {
     // This works because the bit ranges decrease in priority as you go left.
     return a !== NoLane && a < b ? a : b;
   }
+
+  /**
+   * 
+   */
   function createLaneMap(initial) {
     // Intentionally pushing one by one.
     // https://v8.dev/blog/elements-kinds#avoid-creating-holes
@@ -5743,18 +5834,32 @@
 
     return 31 - (log(lanes) / LN2 | 0) | 0;
   }
-
+  // 离散事件优先级
   var DiscreteEventPriority = SyncLane;
+  // 连续事件优先级
   var ContinuousEventPriority = InputContinuousLane;
+  // 默认事件优先级
   var DefaultEventPriority = DefaultLane;
+  // 空闲事件优先级
   var IdleEventPriority = IdleLane;
+  // 当前更新优先级
   var currentUpdatePriority = NoLane;
+  /**
+   * 获取当前更新优先级
+   */
   function getCurrentUpdatePriority() {
     return currentUpdatePriority;
   }
+  /**
+   * 设置当前更新优先级
+   */
   function setCurrentUpdatePriority(newPriority) {
     currentUpdatePriority = newPriority;
   }
+
+  /**
+   * 以 priority 指定的优先级，执行 fn
+   */
   function runWithPriority(priority, fn) {
     var previousPriority = currentUpdatePriority;
 
@@ -5765,26 +5870,46 @@
       currentUpdatePriority = previousPriority;
     }
   }
+
+  /**
+   * 从 a、b 中返回优先级较高的。数值越小，优先级越高
+   */
   function higherEventPriority(a, b) {
     return a !== 0 && a < b ? a : b;
   }
+
+  /**
+   * 从 a、b 中返回优先级较低的，数值越小，优先级越高
+   */
   function lowerEventPriority(a, b) {
     return a === 0 || a > b ? a : b;
   }
+
+  /**
+   * 判断 a 的优先级是否高于 b, 数值越小，优先级越高
+   */
   function isHigherEventPriority(a, b) {
     return a !== 0 && a < b;
   }
+
+  /**
+   * 返回 lanes 中优先级最高的 lane 对应的优先级
+   */
   function lanesToEventPriority(lanes) {
+    // 找到优先级最高的 lane
     var lane = getHighestPriorityLane(lanes);
 
+    // 如果 lane 的值小于等于 DiscreteEventPriority，那么就是离散事件优先级
     if (!isHigherEventPriority(DiscreteEventPriority, lane)) {
       return DiscreteEventPriority;
     }
 
+    // 如果 lane 的值小于等于 ContinuousEventPriority，那么就是连续事件优先级
     if (!isHigherEventPriority(ContinuousEventPriority, lane)) {
       return ContinuousEventPriority;
     }
-
+    
+    // 
     if (includesNonIdleWork(lane)) {
       return DefaultEventPriority;
     }
@@ -13248,11 +13373,18 @@
 
   var classComponentUpdater = {
     isMounted: isMounted,
+    /**
+     * setState,修改类组件的 state，
+     */
     enqueueSetState: function (inst, payload, callback) {
+      // 根据类组件实例获取对应的 fiber node
       var fiber = get(inst);
       var eventTime = requestEventTime();
+      // 为更新分为一个 lane
       var lane = requestUpdateLane(fiber);
+      // 创建一个 update 对象
       var update = createUpdate(eventTime, lane);
+      // update 对象的负载，用于计算新的 state
       update.payload = payload;
 
       if (callback !== undefined && callback !== null) {
@@ -13262,21 +13394,28 @@
 
         update.callback = callback;
       }
-
+      // 将新建的 update 对象添加的 fiber node 的 updateqQueue 队列中
       enqueueUpdate(fiber, update);
+      // 任务调度，处理更新
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
+        // ？？
         entangleTransitions(root, fiber, lane);
       }
 
       {
+        // 标注已经为 state 更新安排任务调度
         markStateUpdateScheduled(fiber, lane);
       }
     },
+    /**
+     * 以 replace 的方式进行更新
+     */
     enqueueReplaceState: function (inst, payload, callback) {
       var fiber = get(inst);
       var eventTime = requestEventTime();
+      // 为更新分配一个 lane
       var lane = requestUpdateLane(fiber);
       var update = createUpdate(eventTime, lane);
       update.tag = ReplaceState;
@@ -13301,9 +13440,14 @@
         markStateUpdateScheduled(fiber, lane);
       }
     },
+
+    /**
+     * 强制更新
+     */
     enqueueForceUpdate: function (inst, callback) {
       var fiber = get(inst);
       var eventTime = requestEventTime();
+      // 为更新分配一个 lane
       var lane = requestUpdateLane(fiber);
       var update = createUpdate(eventTime, lane);
       update.tag = ForceUpdate;
@@ -13329,6 +13473,9 @@
     }
   };
 
+  /**
+   * 检查类组件是否需要重新更新
+   */
   function checkShouldComponentUpdate(workInProgress, ctor, oldProps, newProps, oldState, newState, nextContext) {
     var instance = workInProgress.stateNode;
 
@@ -13362,6 +13509,9 @@
     return true;
   }
 
+  /**
+   * 
+   */
   function checkClassInstance(workInProgress, ctor, newProps) {
     var instance = workInProgress.stateNode;
 
@@ -16454,6 +16604,7 @@
 
         if (!objectIs(snapshot, maybeNewSnapshot)) {
           setSnapshot(maybeNewSnapshot);
+          // 为更新分配一个 lane
           var lane = requestUpdateLane(fiber);
           markRootMutableRead(root, lane);
         } // If the source mutated between render and now,
@@ -16472,7 +16623,7 @@
 
         try {
           latestSetSnapshot(latestGetSnapshot(source._source)); // Record a pending mutable source update with the same expiration time.
-
+          // 为更新分配一个新的 lane
           var lane = requestUpdateLane(fiber);
           markRootMutableRead(root, lane);
         } catch (error) {
@@ -17226,7 +17377,7 @@
         error("State updates from the useState() and useReducer() Hooks don't support the " + 'second callback argument. To execute a side effect after ' + 'rendering, declare it in the component body with useEffect().');
       }
     }
-
+    // 为更新分配一个新的 lane
     var lane = requestUpdateLane(fiber);
     var update = {
       lane: lane,
@@ -24941,11 +25092,17 @@
     currentEventTime = now();
     return currentEventTime;
   }
+
+  /**
+   * 为更新分配一个新的 lane
+   */
   function requestUpdateLane(fiber) {
     // Special cases
+    // fiber node 的模式，分为 legency 模式和 concurrent 模式
     var mode = fiber.mode;
 
     if ((mode & ConcurrentMode) === NoMode) {
+      // 如果是 legency 模式，直接为更新分配 SyncLane: 1
       return SyncLane;
     } else if ( (executionContext & RenderContext) !== NoContext && workInProgressRootRenderLanes !== NoLanes) {
       // This is a render phase update. These are not officially supported. The
@@ -24957,11 +25114,12 @@
       // This behavior is only a fallback. The flag only exists until we can roll
       // out the setState warning, since existing code might accidentally rely on
       // the current behavior.
+      // render 阶段发生的更新，分配当前渲染 lanes 中优先级最高的 lane ？？
       return pickArbitraryLane(workInProgressRootRenderLanes);
     }
-
+    // 是否处于过渡中
     var isTransition = requestCurrentTransition() !== NoTransition;
-
+    // 如果更新是处于 transition 中，分配 transition 类型的 lane
     if (isTransition) {
       // updates at the same priority within the same event. To do this, the
       // inputs to the algorithm must be the same.
@@ -24970,9 +25128,10 @@
       // event. Then reset the cached values once we can be sure the event is
       // over. Our heuristic for that is whenever we enter a concurrent work loop.
 
-
+      // 
       if (currentEventTransitionLane === NoLane) {
         // All transitions within the same event are assigned the same lane.
+        // 同一个事件内部的 transition 都分配相同的 lane ？？
         currentEventTransitionLane = claimNextTransitionLane();
       }
 
@@ -24984,7 +25143,7 @@
     // use that directly.
     // TODO: Move this type conversion to the event priority module.
 
-
+    // 当前
     var updateLane = getCurrentUpdatePriority();
 
     if (updateLane !== NoLane) {
@@ -27237,6 +27396,7 @@
 
       flushPassiveEffects();
       flushSync(function () {
+        // 更新容器节点
         updateContainer(element, root, null, null);
       });
     }
@@ -28211,15 +28371,16 @@
   }
 
   /**
-   * 
+   * 更新容器节点
    */
   function updateContainer(element, container, parentComponent, callback) {
     {
       onScheduleRoot(container, element);
     }
-
+    // current fiber node
     var current$1 = container.current;
     var eventTime = requestEventTime();
+    // 为此次更新分配一个 lane
     var lane = requestUpdateLane(current$1);
 
     {
@@ -28357,6 +28518,9 @@
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
+  /**
+   * 
+   */
   function attemptHydrationAtCurrentPriority$1(fiber) {
     if (fiber.tag !== SuspenseComponent) {
       // We ignore HostRoots here because we can't increase
@@ -28365,7 +28529,9 @@
     }
 
     var eventTime = requestEventTime();
+    // 为更新分配一个 lane
     var lane = requestUpdateLane(fiber);
+    // 调度更新
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
@@ -28645,10 +28811,16 @@
     });
   }
 
+  /**
+   * 构造函数，创建一个 fiber root node
+   */
   function ReactDOMRoot(internalRoot) {
     this._internalRoot = internalRoot;
   }
 
+  /**
+   * render 方法，开始渲染 fiber tree
+   */
   ReactDOMRoot.prototype.render = function (children) {
     var root = this._internalRoot;
 
@@ -28697,6 +28869,7 @@
       }
 
       flushSync(function () {
+        // 更新容器节点
         updateContainer(null, root, null, null);
       });
       unmarkContainerAsRoot(container);
@@ -28769,7 +28942,7 @@
       }
     } // Render the initial children
 
-
+    // 更新容器节点
     updateContainer(initialChildren, root, null, null);
     return new ReactDOMRoot(root);
   }
@@ -28895,6 +29068,7 @@
 
 
       flushSync(function () {
+        // 更新容器节点
         updateContainer(children, fiberRoot, parentComponent, callback);
       });
     } else {
@@ -28910,7 +29084,7 @@
         };
       } // Update
 
-
+      // 更新容器节点
       updateContainer(children, fiberRoot, parentComponent, callback);
     }
 
