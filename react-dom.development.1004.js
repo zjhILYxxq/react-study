@@ -12698,6 +12698,7 @@
             if (fiber.tag === ClassComponent) {
               // Schedule a force update on the work-in-progress.
               var lane = pickArbitraryLane(renderLanes);
+              // 为本次更新创建一个 update 对象
               var update = createUpdate(NoTimestamp, lane);
               update.tag = ForceUpdate; // TODO: Because we don't have a work-in-progress, this will add the
               // update to the current fiber, too, which means it will persist even if
@@ -12951,6 +12952,12 @@
       workInProgress.updateQueue = clone;
     }
   }
+
+  /**
+   * 为更新创建一个 update 对象
+   * @param eventTime 更新发生的时间
+   * @param lane 为更新分配的 lane
+   */
   function createUpdate(eventTime, lane) {
     var update = {
       eventTime: eventTime,
@@ -12962,7 +12969,15 @@
     };
     return update;
   }
+
+  /**
+   * 将 update 对象添加到 fiber node 的 updateQueue 队列中
+   * @param fiber fiber node
+   * @param update update 对象
+   * @param lane 为更新分配的 lane
+   */
   function enqueueUpdate(fiber, update, lane) {
+    // fiber node 的 updateQueue 对象
     var updateQueue = fiber.updateQueue;
 
     if (updateQueue === null) {
@@ -12973,11 +12988,13 @@
     var sharedQueue = updateQueue.shared;
 
     if (isInterleavedUpdate(fiber)) {
+      // TODO: question 什么时候才是交错的更新 ？？
       var interleaved = sharedQueue.interleaved;
 
       if (interleaved === null) {
         // This is the first update. Create a circular list.
-        update.next = update; // At the end of the current render, this queue's interleaved updates will
+        update.next = update; 
+        // At the end of the current render, this queue's interleaved updates will
         // be transferred to the pending queue.
 
         pushInterleavedQueue(sharedQueue);
@@ -12988,10 +13005,13 @@
 
       sharedQueue.interleaved = update;
     } else {
+      // 将 fiber node 的所有 update 对象构成一个环
+      // pengding 指向最后一个 update 对象， pengding.next 指向第一个  update 对象
       var pending = sharedQueue.pending;
 
       if (pending === null) {
         // This is the first update. Create a circular list.
+        // 创建一个环形链表
         update.next = update;
       } else {
         update.next = pending.next;
@@ -13009,6 +13029,10 @@
       }
     }
   }
+
+  /**
+   * 
+   */
   function entangleTransitions(root, fiber, lane) {
     var updateQueue = fiber.updateQueue;
 
@@ -13542,9 +13566,17 @@
       var fiber = get(inst);
       // 返回一个时间戳，标记更新发生的时间
       var eventTime = requestEventTime();
-      // 为更新分为一个 lane
+      /**
+        * 为此次更新分配一个 lane
+        * 分配规则:
+        * - 如果是 legency 模式，分配 SyncLane；
+        * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
+        * - 如果是 transition， 分配 transitionLane；
+        * - 根据当前事件优先级，分配对应的 lane；
+        * - 如果都不符合上述情况，返回默认事件优先级，即 16；
+      */
       var lane = requestUpdateLane(fiber);
-      // 创建一个 update 对象
+      // 为本次更新创建一个 update 对象
       var update = createUpdate(eventTime, lane);
       // update 对象的负载，用于计算新的 state
       update.payload = payload;
@@ -13558,7 +13590,7 @@
       }
       // 将新建的 update 对象添加的 fiber node 的 updateqQueue 队列中
       enqueueUpdate(fiber, update);
-      // 任务调度，处理更新
+      // 为更新安排一个调度任务，用于处理更新
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -13577,8 +13609,17 @@
     enqueueReplaceState: function (inst, payload, callback) {
       var fiber = get(inst);
       var eventTime = requestEventTime();
-      // 为更新分配一个 lane
+      /**
+        * 为此次更新分配一个 lane
+        * 分配规则:
+        * - 如果是 legency 模式，分配 SyncLane；
+        * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
+        * - 如果是 transition， 分配 transitionLane；
+        * - 根据当前事件优先级，分配对应的 lane；
+        * - 如果都不符合上述情况，返回默认事件优先级，即 16；
+      */
       var lane = requestUpdateLane(fiber);
+      // 为本次更新创建一个 update 对象
       var update = createUpdate(eventTime, lane);
       update.tag = ReplaceState;
       update.payload = payload;
@@ -13590,8 +13631,9 @@
 
         update.callback = callback;
       }
-
+      // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
       enqueueUpdate(fiber, update);
+      // 为更新安排一个调度任务，用于处理更新
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -13609,8 +13651,17 @@
     enqueueForceUpdate: function (inst, callback) {
       var fiber = get(inst);
       var eventTime = requestEventTime();
-      // 为更新分配一个 lane
+      /**
+        * 为此次更新分配一个 lane
+        * 分配规则:
+        * - 如果是 legency 模式，分配 SyncLane；
+        * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
+        * - 如果是 transition， 分配 transitionLane；
+        * - 根据当前事件优先级，分配对应的 lane；
+        * - 如果都不符合上述情况，返回默认事件优先级，即 16；
+      */
       var lane = requestUpdateLane(fiber);
+      // 为本次更新创建一个 update 对象
       var update = createUpdate(eventTime, lane);
       update.tag = ForceUpdate;
 
@@ -13621,8 +13672,9 @@
 
         update.callback = callback;
       }
-
+      // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
       enqueueUpdate(fiber, update);
+      // 为更新安排一个调度任务，用于处理更新
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -16767,7 +16819,15 @@
 
         if (!objectIs(snapshot, maybeNewSnapshot)) {
           setSnapshot(maybeNewSnapshot);
-          // 为更新分配一个 lane
+          /**
+            * 为此次更新分配一个 lane
+            * 分配规则:
+            * - 如果是 legency 模式，分配 SyncLane；
+            * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
+            * - 如果是 transition， 分配 transitionLane；
+            * - 根据当前事件优先级，分配对应的 lane；
+            * - 如果都不符合上述情况，返回默认事件优先级，即 16；
+          */
           var lane = requestUpdateLane(fiber);
           // 标记 fiber tree 中可变读的更新 ？？
           markRootMutableRead(root, lane);
@@ -16787,7 +16847,15 @@
 
         try {
           latestSetSnapshot(latestGetSnapshot(source._source)); // Record a pending mutable source update with the same expiration time.
-          // 为更新分配一个新的 lane
+          /**
+            * 为此次更新分配一个 lane
+            * 分配规则:
+            * - 如果是 legency 模式，分配 SyncLane；
+            * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
+            * - 如果是 transition， 分配 transitionLane；
+            * - 根据当前事件优先级，分配对应的 lane；
+            * - 如果都不符合上述情况，返回默认事件优先级，即 16；
+          */
           var lane = requestUpdateLane(fiber);
           // 标记 fiber tree 中可变读的更新 ？？
           markRootMutableRead(root, lane);
@@ -17057,7 +17125,11 @@
     }
   }
 
+  /**
+   * 
+   */
   function forceStoreRerender(fiber) {
+    // 为更新安排一个调度任务，用于处理更新
     scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
   }
 
@@ -17567,7 +17639,15 @@
         error("State updates from the useState() and useReducer() Hooks don't support the " + 'second callback argument. To execute a side effect after ' + 'rendering, declare it in the component body with useEffect().');
       }
     }
-    // 为更新分配一个新的 lane
+    /**
+      * 为此次更新分配一个 lane
+      * 分配规则:
+      * - 如果是 legency 模式，分配 SyncLane；
+      * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
+      * - 如果是 transition， 分配 transitionLane；
+      * - 根据当前事件优先级，分配对应的 lane；
+      * - 如果都不符合上述情况，返回默认事件优先级，即 16；
+    */
     var lane = requestUpdateLane(fiber);
     var update = {
       lane: lane,
@@ -17590,6 +17670,7 @@
       }
 
       var eventTime = requestEventTime();
+      // 为更新安排一个调度任务，用于处理更新
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -17600,6 +17681,11 @@
     markUpdateInDevTools(fiber, lane);
   }
 
+  /**
+   * @param fiber
+   * @param queue
+   * @param action
+   */
   function dispatchSetState(fiber, queue, action) {
     {
       if (typeof arguments[3] === 'function') {
@@ -17607,7 +17693,15 @@
       }
     }
 
-    // 为更新分配一个 lane
+    /**
+      * 为此次更新分配一个 lane
+      * 分配规则:
+      * - 如果是 legency 模式，分配 SyncLane；
+      * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
+      * - 如果是 transition， 分配 transitionLane；
+      * - 根据当前事件优先级，分配对应的 lane；
+      * - 如果都不符合上述情况，返回默认事件优先级，即 16；
+    */
     var lane = requestUpdateLane(fiber);
     var update = {
       lane: lane,
@@ -17671,6 +17765,7 @@
       }
 
       var eventTime = requestEventTime();
+      // 为更新安排一个调度任务，用于处理更新
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -17704,6 +17799,9 @@
     queue.pending = update;
   }
 
+  /**
+   * ??
+   */
   function enqueueUpdate$1(fiber, queue, update, lane) {
     if (isInterleavedUpdate(fiber)) {
       var interleaved = queue.interleaved;
@@ -18875,6 +18973,7 @@
   var PossiblyWeakMap$2 = typeof WeakMap === 'function' ? WeakMap : Map;
 
   function createRootErrorUpdate(fiber, errorInfo, lane) {
+    // 为本次更新创建一个 update 对象
     var update = createUpdate(NoTimestamp, lane); // Unmount the root by rendering null.
 
     update.tag = CaptureUpdate; // Caution: React DevTools currently depends on this property
@@ -18893,7 +18992,11 @@
     return update;
   }
 
+  /**
+   *
+   */
   function createClassErrorUpdate(fiber, errorInfo, lane) {
+    // 为本次更新创建一个 update 对象
     var update = createUpdate(NoTimestamp, lane);
     update.tag = CaptureUpdate;
     var getDerivedStateFromError = fiber.type.getDerivedStateFromError;
@@ -19098,8 +19201,10 @@
                 // When we try rendering again, we should not reuse the current fiber,
                 // since it's known to be in an inconsistent state. Use a force update to
                 // prevent a bail out.
+                // 为本次更新创建一个 update 对象
                 var update = createUpdate(NoTimestamp, SyncLane);
                 update.tag = ForceUpdate;
+                // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
                 enqueueUpdate(sourceFiber, update);
               }
             } // The source fiber did not complete. Mark it with Sync priority to
@@ -21716,6 +21821,7 @@
           suspenseState.retryLane = attemptHydrationAtLane; // TODO: Ideally this would inherit the event time of the current render
 
           var eventTime = NoTimestamp;
+          // 为更新安排一个调度任务，用于处理更新
           scheduleUpdateOnFiber(current, attemptHydrationAtLane, eventTime);
         }
       } // If we have scheduled higher pri work above, this will probably just abort the render
@@ -25355,7 +25461,7 @@
    * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
    * - 如果是 transition， 分配 transitionLane；
    * - 根据当前事件优先级，分配对应的 lane；
-   * - 返回默认事件优先级，即 16；
+   * - 如果都不符合上述情况，返回默认事件优先级，即 16；
    */
   function requestUpdateLane(fiber) {
     // Special cases
@@ -25438,6 +25544,12 @@
     return claimNextRetryLane();
   }
 
+  /**
+   * 为更新安排一个调度任务，用于处理更新
+   * @param fiber
+   * @param lane
+   * @param eventTime
+   */
   function scheduleUpdateOnFiber(fiber, lane, eventTime) {
     checkForNestedUpdates();
     warnAboutRenderPhaseUpdatesInDEV(fiber);
@@ -25544,20 +25656,30 @@
   }
 
   /**
-   * @param fiber 
-   * @param lane
+   * 判断是否是交错的更新
+   * 满足条件：
+   * - workInProgressRoot 不为 null， 意味着已经要协调的 fiber tree 已经确定；
+   * - fiber.mode & ConcurrentMode 不是 NoMode, 意味着是 concurrent 模式；
+   * - executionContext & RenderContext) === NoContext， 意味着还没有开始协调；
+   * 
+   * TODO: question， 什么时候会出现上述情形 ？？
+   * @param fiber  fiber node
+   * @param lane 为 update 分配的 lane
    */
   function isInterleavedUpdate(fiber, lane) {
     return (// TODO: Optimize slightly by comparing to root that fiber belongs to.
       // Requires some refactoring. Not a big deal though since it's rare for
       // concurrent apps to have more than a single root.
-      workInProgressRoot !== null && (fiber.mode & ConcurrentMode) !== NoMode && ( // If this is a render phase update (i.e. UNSAFE_componentWillReceiveProps),
+      workInProgressRoot !== null && (fiber.mode & ConcurrentMode) !== NoMode && ( 
+      // If this is a render phase update (i.e. UNSAFE_componentWillReceiveProps),
       // then don't treat this as an interleaved update. This pattern is
       // accompanied by a warning but we haven't fully deprecated it yet. We can
       // remove once the deferRenderPhaseUpdateToNextBatch flag is enabled.
        (executionContext & RenderContext) === NoContext)
     );
-  } // Use this function to schedule a task for a root. There's only one task per
+  } 
+  
+  // Use this function to schedule a task for a root. There's only one task per
   // root; if a task was already scheduled, we'll check to make sure the priority
   // of the existing task is the same as the priority of the next level that the
   // root has work on. This function is called on every update, and right before
@@ -27074,9 +27196,17 @@
 
   var onUncaughtError = prepareToThrowUncaughtError;
 
+  /**
+   * 
+   * @param rootFiber
+   * @param sourceFiber
+   * @param error
+   */
   function captureCommitPhaseErrorOnRoot(rootFiber, sourceFiber, error) {
     var errorInfo = createCapturedValue(error, sourceFiber);
+    // 创建一个 update 对象
     var update = createRootErrorUpdate(rootFiber, errorInfo, SyncLane);
+    // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
     enqueueUpdate(rootFiber, update);
     var eventTime = requestEventTime();
     var root = markUpdateLaneFromFiberToRoot(rootFiber, SyncLane);
@@ -27113,6 +27243,7 @@
         if (typeof ctor.getDerivedStateFromError === 'function' || typeof instance.componentDidCatch === 'function' && !isAlreadyFailedLegacyErrorBoundary(instance)) {
           var errorInfo = createCapturedValue(error$1, sourceFiber);
           var update = createClassErrorUpdate(fiber, errorInfo, SyncLane);
+          // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
           enqueueUpdate(fiber, update);
           var eventTime = requestEventTime();
           var root = markUpdateLaneFromFiberToRoot(fiber, SyncLane);
@@ -27839,6 +27970,7 @@
       }
 
       if (needsRemount || needsRender) {
+        // 为更新安排一个调度任务，用于处理更新
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
 
@@ -28762,7 +28894,15 @@
     // current fiber node
     var current$1 = container.current;
     var eventTime = requestEventTime();
-    // 为此次更新分配一个 lane
+    /**
+      * 为此次更新分配一个 lane
+      * 分配规则:
+      * - 如果是 legency 模式，分配 SyncLane；
+      * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
+      * - 如果是 transition， 分配 transitionLane；
+      * - 根据当前事件优先级，分配对应的 lane；
+      * - 如果都不符合上述情况，返回默认事件优先级，即 16；
+     */
     var lane = requestUpdateLane(current$1);
 
     {
@@ -28784,7 +28924,7 @@
         error('Render methods should be a pure function of props and state; ' + 'triggering nested component updates from render is not allowed. ' + 'If necessary, trigger nested updates in componentDidUpdate.\n\n' + 'Check the render method of %s.', getComponentNameFromFiber(current) || 'Unknown');
       }
     }
-
+    // 为本次更新创建一个 update 对象
     var update = createUpdate(eventTime, lane); // Caution: React DevTools currently depends on this property
     // being called "element".
 
@@ -28802,8 +28942,9 @@
 
       update.callback = callback;
     }
-
+    // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
     enqueueUpdate(current$1, update);
+    // 为更新安排一个调度任务，用于处理更新
     var root = scheduleUpdateOnFiber(current$1, lane, eventTime);
 
     if (root !== null) {
@@ -28812,6 +28953,10 @@
 
     return lane;
   }
+
+  /**
+   * @param container 
+   */
   function getPublicRootInstance(container) {
     var containerFiber = container.current;
 
@@ -28843,6 +28988,7 @@
       case SuspenseComponent:
         var eventTime = requestEventTime();
         flushSync(function () {
+          // 为更新安排一个调度任务，用于处理更新
           return scheduleUpdateOnFiber(fiber, SyncLane, eventTime);
         }); // If we're still blocked after this, we need to increase
         // the priority of any promises resolving within this
@@ -28883,6 +29029,7 @@
 
     var eventTime = requestEventTime();
     var lane = SyncLane;
+    // 为更新安排一个调度任务，用于处理更新
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
@@ -28897,6 +29044,7 @@
 
     var eventTime = requestEventTime();
     var lane = SelectiveHydrationLane;
+    // 为更新安排一个调度任务，用于处理更新
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
@@ -28911,9 +29059,17 @@
     }
 
     var eventTime = requestEventTime();
-    // 为更新分配一个 lane
+    /**
+      * 为此次更新分配一个 lane
+      * 分配规则:
+      * - 如果是 legency 模式，分配 SyncLane；
+      * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
+      * - 如果是 transition， 分配 transitionLane；
+      * - 根据当前事件优先级，分配对应的 lane；
+      * - 如果都不符合上述情况，返回默认事件优先级，即 16；
+    */
     var lane = requestUpdateLane(fiber);
-    // 调度更新
+    // // 为更新安排一个调度任务，用于处理更新
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
@@ -29060,6 +29216,7 @@
         // Shallow cloning props works as a workaround for now to bypass the bailout check.
 
         fiber.memoizedProps = _assign({}, fiber.memoizedProps);
+        // 为更新安排一个调度任务，用于处理更新
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
     };
@@ -29077,6 +29234,7 @@
         // Shallow cloning props works as a workaround for now to bypass the bailout check.
 
         fiber.memoizedProps = _assign({}, fiber.memoizedProps);
+        // 为更新安排一个调度任务，用于处理更新
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
     };
@@ -29094,6 +29252,7 @@
         // Shallow cloning props works as a workaround for now to bypass the bailout check.
 
         fiber.memoizedProps = _assign({}, fiber.memoizedProps);
+        // 为更新安排一个调度任务，用于处理更新
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
     }; // Support DevTools props for function components, forwardRef, memo, host components, etc.
@@ -29105,7 +29264,7 @@
       if (fiber.alternate) {
         fiber.alternate.pendingProps = fiber.pendingProps;
       }
-
+      // 为更新安排一个调度任务，用于处理更新
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
@@ -29115,7 +29274,7 @@
       if (fiber.alternate) {
         fiber.alternate.pendingProps = fiber.pendingProps;
       }
-
+      // 为更新安排一个调度任务，用于处理更新
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
@@ -29125,11 +29284,14 @@
       if (fiber.alternate) {
         fiber.alternate.pendingProps = fiber.pendingProps;
       }
-
+      // 为更新安排一个调度任务，用于处理更新
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
-
+    /**
+     * 为更新安排一个调度任务，用于处理更新
+     */
     scheduleUpdate = function (fiber) {
+      // 为更新安排一个调度任务，用于处理更新
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
