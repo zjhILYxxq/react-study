@@ -5578,7 +5578,7 @@
   }
 
   /**
-   * 
+   * 判断 a、b 中是否包含相同的 lane
    */
   function includesSomeLane(a, b) {
     return (a & b) !== NoLanes;
@@ -5592,14 +5592,14 @@
   }
 
   /**
-   * 
+   * 将 a、b 合并
    */
   function mergeLanes(a, b) {
     return a | b;
   }
 
   /**
-   * 
+   * 从 set 中移除 subset
    */
   function removeLanes(set, subset) {
     return set & ~subset;
@@ -5720,7 +5720,7 @@
 
   /**
    * TODO: study
-   * 标记 fiber tree 可变读？？
+   * 标记 fiber tree 中可变读的更新 ？？
    * @param root fiber root node
    * @param updateLane 为更新分配的 lane
    */
@@ -5772,9 +5772,9 @@
   }
 
   /**
-   * 
-   * @param root
-   * @param entangledLanes
+   * 标记 fiber tree 中发生缠绕的更新 ？？
+   * @param root  fiber root node
+   * @param entangledLanes 发生缠绕的更新
    */
   function markRootEntangled(root, entangledLanes) {
     // In addition to entangling each of the given lanes with each other, we also
@@ -5788,7 +5788,9 @@
     // If this is hard to grasp, it might help to intentionally break this
     // function and look at the tests that fail in ReactTransition-test.js. Try
     // commenting out one of the conditions below.
+    // 将 entangledLanes 合并到 root.entangledLanes 中
     var rootEntangledLanes = root.entangledLanes |= entangledLanes;
+    // 
     var entanglements = root.entanglements;
     var lanes = rootEntangledLanes;
 
@@ -5797,6 +5799,7 @@
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
 
+      // TODO: study
       if ( // Is this one of the newly entangled lanes?
       lane & entangledLanes | // Is this lane transitively entangled with the newly entangled lanes?
       entanglements[index] & entangledLanes) {
@@ -12755,6 +12758,7 @@
         if (firstContext !== null) {
           if (includesSomeLane(dependencies.lanes, renderLanes)) {
             // Context list has a pending update. Mark that this fiber performed work.
+            // 如果 dependencies.lanes 和 renderLanes 中包含相同的 lane
             markWorkInProgressReceivedUpdate();
           } // Reset the work-in-progress list
 
@@ -12972,6 +12976,7 @@
       // the lane finished since the last time we entangled it. So we need to
       // entangle it again, just to be sure.
 
+      // 标记 fiber tree 中发生缠绕的更新 
       markRootEntangled(root, newQueueLanes);
     }
   }
@@ -16212,7 +16217,7 @@
     } else {
       workInProgress.flags &= ~(Passive | Update);
     }
-
+    // 从 current.lanes 中移除 lanes
     current.lanes = removeLanes(current.lanes, lanes);
   }
   function resetHooksAfterThrow() {
@@ -16702,12 +16707,13 @@
           setSnapshot(maybeNewSnapshot);
           // 为更新分配一个 lane
           var lane = requestUpdateLane(fiber);
+          // 标记 fiber tree 中可变读的更新 ？？
           markRootMutableRead(root, lane);
         } // If the source mutated between render and now,
         // there may be state updates already scheduled from the old source.
         // Entangle the updates so that they render in the same batch.
 
-
+        // 标记 fiber tree 中发生缠绕的更新
         markRootEntangled(root, root.mutableReadLanes);
       }
     }, [getSnapshot, source, subscribe]); // If we got a new source or subscribe function, re-subscribe in a passive effect.
@@ -16721,6 +16727,7 @@
           latestSetSnapshot(latestGetSnapshot(source._source)); // Record a pending mutable source update with the same expiration time.
           // 为更新分配一个新的 lane
           var lane = requestUpdateLane(fiber);
+          // 标记 fiber tree 中可变读的更新 ？？
           markRootMutableRead(root, lane);
         } catch (error) {
           // A selector might throw after a source mutation.
@@ -17679,7 +17686,7 @@
       queue.lanes = newQueueLanes; // Even if queue.lanes already include lane, we don't know for certain if
       // the lane finished since the last time we entangled it. So we need to
       // entangle it again, just to be sure.
-
+      // 标记 fiber tree 中发生缠绕的更新
       markRootEntangled(root, newQueueLanes);
     }
   }
@@ -18918,6 +18925,7 @@
       if (!threadIDs.has(lanes)) {
         // Memoize using the thread ID to prevent redundant listeners.
         threadIDs.add(lanes);
+        // concurrent 模式下 suspense 恢复畅通的处理逻辑
         var ping = pingSuspendedRoot.bind(null, root, wakeable, lanes);
 
         {
@@ -20034,6 +20042,7 @@
             // Don't bubble properties for hidden children unless we're rendering
             // at offscreen priority.
             if (includesSomeLane(subtreeRenderLanes, OffscreenLane)) {
+              // 如果 subtreeRenderLanes 中包含 OffscreenLane
               bubbleProperties(workInProgress);
 
               {
@@ -20340,6 +20349,7 @@
         workInProgress.memoizedState = nextState;
         pushRenderLanes(workInProgress, renderLanes);
       } else if (!includesSomeLane(renderLanes, OffscreenLane)) {
+        // 如果 renderLanes 中不包含  OffscreenLane
         // We're hidden, and we're not rendering at Offscreen. We will bail out
         // and resume this tree later.
         var nextBaseLanes;
@@ -21159,11 +21169,23 @@
     return hasSuspenseContext(suspenseContext, ForceSuspenseFallback);
   }
 
+  /**
+   * 
+   * @param current
+   * @param renderLanes
+   */
   function getRemainingWorkInPrimaryTree(current, renderLanes) {
     // TODO: Should not remove render lanes that were pinged during this render
+    // 从 current.childLanes 中移除 renderLanes
     return removeLanes(current.childLanes, renderLanes);
   }
 
+  /**
+   * 更新 suspense 类型的 fiber node
+   * @param current
+   * @param workInProgress
+   * @param renderLanes
+   */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
 
@@ -21612,7 +21634,8 @@
     }
     // any context has changed, we need to treat is as if the input might have changed.
 
-
+    // 判断 renderLanes 和 current.childLanes 是否有共同的 lanes
+    // 如果有 ？？
     var hasContextChanged = includesSomeLane(renderLanes, current.childLanes);
 
     if (didReceiveUpdate || hasContextChanged) {
@@ -22132,6 +22155,9 @@
     didReceiveUpdate = true;
   }
 
+  /**
+   * 
+   */
   function bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes) {
     if (current !== null) {
       // Reuse previous dependencies
@@ -22150,6 +22176,8 @@
       // TODO: Once we add back resuming, we should check if the children are
       // a work-in-progress set. If so, we need to transfer their effects.
       {
+        // 判断 renderLanes 和 workInProgress.childLanes 是否有共同的 lanes
+        // 如果有，意味着着有子节点需要处理; 如果没有，子节点都不需要处理
         return null;
       }
     } // This fiber doesn't have work, but its subtree does. Clone the child
@@ -22218,12 +22246,18 @@
     }
   }
 
+  /**
+   * @param current
+   * @param
+   */
   function checkScheduledUpdateOrContext(current, renderLanes) {
     // Before performing an early bailout, we must check if there are pending
     // updates or context.
     var updateLanes = current.lanes;
 
     if (includesSomeLane(updateLanes, renderLanes)) {
+      // 判断 updateLanes 和 renderLanes 是否有共同的 lanes
+      // 如果有，意味着着有子节点需要处理
       return true;
     } // No pending update, but because context is propagated lazily, we need
 
@@ -22271,6 +22305,8 @@
       case Profiler:
         {
           // Profiler should only call onRender when one of its descendants actually rendered.
+          // 判断 renderLanes 和 workInProgress.childLanes 是否有共同的 lanes
+          // 如果有，以为着有子节点需要处理
           var hasChildWork = includesSomeLane(renderLanes, workInProgress.childLanes);
 
           if (hasChildWork) {
@@ -22314,6 +22350,8 @@
             var primaryChildLanes = primaryChildFragment.childLanes;
 
             if (includesSomeLane(renderLanes, primaryChildLanes)) {
+              // 判断 renderLanes 和 primaryChildLanes 是否包含相同的 lanes
+              // 如果有，以为着子节点有更新需要处理
               // The primary children have pending work. Use the normal path
               // to attempt to render the primary children again.
               return updateSuspenseComponent(current, workInProgress, renderLanes);
@@ -22347,6 +22385,8 @@
         {
           var didSuspendBefore = (current.flags & DidCapture) !== NoFlags;
 
+          // 判断 renderLanes 和 workInProgress.childLanes 中是否包含相同的 lane
+          // 如果包含，以为着 workInProgress 的子节点有更新需要处理
           var _hasChildWork = includesSomeLane(renderLanes, workInProgress.childLanes);
 
           if (didSuspendBefore) {
@@ -25331,6 +25371,7 @@
         // effect of interrupting the current render and switching to the update.
         // TODO: Make sure this doesn't override pings that happen while we've
         // already started rendering.
+        // 标记 fiber tree 中暂停的更新
         markRootSuspended$1(root, workInProgressRootRenderLanes);
       }
     }
@@ -25609,6 +25650,7 @@
       if (exitStatus === RootFatalErrored) {
         var fatalError = workInProgressRootFatalError;
         prepareFreshStack(root, NoLanes);
+        // 标记 fiber tree 中暂停的更新
         markRootSuspended$1(root, lanes);
         ensureRootIsScheduled(root, now());
         throw fatalError;
@@ -25640,6 +25682,7 @@
         if (exitStatus === RootFatalErrored) {
           var _fatalError = workInProgressRootFatalError;
           prepareFreshStack(root, NoLanes);
+          // 标记 fiber tree 中暂停的更新
           markRootSuspended$1(root, lanes);
           ensureRootIsScheduled(root, now());
           throw _fatalError;
@@ -25716,6 +25759,7 @@
 
       case RootSuspended:
         {
+          // 标记 fiber tree 中暂停的更新
           markRootSuspended$1(root, lanes); // We have an acceptable loading state. We need to figure out if we
           // should immediately commit it or wait a bit.
 
@@ -25741,6 +25785,7 @@
                 // rendering it again.
                 // FIXME: What if the suspended lanes are Idle? Should not restart.
                 var eventTime = requestEventTime();
+                // 标记 fiber tree 中恢复畅通的更新
                 markRootPinged(root, suspendedLanes);
                 break;
               } // The render is suspended, it hasn't timed out, and there's no
@@ -25760,6 +25805,7 @@
 
       case RootSuspendedWithDelay:
         {
+          // 标记 fiber tree 中暂停的更新
           markRootSuspended$1(root, lanes);
 
           if (includesOnlyTransitions(lanes)) {
@@ -25873,13 +25919,21 @@
     return true;
   }
 
+  /**
+   * 标记 fiber tree 中发生暂停的更新
+   * @param root  fiber tree
+   * @param suspendedLanes 发生暂停的更新
+   */
   function markRootSuspended$1(root, suspendedLanes) {
     // When suspending, we should always exclude lanes that were pinged or (more
     // rarely, since we try to avoid it) updated during the render phase.
     // TODO: Lol maybe there's a better way to factor this besides this
     // obnoxiously named function :)
+    // 从 suspendedLanes 中移除 workInProgressRootPingedLanes 
     suspendedLanes = removeLanes(suspendedLanes, workInProgressRootPingedLanes);
+    // 从 suspendedLanes 中移除 workInProgressRootUpdatedLanes
     suspendedLanes = removeLanes(suspendedLanes, workInProgressRootUpdatedLanes);
+    // 将 suspendedLanes 合并到 root.suspendedLanes 中
     markRootSuspended(root, suspendedLanes);
   } // This is the entry point for synchronous tasks that don't go
   // through Scheduler
@@ -25899,6 +25953,7 @@
 
     if (!includesSomeLane(lanes, SyncLane)) {
       // There's no remaining sync work left.
+      // lanes 中不包含 SyncLane，
       ensureRootIsScheduled(root, now());
       return null;
     }
@@ -25937,6 +25992,7 @@
     if (exitStatus === RootFatalErrored) {
       var fatalError = workInProgressRootFatalError;
       prepareFreshStack(root, NoLanes);
+      // 标记 fiber tree 中暂停的更新
       markRootSuspended$1(root, lanes);
       ensureRootIsScheduled(root, now());
       throw fatalError;
@@ -25954,8 +26010,14 @@
     return null;
   }
 
+  /**
+   * 
+   * @param root
+   * @param lanes
+   */
   function flushRoot(root, lanes) {
     if (lanes !== NoLanes) {
+      // 标记 fiber tree 中发生缠绕的更新
       markRootEntangled(root, mergeLanes(lanes, SyncLane));
       ensureRootIsScheduled(root, now());
 
@@ -25965,9 +26027,19 @@
       }
     }
   }
+
+  /**
+   * 获取当前发生更新的上下文
+   */
   function getExecutionContext() {
     return executionContext;
   }
+
+  /**
+   * 批处理更新
+   * @param fn
+   * @param a
+   */
   function batchedUpdates$1(fn, a) {
     var prevExecutionContext = executionContext;
     executionContext |= BatchedContext;
@@ -26205,6 +26277,7 @@
       // (inside this function), since by suspending at the end of the render
       // phase introduces a potential mistake where we suspend lanes that were
       // pinged or updated while we were rendering.
+      // // 标记 fiber tree 中暂停的更新
       markRootSuspended$1(workInProgressRoot, workInProgressRootRenderLanes);
     }
   }
@@ -26558,6 +26631,7 @@
     // pending time is whatever is left on the root fiber.
 
     var remainingLanes = mergeLanes(finishedWork.lanes, finishedWork.childLanes);
+    // 标记 fiber tree 的协调过程已结束
     markRootFinished(root, remainingLanes);
 
     if (root === workInProgressRoot) {
@@ -26717,6 +26791,8 @@
 
 
     if (includesSomeLane(pendingPassiveEffectsLanes, SyncLane) && root.tag !== LegacyRoot) {
+      // 如果 pendingPassiveEffectsLanes 中包含 SyncLane，且是 concurrent 模式
+      // 
       flushPassiveEffects();
     } // Read this again, since a passive effect might have updated it
 
@@ -26724,6 +26800,7 @@
     remainingLanes = root.pendingLanes;
 
     if (includesSomeLane(remainingLanes, SyncLane)) {
+      // 如果 remainingLanes 中包含 SyncLane
       {
         markNestedUpdateScheduled();
       } // Count the number of times the root synchronously re-renders without
@@ -26947,6 +27024,16 @@
       error('Internal React error: Attempted to capture a commit phase error ' + 'inside a detached tree. This indicates a bug in React. Likely ' + 'causes include deleting the same fiber more than once, committing an ' + 'already-finished tree, or an inconsistent return pointer.\n\n' + 'Error message:\n\n%s', error$1);
     }
   }
+
+  /**
+   * concurrent 模式下处理 Suspense 的更新
+   * 在构建 workInProgress tree 的过程中，如果遇到之前暂停的 lanes 变为 pinged，要分两种情况处理
+   * 1. 重置当前 workInProgress tree，在本次渲染过程中一并处理 pinged 的更新()
+   * 2. 继续当前 workInProgress tree 的构建，pinged 的 lanes 在下一次 workInProgress tree 的过程中处理
+   * @param root  fiber root node
+   * @param wakeable 类 promise 对象
+   * @param pingedLanes 已经畅通的更新(异步请求的数据/组件已经获取到，对应的 promise 对象的状态为 resolved)
+   */
   function pingSuspendedRoot(root, wakeable, pingedLanes) {
     var pingCache = root.pingCache;
 
@@ -26957,6 +27044,7 @@
     }
 
     var eventTime = requestEventTime();
+    // 标记 fiber tree 中恢复畅通的更新
     markRootPinged(root, pingedLanes);
 
     if (workInProgressRoot === root && isSubsetOfLanes(workInProgressRootRenderLanes, pingedLanes)) {
