@@ -5585,7 +5585,7 @@
   }
 
   /**
-   * 
+   * 判断 subset 是否是 set 的子集，即 set 中包含 subset
    */
   function isSubsetOfLanes(set, subset) {
     return (set & subset) === subset;
@@ -12594,12 +12594,14 @@
       var alternate = node.alternate;
 
       if (!isSubsetOfLanes(node.childLanes, renderLanes)) {
+        // 如果 node.childLanes 中不包含 renderLanes，将 renderLanes 合并到 node.childLanes 中
         node.childLanes = mergeLanes(node.childLanes, renderLanes);
 
         if (alternate !== null) {
           alternate.childLanes = mergeLanes(alternate.childLanes, renderLanes);
         }
       } else if (alternate !== null && !isSubsetOfLanes(alternate.childLanes, renderLanes)) {
+        // 如果 alternate.childLanes 中不包含 renderLanes， 将 renderLanes 合并到 alternate.childLanes 中
         alternate.childLanes = mergeLanes(alternate.childLanes, renderLanes);
       } else {
         // Neither alternate was updated, which means the rest of the
@@ -13226,6 +13228,7 @@
           // Priority is insufficient. Skip this update. If this is the first
           // skipped update, the previous update/state is the new base
           // update/state.
+          // renderLanes 中不包含 updateLane，意味着该 update 不处理
           var clone = {
             eventTime: updateEventTime,
             lane: updateLane,
@@ -16434,6 +16437,7 @@
           // Priority is insufficient. Skip this update. If this is the first
           // skipped update, the previous update/state is the new base
           // update/state.
+          // 如果 renderLanes 中不包含 updateLane，意味着该 update 不需要处理
           var clone = {
             lane: updateLane,
             action: update.action,
@@ -16611,7 +16615,7 @@
       // the source is consistent with the values that we read during the most
       // recent mutation.
       isSafeToReadFromSource = isSubsetOfLanes(renderLanes, root.mutableReadLanes);
-
+      // renderLanes 中不包含 root.mutableReadLanes， 意味着？？
       if (isSafeToReadFromSource) {
         // If it's safe to read from this source during the current render,
         // store the version in case other components read from it.
@@ -25143,34 +25147,39 @@
       ReactCurrentOwner$2 = ReactSharedInternals.ReactCurrentOwner,
       ReactCurrentBatchConfig$3 = ReactSharedInternals.ReactCurrentBatchConfig,
       ReactCurrentActQueue = ReactSharedInternals.ReactCurrentActQueue;
+
   var NoContext =
   /*             */
   0;
-  var BatchedContext =
+  var BatchedContext =   // 批处理上下文
   /*               */
   1;
-  var RenderContext =
+  var RenderContext =    // fiber tree 协调阶段
   /*                */
   2;
-  var CommitContext =
+  var CommitContext =    // commit 阶段
   /*                */
   4;
-  var RetryAfterError =
+  var RetryAfterError =   // ??
   /*       */
   8;
-  var RootIncomplete = 0;
-  var RootFatalErrored = 1;
-  var RootErrored = 2;
-  var RootSuspended = 3;
-  var RootSuspendedWithDelay = 4;
-  var RootCompleted = 5; // Describes where we are in the React execution stack
+  var RootIncomplete = 0;   // fiber tree 协调未完成
+  var RootFatalErrored = 1;  // 发生致命的错误 ？？
+  var RootErrored = 2;     // 发生错误 ？？
+  var RootSuspended = 3;   // fiber tree 被暂停
+  var RootSuspendedWithDelay = 4;  // 
+  var RootCompleted = 5; // fiber tree 协调完成 Describes where we are in the React execution stack
 
+  // 初始化执行上下文
   var executionContext = NoContext; // The root we're working on
 
+  // 要协调的 fiber tree
   var workInProgressRoot = null; // The fiber we're working on
 
+  // 要协调的 fiber node
   var workInProgress = null; // The lanes we're rendering
 
+  // 协调 fiber tree 时要处理的更新
   var workInProgressRootRenderLanes = NoLanes; // Stack that allows components to change the render lanes for its subtree
   // This is a superset of the lanes we started working on at the root. The only
   // case where it's different from `workInProgressRootRenderLanes` is when we
@@ -25180,9 +25189,12 @@
   // Most things in the work loop should deal with workInProgressRootRenderLanes.
   // Most things in begin/complete phases should deal with subtreeRenderLanes.
 
+  // 协调 fiber node 时要处理的更新
   var subtreeRenderLanes = NoLanes;
+
   var subtreeRenderLanesCursor = createCursor(NoLanes); // Whether to root completed, errored, suspended, etc.
 
+  // 初始化 workInProgressRootExitStatus 为 RootIncomplete，即未完成
   var workInProgressRootExitStatus = RootIncomplete; // A fatal error, if one is thrown
 
   var workInProgressRootFatalError = null; // "Included" lanes refer to lanes that were worked on during this render. It's
@@ -25190,32 +25202,46 @@
   // enter and exit an Offscreen tree. This value is the combination of all render
   // lanes for the entire render phase.
 
+  // 协调 fiber tree 的整个过程中处理的所有的更新
   var workInProgressRootIncludedLanes = NoLanes; // The work left over by components that were visited during this render. Only
   // includes unprocessed updates, not work in bailed out children.
 
+  // 协调 fiber tree 的过程中跳过的更新
   var workInProgressRootSkippedLanes = NoLanes; // Lanes that were updated (in an interleaved event) during this render.
 
+  // 协调 fiber tree 的过程中产生的新的更新
   var workInProgressRootUpdatedLanes = NoLanes; // Lanes that were pinged (in an interleaved event) during this render.
 
+  // 协调 fiber tree 的过程中恢复畅通的更新
   var workInProgressRootPingedLanes = NoLanes; // The most recent time we committed a fallback. This lets us ensure a train
   // model where we don't commit new loading states in too quick succession.
 
+  // 最近一次显示 fallback 的时间。用于确保我们不会太快的连续提交 fallback
   var globalMostRecentFallbackTime = 0;
   var FALLBACK_THROTTLE_MS = 500; // The absolute time for when we should start giving up on rendering
   // more and prefer CPU suspense heuristics instead.
 
+  // fiber tree 协调的终止时间
   var workInProgressRootRenderTargetTime = Infinity; // How long a render is supposed to take before we start following CPU
   // suspense heuristics and opt out of rendering more content.
 
+  // render 超时时间 500ms, 即渲染应该花多少时间
   var RENDER_TIMEOUT_MS = 500;
 
+  /**
+   * 重置 fiber tree 终止协调的时间
+   */
   function resetRenderTimer() {
     workInProgressRootRenderTargetTime = now() + RENDER_TIMEOUT_MS;
   }
 
+  /**
+   * 获取 fiber tree 协调的终止时间
+   */
   function getRenderTargetTime() {
     return workInProgressRootRenderTargetTime;
   }
+
   var hasUncaughtError = false;
   var firstUncaughtError = null;
   var legacyErrorBoundariesThatAlreadyFailed = null; // Only used when enableProfilerNestedUpdateScheduledHook is true;
@@ -25224,6 +25250,7 @@
   var pendingPassiveEffectsLanes = NoLanes;
   var pendingPassiveProfilerEffects = []; // Use these to prevent an infinite loop of nested updates
 
+  // 允许嵌套的 update 的最大数量，50
   var NESTED_UPDATE_LIMIT = 50;
   var nestedUpdateCount = 0;
   var rootWithNestedUpdates = null;
@@ -25234,9 +25261,17 @@
 
   var currentEventTime = NoTimestamp;
   var currentEventTransitionLane = NoLanes;
+
+  /**
+   * 返回当前协调的 fiber tree 的根节点
+   */
   function getWorkInProgressRoot() {
     return workInProgressRoot;
   }
+
+  /**
+   * 返回一个事件戳
+   */
   function requestEventTime() {
     if ((executionContext & (RenderContext | CommitContext)) !== NoContext) {
       // We're inside React, so it's fine to read the actual time.
@@ -25784,6 +25819,7 @@
                 // suspended level. Ping the last suspended level to try
                 // rendering it again.
                 // FIXME: What if the suspended lanes are Idle? Should not restart.
+                // suspendedLanes 中不包含 lanes，意味着 lanes 已经是恢复畅通 ？？
                 var eventTime = requestEventTime();
                 // 标记 fiber tree 中恢复畅通的更新
                 markRootPinged(root, suspendedLanes);
@@ -27055,6 +27091,7 @@
       // we should probably never restart.
       // If we're suspended with delay, or if it's a retry, we'll always suspend
       // so we can always restart.
+      // workInProgressRootRenderLanes 中包含 pingedLanes， 意味着 ？？
       if (workInProgressRootExitStatus === RootSuspendedWithDelay || workInProgressRootExitStatus === RootSuspended && includesOnlyRetries(workInProgressRootRenderLanes) && now() - globalMostRecentFallbackTime < FALLBACK_THROTTLE_MS) {
         // Restart from the root.
         prepareFreshStack(root, NoLanes);
