@@ -14173,6 +14173,7 @@
    * @param instance instance 类组件实例
    */
   function getStateFromUpdate(workInProgress, queue, update, prevState, nextProps, instance) {
+    console.log('getStateFromUpdate', update, prevState);
     // update 对象的类型 
     switch (update.tag) {
       case ReplaceState: // 替换，即使用新的 state 替换 老的 state，useState 是这样的
@@ -14290,8 +14291,10 @@
     var lastBaseUpdate = queue.lastBaseUpdate; // Check if there are pending updates. If so, transfer them to the base queue.
     // 本次更新，等待处理的新的 update 
     var pendingQueue = queue.shared.pending;
-
+    // pendingQueue 是本次更新等待处理的 update 对象，是一个环
+    // 如果 pendingQueue 不为空，要将链表打断，添加到 laseBaseUpdate 之后，并缓存到 current fiber node 的 laseBaseUpdate 之后
     if (pendingQueue !== null) { // 处于等待状态的更新队列不为空
+      // 在这里已经将待处理的 update 清空了，所以要在下面做处理的时候把 update 缓存起来
       queue.shared.pending = null; // The pending queue is circular. Disconnect the pointer between first
       // and last so that it's non-circular.
       // 最后一个等待处理的 update
@@ -14316,6 +14319,7 @@
       // lists and take advantage of structural sharing.
       // TODO: Pass `current` as argument
       // current fiber node
+      // current fiber node, 即 old fiber node
       var current = workInProgress.alternate;
     
       // 本次更新，也有可能会被打断，那么所有的 pendingUpdate 都会变成遗留 update。那么就需要先将本次更新的 pendingUpdate 缓存到 
@@ -14327,9 +14331,11 @@
         var currentQueue = current.updateQueue;
         // 上一次更新遗留的最后一个 update
         var currentLastBaseUpdate = currentQueue.lastBaseUpdate;
-        // 本次更新有新的 update 处理？？
         if (currentLastBaseUpdate !== lastBaseUpdate) {
-          // 这里为什么要这么做
+          // currentLastBaseUpdate 表示上一次更新遗留的 update
+          // laseBaseUpdate 表示本次更新要处理的最后一个 update
+          // currentLastBaseUpdate !== lastBaseUpdate， 意味着本次更新要处理的 update 还没有被缓存，要先缓存起来
+          // 如果 currentLastBaseUpdate === laseBaseUpdate， 说明本次更新等待处理的 update 已经被缓存起来了
           if (currentLastBaseUpdate === null) {
             // fiber root node 对应的 fiber node， 它的 lastBaseUpdate 是 null
             // 上一次更新时没有遗留 update，那么就把本次更新的 firstPendingUpdate 缓存到 current fiber node 的 firstBaseUpdate
@@ -14347,8 +14353,9 @@
 
     // 
     if (firstBaseUpdate !== null) {
+      // firstBaseUpdate 不为空，意味者本次更新有 update 需要处理(不管是上次更新遗留的 update，还是本次要处理的 update)
       // Iterate through the list of updates to compute the result.
-      // 新的 state
+      // queue.baseState 是上一次更新的 state，使用它初始化 newState
       var newState = queue.baseState; // TODO: Don't need to accumulate this. Instead, we can remove renderLanes
       // from the original lanes.
       // 新的 lanes
@@ -14375,7 +14382,7 @@
           // 根据此 update 对象，克隆一个新的 update 对象
           var clone = {
             eventTime: updateEventTime,
-            lane: updateLane,
+            lane: updateLane,   // 由于 update 未被处理，所有 lane 还是原来的 updateLane
             tag: update.tag,
             payload: update.payload,
             callback: update.callback,
@@ -14403,12 +14410,13 @@
               // This update is going to be committed so we never want uncommit
               // it. Using NoLane works because 0 is a subset of all bitmasks, so
               // this will never be skipped by the check above.
-              lane: NoLane,
+              lane: NoLane,   // update 已经被处理过了， lane 为 0
               tag: update.tag,
               payload: update.payload,
               callback: update.callback,
               next: null
             };
+            // 
             newLastBaseUpdate = newLastBaseUpdate.next = _clone;
           } // Process this update.
 
@@ -14455,8 +14463,8 @@
         }
       } while (true);
 
-      // 没有低优先级的更新 ？？
       if (newLastBaseUpdate === null) {
+        // 没有跳过的更新，意味着本次更新过程中要处理的 update 都已经按序处理了
         newBaseState = newState;
       }
       // 新的 state 缓存到 baseState 中，做为下次更新时的 old state
@@ -14476,6 +14484,7 @@
       // 如果 fiber node 所有的 update 都处理完了，那么它的 lanes 就是 0
       workInProgress.lanes = newLanes;
       // new state 会保存到 workInProgress fiber node 的 memoizedState 中
+      // 本次更新要处理的所有的 update 生成的 state
       workInProgress.memoizedState = newState;
     }
 
@@ -24590,7 +24599,6 @@
    * @param finishedWork workInProgress fiber node
    */
   function commitHookEffectListMount(tag, finishedWork) {
-    debugger
     var updateQueue = finishedWork.updateQueue;
     var lastEffect = updateQueue !== null ? updateQueue.lastEffect : null;
 
@@ -25393,7 +25401,6 @@
    * @param renderPriorityLevel
    */
   function unmountHostComponents(finishedRoot, current, renderPriorityLevel) {
-    debugger
     // We only have the top Fiber that was deleted but we need to recurse down its
     // children to find all the terminal nodes.
     var node = current; // Each iteration, currentParent is populated with node's host parent if not
@@ -26088,6 +26095,7 @@
       currentEventWipLanes = workInProgressRootIncludedLanes;
     }
     // 判断当前是否处于过渡阶段(如果使用了 useTransition，isTransition 就是 true)
+    // 触发更新时，是否使用了 useTransition
     var isTransition = requestCurrentTransition() !== NoTransition;
 
     if (isTransition) {
@@ -27405,7 +27413,10 @@
    * @param lanes 本次非阻塞渲染对应的 lanes(更新)
    */
   function renderRootConcurrent(root, lanes) {
-    console.log('concurrent render');
+    console.log('concurrent render', lanes);
+    if (lanes === 1024) {
+      debugger
+    }
     // 先缓存当前执行上下文
     var prevExecutionContext = executionContext;
     // 当前执行上下文为 RenderContext，渲染上下文
@@ -27573,7 +27584,6 @@
 
           stopProfilerTimerIfRunningAndRecordDelta(completedWork, false);
         }
-        debugger
         resetCurrentFiber();
 
         if (next !== null) {
@@ -27951,7 +27961,6 @@
       root.current = finishedWork; // The next phase is the layout phase, where we call effects that read
       // the host tree after it's been mutated. The idiomatic use case for this is
       // layout, but class component lifecycles also fire here for legacy reasons.
-      debugger
       nextEffect = firstEffect;
 
       // dom 操作完成以后的处理，处理 useEffect、useLayoutEffect、componentDidMount、componentDidUpdate

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.0913.js"></script>
+    <script src="../../react-dom.development.0913.js"></script>
+    <script src="../../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+    <style>
+        .box {
+            height: 100px;
+            overflow: auto;
+            word-wrap:break-word;
+            word-break: break-all;
+        }
+
+        .float {
+            width: 100px;
+            height: 100px;
+            text-align: center;
+            line-height: 100px;
+            position: absolute;
+            background-color: green;
+            cursor: pointer;
+            
+        }
+
+        #app {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+        function App() {
+            const [visible, setVisible] = React.useState(true);
+            const [value, setValue] = React.useState('');
+            const [isPending, start] = React.useTransition();
+
+            const changeValue = (val) => {
+                console.log(val.length);
+                setTimeout(() => {
+                    setValue(val);
+                }, 100)
+            }
+            return <div>
+                <button onClick={() => setVisible(true)}>显示</button>
+                <input onChange={(e) => start(changeValue(e.target.value))}/>
+                <input onChange={(e) => changeValue(e.target.value)}/>
+                <div>{value.length}</div>
+                {visible && (
+                    <div className="box">
+                        {Array(10000).fill('a').map(item => <span>{value}</span>)}    
+                    </div>
+                )}
+            </div>
+        }
+
+        class Children extends React.Component {
+            state = {
+                name: 'zjh',
+                count: 0
+            }
+
+            ref = React.createRef(null);
+
+            handleClick1() {
+                // this.ref.current.click();
+                // this.ref.current.click();
+                // this.ref.current.click();
+                // this.ref.current.click();
+                setTimeout(() => {
+                    this.handleClick2();
+                    this.handleClick2();
+                    React.startTransition(() => {
+                        this.setState({
+                            name: 'xxq'
+                        });
+                    });
+                    this.handleClick2();
+                    this.handleClick2();
+                }, 100)
+
+
+
+            }
+
+            handleClick2() {
+                this.setState((preState) => {
+                    return {
+                        count: preState.count + 1
+                    }
+                });
+            }
+
+            render() {
+                return <div>
+                    <button onClick={() => { this.handleClick1() }}>btn1</button>
+                    <button ref={this.ref} onClick={() => {this.handleClick2()}}>btn2</button>
+                    <div>{this.state.name}</div>
+                    <div>{this.state.count}</div>
+                </div>
+            }
+        }
+
+        // ReactDOM.render(<App />, document.getElementById('app'));
+
+        ReactDOM.createRoot(document.getElementById('app')).render(<Children/>);
+    
+    </script>
+</body>
