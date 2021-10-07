@@ -5118,27 +5118,29 @@
   var nextRetryLane = RetryLane1;
 
   /**
-   * 
+   * 从 lanes 中找出优先级最高的 lanes
+   * 如果是 transition、retry 类型的 lane，会存在多条
    */
   function getHighestPriorityLanes(lanes) {
+    // 从 lanes 中选出优先级最高的 lane，即最靠右的 lane
     switch (getHighestPriorityLane(lanes)) {
       case SyncLane:
-        return SyncLane;
+        return SyncLane;  // SyncLane 只有一条
 
       case InputContinuousHydrationLane:
-        return InputContinuousHydrationLane;
+        return InputContinuousHydrationLane;  // InputContinuousHydrationLane 只有一条
 
       case InputContinuousLane:
-        return InputContinuousLane;
+        return InputContinuousLane; // InputContinuousLane 只有一条
 
       case DefaultHydrationLane:
-        return DefaultHydrationLane;
+        return DefaultHydrationLane;  // DefaultHydrationLane 只有一条
 
       case DefaultLane:
-        return DefaultLane;
+        return DefaultLane; // DefaultLane 只有一条
 
       case TransitionHydrationLane:
-        return TransitionHydrationLane;
+        return TransitionHydrationLane; // TransitionHydrationLane 只有一条
 
       case TransitionLane1:
       case TransitionLane2:
@@ -5156,26 +5158,26 @@
       case TransitionLane14:
       case TransitionLane15:
       case TransitionLane16:
-        return lanes & TransitionLanes;
+        return lanes & TransitionLanes; // TransitionLanes 有 16 条
 
       case RetryLane1:
       case RetryLane2:
       case RetryLane3:
       case RetryLane4:
       case RetryLane5:
-        return lanes & RetryLanes;
+        return lanes & RetryLanes; // RetryLanes 有 5 条
 
       case SelectiveHydrationLane:
-        return SelectiveHydrationLane;
+        return SelectiveHydrationLane; // InputContinuousHydrationLane 只有一条
 
       case IdleHydrationLane:
-        return IdleHydrationLane;
+        return IdleHydrationLane; // SelectiveHydrationLane 只有一条
 
       case IdleLane:
-        return IdleLane;
+        return IdleLane; // IdleLane 只有一条
 
       case OffscreenLane:
-        return OffscreenLane;
+        return OffscreenLane; // OffscreenLane 只有一条
 
       default:
         {
@@ -5209,11 +5211,13 @@
       var nonIdleUnblockedLanes = nonIdlePendingLanes & ~suspendedLanes;
 
       if (nonIdleUnblockedLanes !== NoLanes) {
+        // 从 nonIdleUnblockedLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
         nextLanes = getHighestPriorityLanes(nonIdleUnblockedLanes);
       } else {
         var nonIdlePingedLanes = nonIdlePendingLanes & pingedLanes;
 
         if (nonIdlePingedLanes !== NoLanes) {
+          // 从 nonIdlePingedLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
           nextLanes = getHighestPriorityLanes(nonIdlePingedLanes);
         }
       }
@@ -5222,9 +5226,11 @@
       var unblockedLanes = pendingLanes & ~suspendedLanes;
 
       if (unblockedLanes !== NoLanes) {
+        // 从 unblockedLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
         nextLanes = getHighestPriorityLanes(unblockedLanes);
       } else {
         if (pingedLanes !== NoLanes) {
+          // 从 pingedLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
           nextLanes = getHighestPriorityLanes(pingedLanes);
         }
       }
@@ -5242,7 +5248,9 @@
     if (wipLanes !== NoLanes && wipLanes !== nextLanes && // If we already suspended with a delay, then interrupting is fine. Don't
     // bother waiting until the root is complete.
     (wipLanes & suspendedLanes) === NoLanes) {
+      // 从 nextLanes 中选出优先级最高的 lane，即最靠右的 lane
       var nextLane = getHighestPriorityLane(nextLanes);
+      // 从 wipLanes 中选出优先级最高的 lane，即最靠右的 lane
       var wipLane = getHighestPriorityLane(wipLanes);
 
       if ( // Tests whether the next lane is equal or lower priority than the wip
@@ -5293,6 +5301,7 @@
       var lanes = nextLanes & entangledLanes;
 
       while (lanes > 0) {
+        // // 从 lanes 中分离逐个分离 lane，从优先级最低的开始
         var index = pickArbitraryLaneIndex(lanes);
         var lane = 1 << index;
         nextLanes |= entanglements[index];
@@ -5311,6 +5320,7 @@
     var mostRecentEventTime = NoTimestamp;
 
     while (lanes > 0) {
+      // 从 lanes 中分离逐个分离 lane，从优先级最低的开始
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
       var eventTime = eventTimes[index];
@@ -5407,6 +5417,7 @@
     var lanes = pendingLanes;
 
     while (lanes > 0) {
+      // 从 lanes 中分离逐个分离 lane，从优先级最低的开始
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
       var expirationTime = expirationTimes[index];
@@ -5429,9 +5440,18 @@
   } // This returns the highest priority pending lanes regardless of whether they
   // are suspended.
 
+  /**
+   * 
+   * @param root fiber root node
+   */
   function getHighestPriorityPendingLanes(root) {
+    // 从 pendingLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
     return getHighestPriorityLanes(root.pendingLanes);
   }
+
+  /**
+   * @param root fiber root node
+   */
   function getLanesToRetrySynchronouslyOnError(root) {
     var everythingButOffscreen = root.pendingLanes & ~OffscreenLane;
 
@@ -5523,7 +5543,8 @@
   }
 
   /**
-   * 
+   * 从 lanes 中选出优先级最高的 lane，即最靠右的 lane
+   * @param lanes
    */
   function getHighestPriorityLane(lanes) {
     return lanes & -lanes;
@@ -5537,18 +5558,20 @@
     // doesn't matter which bit is selected; you can pick any bit without
     // affecting the algorithms where its used. Here I'm using
     // getHighestPriorityLane because it requires the fewest operations.
+    // 从 lanes 中选出优先级最高的 lane，即最靠右的 lane
     return getHighestPriorityLane(lanes);
   }
 
   /**
-   * 
+   * 从 lanes 中选出优先级最低的 lane，返回对应的 index
+   * 常用于从 lanes 逐个分离 lane
    */
   function pickArbitraryLaneIndex(lanes) {
     return 31 - clz32(lanes);
   }
 
   /**
-   * 
+   * 返回 lane 对应的 index
    */
   function laneToIndex(lane) {
     return pickArbitraryLaneIndex(lane);
@@ -5621,10 +5644,15 @@
   }
 
   /**
-   * 
+   * 标记 fiber tree 需要更新
+   * @param root  fiber tree
+   * @param updateLane 为更新分配的 lane
+   * @param eventTime 发生更新的时间
    */
   function markRootUpdated(root, updateLane, eventTime) {
-    root.pendingLanes |= updateLane; // If there are any suspended transitions, it's possible this new update
+    // 将为更新分配的 lane 合并的 fiber root node 的 pendingLanes 中
+    root.pendingLanes |= updateLane; 
+    // If there are any suspended transitions, it's possible this new update
     // could unblock them. Clear the suspended lanes so that we can try rendering
     // them again.
     //
@@ -5637,29 +5665,40 @@
     // idle updates until after all the regular updates have finished; there's no
     // way it could unblock a transition.
 
-    if (updateLane !== IdleLane) {
+    // 如果新的更新不是空闲更新，那么它可能会解锁已经暂停的 transition
+    // 此时我们需要将解锁已经暂停的 transition, 重新渲染 transition ？？
+    // TODO: study ??
+    if (updateLane !== IdleLane) { 
       root.suspendedLanes = NoLanes;
       root.pingedLanes = NoLanes;
     }
 
     var eventTimes = root.eventTimes;
+    // lane 对应的 index， 0 - 31
     var index = laneToIndex(updateLane); // We can always overwrite an existing timestamp because we prefer the most
     // recent event, and we assume time is monotonically increasing.
-
+    // 记录更新发生的时间
     eventTimes[index] = eventTime;
   }
 
   /**
-   * 
+   * 标记 fiber tree 中被暂停的更新
+   * @param root fiber root node
+   * @param suspenedLanes 被暂停的更新
    */
   function markRootSuspended(root, suspendedLanes) {
+    // 将被暂停的 lanes 合并到 fiber root node 的 suspendedLanes 中
+    // (只有 transition 类型的 lane 才会被暂停 ？？)
     root.suspendedLanes |= suspendedLanes;
+    // 从 pingedLanes 中移除已经暂停的 lanes
     root.pingedLanes &= ~suspendedLanes; // The suspended lanes are no longer CPU-bound. Clear their expiration times.
-
+    // 更新的过期时间
     var expirationTimes = root.expirationTimes;
     var lanes = suspendedLanes;
 
+    // 由于 suspendedLanes 已经被暂停，设置对应的过期时间为 NoTimestamp: -1, 即没有过期时间
     while (lanes > 0) {
+      // 从 lanes 中选出优先级最低的 lane
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
       expirationTimes[index] = NoTimestamp;
@@ -5668,39 +5707,61 @@
   }
 
   /**
-   * 
+   * 标记 fiber tree 中恢复畅通的更新
+   * @param root fiber root node
+   * @param pingedLanes 已经畅通的更新
+   * @param eventTime
    */
   function markRootPinged(root, pingedLanes, eventTime) {
+    // 将 pingedLanes 合并到 root.pingedLanes 中
+    // 并且将 pingedLanes 从 root.suspendedLanes 移除
     root.pingedLanes |= root.suspendedLanes & pingedLanes;
   }
 
   /**
-   * 
+   * TODO: study
+   * 标记 fiber tree 可变读？？
+   * @param root fiber root node
+   * @param updateLane 为更新分配的 lane
    */
   function markRootMutableRead(root, updateLane) {
     root.mutableReadLanes |= updateLane & root.pendingLanes;
   }
 
   /**
-   * 
+   * 标记 fiber tree 结束协调过程
+   * @param root fiber root node
+   * @param remainingLanes 未处理的更新
    */
   function markRootFinished(root, remainingLanes) {
+    // 已经处理的更新
     var noLongerPendingLanes = root.pendingLanes & ~remainingLanes;
+    // 协调结束后还未处理的更新
     root.pendingLanes = remainingLanes; // Let's try everything again
-
+    // 清空暂停的更新 ？？
     root.suspendedLanes = 0;
+    // 清空恢复畅通的更新 ？？
     root.pingedLanes = 0;
+    // 从未处理的更新中选出过期的更新
     root.expiredLanes &= remainingLanes;
+    // 从未处理的更新中选出可变读的更新 ？？
     root.mutableReadLanes &= remainingLanes;
+    // 从未处理的更新中选出纠缠的更新
     root.entangledLanes &= remainingLanes;
 
+    //  ？？
     var entanglements = root.entanglements;
+    // 更新发生的时间
     var eventTimes = root.eventTimes;
+    // 更新过期的时间
     var expirationTimes = root.expirationTimes; // Clear the lanes that no longer have pending work
 
     var lanes = noLongerPendingLanes;
 
+    // 已经处理的更新，将 eventTime、expirationTime、entanglement 清空
     while (lanes > 0) {
+      // pickArbitraryLaneIndex 用于从 lanes 中分离 lane
+      // 从优先级最低的 lane 开始分离
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
       entanglements[index] = NoLanes;
@@ -5732,6 +5793,7 @@
     var lanes = rootEntangledLanes;
 
     while (lanes) {
+      // 从 lanes 中分离逐个分离 lane，从优先级最低的开始
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
 
@@ -5744,7 +5806,14 @@
       lanes &= ~lane;
     }
   }
+
+  /**
+   * 
+   * @param root
+   * @param renderLanes
+   */
   function getBumpedLaneForHydration(root, renderLanes) {
+    // 从 renderLanes 中选出优先级最高的 lane，即最靠右的 lane
     var renderLane = getHighestPriorityLane(renderLanes);
     var lane;
 
@@ -5922,7 +5991,7 @@
    * 返回 lanes 中优先级最高的 lane 对应的优先级
    */
   function lanesToEventPriority(lanes) {
-    // 找到优先级最高的 lane
+    // 从 lanes 中选出优先级最高的 lane，即最靠右的 lane
     var lane = getHighestPriorityLane(lanes);
 
     // 如果 lane 的值小于等于 DiscreteEventPriority，那么就是离散事件优先级
@@ -25241,7 +25310,7 @@
       }
     } // Mark that the root has a pending update.
 
-
+    // 标记 fiber tree 需要更新
     markRootUpdated(root, lane, eventTime);
 
 
@@ -25374,6 +25443,7 @@
     } // We use the highest priority lane to represent the priority of the callback.
 
 
+    // 从 nextLanes 中选出优先级最高的 lane，即最靠右的 lane
     var newCallbackPriority = getHighestPriorityLane(nextLanes); // Check if there's an existing task. We may be able to reuse it.
 
     var existingCallbackPriority = root.callbackPriority;
@@ -26820,6 +26890,7 @@
     var root = markUpdateLaneFromFiberToRoot(rootFiber, SyncLane);
 
     if (root !== null) {
+      // 标记 fiber tree 需要更新
       markRootUpdated(root, SyncLane, eventTime);
       ensureRootIsScheduled(root, eventTime);
     }
@@ -26855,6 +26926,7 @@
           var root = markUpdateLaneFromFiberToRoot(fiber, SyncLane);
 
           if (root !== null) {
+            // 标记 fiber tree 需要更新，更新的 lane 为 SyncLane
             markRootUpdated(root, SyncLane, eventTime);
             ensureRootIsScheduled(root, eventTime);
           }
@@ -26908,6 +26980,11 @@
     ensureRootIsScheduled(root, eventTime);
   }
 
+  /**
+   * 
+   * @param boundaryFiber 
+   * @param retryLane
+   */
   function retryTimedOutBoundary(boundaryFiber, retryLane) {
     // The boundary fiber (a Suspense component or SuspenseList component)
     // previously was rendered in its fallback state. One of the promises that
@@ -26924,11 +27001,18 @@
     var root = markUpdateLaneFromFiberToRoot(boundaryFiber, retryLane);
 
     if (root !== null) {
+      // 标记 fiber tree 需要更新，更新分配的 lane 为 retryLane
       markRootUpdated(root, retryLane, eventTime);
+      // 
       ensureRootIsScheduled(root, eventTime);
     }
   }
 
+  /**
+   * 
+   * @param boundaryFiber
+   * 
+   */
   function retryDehydratedSuspenseBoundary(boundaryFiber) {
     var suspenseState = boundaryFiber.memoizedState;
     var retryLane = NoLane;
