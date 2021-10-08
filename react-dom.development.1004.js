@@ -5339,7 +5339,7 @@
       nextLane === DefaultLane && (wipLane & TransitionLanes) !== NoLanes) {
         // Keep working on the existing in-progress tree. Do not interrupt.
         // 默认优先级更新不能中断 transition 更新
-        // TODO: question 
+        // TODO: question ？？
         // 默认优先级更新和 transition 更新的区别: 默认优先级的更新不支持刷新 transition ？？
         return wipLanes;
       }
@@ -5365,24 +5365,36 @@
 
     // 在一个批次中， 如果 laneA 不允许 render，且这个批次中不包含 laneB，那么 laneA 和 lane B 缠绕在一起 ？？
     // 通常，当更新具有相同的来源时，会这么做，并且我们只想响应来自该源的最新事件 ？？ 防抖 ？？ 节流 ？？
-    //
+
     // Note that we apply entanglements *after* checking for partial work above.
     // This means that if a lane is entangled during an interleaved event while
     // it's already rendering, we won't interrupt it. This is intentional, since
     // entanglement is usually "best effort": we'll try our best to render the
     // lanes in the same batch, but it's not worth throwing out partially
     // completed work in order to do it.
+
+    // 注意，我们是在检查上述部分工作之后开始使用纠缠 ？？
+    // 这意味着如果一个 lane 在渲染过程中，如果在交错事件期间(??)发生纠缠(??)，我们是不会中断它的。
+    // 这是故意的，因为纠缠(??)通常是尽力而为。
+    // 我们要尽可能在同一个批次中处理 lanes，但是为了完成它而放弃部分完成的工作是不值得的。 ？？
+
     // TODO: Reconsider this. The counter-argument is that the partial work
     // represents an intermediate state, which we don't want to show to the user.
     // And by spending extra time finishing it, we're increasing the amount of
     // time it takes to show the final state, which is what they are actually
     // waiting for.
+
+    // 重新考虑。相反的观点是，部分工作代表了一个我们不想向用户展示的中间状态。
+    // 通过花费额外的时间来完成它，我们增加了显示最终状态所需要的时间，这正是他们实际等待的状态 ？？
+    
     //
     // For those exceptions where entanglement is semantically important, like
     // useMutableSource, we should ensure that there is no partial work at the
     // time we apply the entanglement.
 
+    // 
 
+    // 发生纠缠的 lanes ？？
     var entangledLanes = root.entangledLanes;
 
     if (entangledLanes !== NoLanes) {
@@ -11185,9 +11197,15 @@
   // Some environments might not have setTimeout or clearTimeout.
 
   var scheduleTimeout = typeof setTimeout === 'function' ? setTimeout : undefined;
+
   var cancelTimeout = typeof clearTimeout === 'function' ? clearTimeout : undefined;
+
   var noTimeout = -1;
+
   var localPromise = typeof Promise === 'function' ? Promise : undefined; // -------------------
+
+  // 微任务调度
+  // 实现微任务: queueMicrotask、promise、setTiemout
   var scheduleMicrotask = typeof queueMicrotask === 'function' ? queueMicrotask : typeof localPromise !== 'undefined' ? function (callback) {
     return localPromise.resolve(null).then(callback).catch(handleErrorInNextTick);
   } : scheduleTimeout; // TODO: Determine the best fallback here.
@@ -11196,7 +11214,9 @@
     setTimeout(function () {
       throw error;
     });
-  } // -------------------
+  } 
+
+  // -------------------
   function commitMount(domElement, type, newProps, internalInstanceHandle) {
     // Despite the naming that might imply otherwise, this method only
     // fires if there is an `Update` effect scheduled during mounting.
@@ -11208,6 +11228,7 @@
       domElement.focus();
     }
   }
+
   function commitUpdate(domElement, updatePayload, type, oldProps, newProps, internalInstanceHandle) {
     // Update the props handle so that we know which props are the ones with
     // with current event handlers.
@@ -11215,15 +11236,19 @@
 
     updateProperties(domElement, updatePayload, type, oldProps, newProps);
   }
+
   function resetTextContent(domElement) {
     setTextContent(domElement, '');
   }
+
   function commitTextUpdate(textInstance, oldText, newText) {
     textInstance.nodeValue = newText;
   }
+
   function appendChild(parentInstance, child) {
     parentInstance.appendChild(child);
   }
+
   function appendChildToContainer(container, child) {
     var parentNode;
 
@@ -12107,10 +12132,17 @@
   var LegacyRoot = 0;
   // concurrent 模式，ReactDOM.createRoot 方式创建的 fiber root
   var ConcurrentRoot = 1;
-
+  // 同步任务队列
   var syncQueue = null;
+  // 是否包含 legacy 模式下的同步调度 ？？
   var includesLegacySyncCallbacks = false;
+  //
   var isFlushingSyncQueue = false;
+
+  /**
+   * 同步调度
+   * @param callback
+   */
   function scheduleSyncCallback(callback) {
     // Push this callback into an internal queue. We'll flush these either in
     // the next tick, or earlier if something calls `flushSyncCallbackQueue`.
@@ -12122,10 +12154,19 @@
       syncQueue.push(callback);
     }
   }
+
+  /**
+   * legacy 模式下的同步调度
+   */
   function scheduleLegacySyncCallback(callback) {
     includesLegacySyncCallbacks = true;
     scheduleSyncCallback(callback);
   }
+
+
+  /**
+   * legacy 模式下刷新同步调度队列
+   */
   function flushSyncCallbacksOnlyInLegacyMode() {
     // Only flushes the queue if there's a legacy sync callback scheduled.
     // TODO: There's only a single type of callback: performSyncOnWorkOnRoot. So
@@ -25819,10 +25860,14 @@
     markStarvedLanesAsExpired(root, currentTime); // Determine the next lanes to work on, and their priority.
     // 获取本次调度要处理的更新
     // TODO: question 为什么这里就要获取 ？？
+    /**
+     * 
+     */
     var nextLanes = getNextLanes(root, root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes);
 
     if (nextLanes === NoLanes) {
       // Special case: There's nothing to work on.
+      // 没有新的更新要处理，结束任务调度
       if (existingCallbackNode !== null) {
         cancelCallback$1(existingCallbackNode);
       }
@@ -25857,11 +25902,14 @@
 
     if (existingCallbackNode != null) {
       // Cancel the existing callback. We'll schedule a new one below.
+      // 结束原来的任务调度，重新开始一个新的任务调度
       cancelCallback$1(existingCallbackNode);
     } // Schedule a new callback.
 
 
     var newCallbackNode;
+
+    // 根据分配的 lanes 的最高优先级，进行任务调度
 
     if (newCallbackPriority === SyncLane) {
       // Special case: Sync React callbacks are scheduled on a special
@@ -25870,9 +25918,11 @@
         if ( ReactCurrentActQueue.isBatchingLegacy !== null) {
           ReactCurrentActQueue.didScheduleLegacyUpdate = true;
         }
-
+        // legency 模式下的同步任务调度
         scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null, root));
       } else {
+        // concurrent 模式下的同步任务调度
+        // 和 scheduleLegacySyncCallback 的区别是，不会设置 includesLegacySyncCallbacks 为 true
         scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
       }
 
@@ -25884,6 +25934,7 @@
           // of `act`.
           ReactCurrentActQueue.current.push(flushSyncCallbacks);
         } else {
+          // 使用微任务进行异步任务调度 - flushSyncCallbacks
           scheduleMicrotask(flushSyncCallbacks);
         }
       }
@@ -25965,7 +26016,7 @@
     } // Determine the next lanes to work on, using the fields stored
     // on the root.
 
-    // 
+    // 获取本次协调需要处理的更新
     var lanes = getNextLanes(root, root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes);
 
     if (lanes === NoLanes) {
@@ -26119,6 +26170,7 @@
             var msUntilTimeout = globalMostRecentFallbackTime + FALLBACK_THROTTLE_MS - now(); // Don't bother with a very short suspense time.
 
             if (msUntilTimeout > 10) {
+              // 获取本次协调需要处理的更新
               var nextLanes = getNextLanes(root, NoLanes);
 
               if (nextLanes !== NoLanes) {
@@ -26300,8 +26352,9 @@
     if ((executionContext & (RenderContext | CommitContext)) !== NoContext) {
       throw Error( 'Should not already be working.' );
     }
-
+    // 
     flushPassiveEffects();
+    // 获取本次协调需要处理的更新
     var lanes = getNextLanes(root, NoLanes);
 
     if (!includesSomeLane(lanes, SyncLane)) {
@@ -27774,6 +27827,11 @@
   }
   var fakeActCallbackNode = {};
 
+  /**
+   * 根据指定优先级，进行任务调度
+   * @param priorityLevel   任务优先级
+   * @param callback  任务回调方法
+   */
   function scheduleCallback$1(priorityLevel, callback) {
     {
       // If we're currently inside an `act` scope, bypass Scheduler and push to
