@@ -27836,6 +27836,7 @@
     {
       // If we're currently inside an `act` scope, bypass Scheduler and push to
       // the `act` queue instead.
+      // 如果当前我们在一个 act 作用域内，绕过调度器并推送到 act 对垒中
       var actQueue = ReactCurrentActQueue.current;
 
       if (actQueue !== null) {

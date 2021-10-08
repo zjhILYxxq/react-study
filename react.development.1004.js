@@ -62,6 +62,7 @@
 
   var MAYBE_ITERATOR_SYMBOL = typeof Symbol === 'function' && Symbol.iterator;
   var FAUX_ITERATOR_SYMBOL = '@@iterator';
+
   function getIteratorFn(maybeIterable) {
     if (maybeIterable === null || typeof maybeIterable !== 'object') {
       return null;
@@ -78,6 +79,9 @@
 
   var hasOwnProperty = Object.prototype.hasOwnProperty;
 
+  /**
+   * 浅拷贝放方法
+   */
   var _assign = function (to, from) {
     for (var key in from) {
       if (hasOwnProperty.call(from, key)) {
@@ -106,6 +110,7 @@
 
   /**
    * Keeps track of the current dispatcher.
+   * react 调度器
    */
   var ReactCurrentDispatcher = {
     /**
@@ -118,6 +123,7 @@
   /**
    * Keeps track of the current batch's configuration such as how long an update
    * should suspend for if it needs to.
+   * 跟踪当前批次的配置，例如更新应该暂停多长时间 ？？
    */
   var ReactCurrentBatchConfig = {
     transition: 0
@@ -141,8 +147,8 @@
   };
 
   /**
-   * Keeps track of the current owner.
-   *
+   * Keeps track of the current owner. 
+   * 用于追踪当前所有着？？
    * The current owner is the component who should own any components that are
    * currently being constructed.
    */
@@ -154,8 +160,12 @@
     current: null
   };
 
+  //
   var ReactDebugCurrentFrame = {};
+
+  // 
   var currentExtraStackFrame = null;
+
   function setExtraStackFrame(stack) {
     {
       currentExtraStackFrame = stack;
@@ -190,6 +200,7 @@
     };
   }
 
+  // 供外部(react-dom) 使用的内部配置啥的
   var ReactSharedInternals = {
     ReactCurrentDispatcher: ReactCurrentDispatcher,
     ReactCurrentBatchConfig: ReactCurrentBatchConfig,
@@ -219,6 +230,7 @@
       }
     }
   }
+
   function error(format) {
     {
       {
@@ -2487,17 +2499,32 @@
   }
 
   var enableSchedulerDebugging = false;
+
   var enableProfiling = false;
+
+  // 时间片的长度
   var frameYieldMs = 5;
 
+  /**
+   * 入堆
+   */
   function push(heap, node) {
     var index = heap.length;
     heap.push(node);
     siftUp(heap, node, index);
   }
+
+  /**
+   * 获取对顶元素
+   * @param {} heap 
+   */
   function peek(heap) {
     return heap.length === 0 ? null : heap[0];
   }
+
+  /**
+   * 元素出堆
+   */
   function pop(heap) {
     if (heap.length === 0) {
       return null;
@@ -2514,6 +2541,12 @@
     return first;
   }
 
+  /**
+   * 堆底元素上升
+   * @param {} heap 
+   * @param {*} node 
+   * @param {*} i 
+   */
   function siftUp(heap, node, i) {
     var index = i;
 
@@ -2533,6 +2566,9 @@
     }
   }
 
+  /**
+   * 堆中元素下沉
+   */
   function siftDown(heap, node, i) {
     var index = i;
     var length = heap.length;
@@ -2564,7 +2600,14 @@
       }
     }
   }
-
+  /**
+   * 比较两个节点的大小
+   * 先比较两个任务的 sortIndex， 过期时间短的先执行，过期时间长的后执行；
+   * 如果 sortIndex 相同，那就看那个任务先创建，先创建的任务先执行；
+   * @param {*} a 
+   * @param {*} b
+   * @return {*} 
+   */
   function compare(a, b) {
     // Compare sort index first, then task id.
     var diff = a.sortIndex - b.sortIndex;
@@ -2572,10 +2615,15 @@
   }
 
   // TODO: Use symbols?
-  var ImmediatePriority = 1;
+  // 直接优先级
+  var ImmediatePriority = 1;  
+  // 用户阻塞优先级
   var UserBlockingPriority = 2;
+  // 普通优先级
   var NormalPriority = 3;
+  // 低优先级
   var LowPriority = 4;
+  // 空闲优先级
   var IdlePriority = 5;
 
   function markTaskErrored(task, ms) {
@@ -2605,46 +2653,68 @@
 
   var maxSigned31BitInt = 1073741823; // Times out immediately
 
+  // 直接优先级的过期时间为 -1
   var IMMEDIATE_PRIORITY_TIMEOUT = -1; // Eventually times out
 
+  // 用户阻塞优先级的过期时间为 250ms
   var USER_BLOCKING_PRIORITY_TIMEOUT = 250;
+  // 普通优先级任务的过期时间为 5s
   var NORMAL_PRIORITY_TIMEOUT = 5000;
+  // 低优先级任务的过期时间为 10s
   var LOW_PRIORITY_TIMEOUT = 10000; // Never times out
 
+  // 空闲优先级任务的过期时间为 1073741823
   var IDLE_PRIORITY_TIMEOUT = maxSigned31BitInt; // Tasks are stored on a min heap
 
+  // 任务队列
   var taskQueue = [];
+  // 延迟任务队列
   var timerQueue = []; // Incrementing id counter. Used to maintain insertion order.
 
+  // 
   var taskIdCounter = 1; // Pausing the scheduler is useful for debugging.
   var currentTask = null;
+  // 任务的默认优先级为普通优先级
   var currentPriorityLevel = NormalPriority; // This is set while performing work, to prevent re-entrance.
-
+  // 是否在处理调度任务
   var isPerformingWork = false;
+  // 
   var isHostCallbackScheduled = false;
+  // 
   var isHostTimeoutScheduled = false; // Capture local references to native APIs, in case a polyfill overrides them.
 
   var localSetTimeout = typeof setTimeout === 'function' ? setTimeout : null;
   var localClearTimeout = typeof clearTimeout === 'function' ? clearTimeout : null;
   var localSetImmediate = typeof setImmediate !== 'undefined' ? setImmediate : null; // IE and Node.js + jsdom
 
+  // isInputPending 是原生的 API， 可以用来监听用户是否正在输入，使 js 引擎能及时让出主线程
   var isInputPending = typeof navigator !== 'undefined' && navigator.scheduling !== undefined && navigator.scheduling.isInputPending !== undefined ? navigator.scheduling.isInputPending.bind(navigator.scheduling) : null;
 
+  /**
+   * 处理延迟任务最小堆，将已到达开始时间的延迟任务，添加到 taskQueue 中
+   * @param {*} currentTime
+   * @return {*} 
+   */
   function advanceTimers(currentTime) {
     // Check for tasks that are no longer delayed and add them to the queue.
+    // 从延迟任务队列中获取时间最靠前的任务
     var timer = peek(timerQueue);
-
+     // 遍历延时任务
     while (timer !== null) {
       if (timer.callback === null) {
         // Timer was cancelled.
+        // 没有 callback，将这个 task 去掉
         pop(timerQueue);
       } else if (timer.startTime <= currentTime) {
         // Timer fired. Transfer to the task queue.
+        // 延迟任务的开始时间已过，需要将延迟任务放到 taskQueue 最小堆中
         pop(timerQueue);
         timer.sortIndex = timer.expirationTime;
+        // 将延迟任务添加到 taskQueue 中
         push(taskQueue, timer);
       } else {
         // Remaining timers are pending.
+        // 延时任务还需要处理
         return;
       }
 
@@ -2652,8 +2722,13 @@
     }
   }
 
+  /**
+   * 处理延迟任务
+   * @param {*} currentTime 延迟任务实际开始处理的时间
+   */
   function handleTimeout(currentTime) {
     isHostTimeoutScheduled = false;
+    // 处理延迟任务列表，将需要处理的延迟任务放到 taskQueue 中
     advanceTimers(currentTime);
 
     if (!isHostCallbackScheduled) {
@@ -2670,6 +2745,11 @@
     }
   }
 
+  /**
+   * 
+   * @param {*} hasTimeRemaining 
+   * @param {*} initialTime 
+   */  
   function flushWork(hasTimeRemaining, initialTime) {
 
 
@@ -2708,58 +2788,84 @@
     }
   }
 
+  /**
+   * 循环调度处理 taskQueue 中的任务，将当前任务队列中的任务全部处理完(内循环)
+   * @param {*} hasTimeRemaining 是否有剩余时间
+   * @param {*} initialTime 任务调度的初始时间
+   * @return {boolean} 
+   */
   function workLoop(hasTimeRemaining, initialTime) {
+    // 当前时间
     var currentTime = initialTime;
+    // 根据当前时间，将延迟队列中要处理的任务添加到 taskQueue 中
     advanceTimers(currentTime);
+    // 从 taskQueue 中获取需要最早处理的 task
     currentTask = peek(taskQueue);
-
+    // 循环调度 taskQueue 中的任务
     while (currentTask !== null && !(enableSchedulerDebugging )) {
+      // 如果任务的过期时间小于当前时间，且没有剩余时间，或者已经工作了 5s 需要让出主线程，那么当前 messageChannel 片段内不处理当前任务
       if (currentTask.expirationTime > currentTime && (!hasTimeRemaining || shouldYieldToHost())) {
         // This currentTask hasn't expired, and we've reached the deadline.
         break;
       }
 
+      // 不需要让出主线程，继续处理当前任务
       var callback = currentTask.callback;
 
       if (typeof callback === 'function') {
         currentTask.callback = null;
+        // 当前要处理任务的优先级
         currentPriorityLevel = currentTask.priorityLevel;
+        // 任务是否已经超时
         var didUserCallbackTimeout = currentTask.expirationTime <= currentTime;
-
+        // 如果任务没有处理完，那么 continuationCallback 就是一个新的 callback 函数
+        // (fiber tree 的协调被中断，返回一个新的 callback)
         var continuationCallback = callback(didUserCallbackTimeout);
+        // 获取当前事件
         currentTime = getCurrentTime();
 
         if (typeof continuationCallback === 'function') {
+          // 当前任务没有还没有结束，更新当前任务的 callback
           currentTask.callback = continuationCallback;
         } else {
-
+          // 当前任务结束，将任务从任务队列中移除
           if (currentTask === peek(taskQueue)) {
             pop(taskQueue);
           }
         }
-
+        // 此时，延时队列中的任务有些可能需要处理了，要将它们它们添加到任务队列中
         advanceTimers(currentTime);
       } else {
+        // 没有 callback 的任务是没有意义的，直接移除就好了
         pop(taskQueue);
       }
-
+      // 继续处理任务队列中的任务
       currentTask = peek(taskQueue);
     } // Return whether there's additional work
 
 
     if (currentTask !== null) {
+      // 任务队列里面的任务还没有处理完，分配的时间片已经用完了；
+      // 内循环还没有结束
       return true;
     } else {
+      // 任务队列里面的任务已经处理完，处理延迟任务
       var firstTimer = peek(timerQueue);
-
+      // 延时任务列表不为空
       if (firstTimer !== null) {
+        // 处理延时任务
         requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);
       }
-
+      // taskQueue 已经处理完了，内循环暂时结束
       return false;
     }
   }
 
+  /**
+   * 
+   * @param priorityLevel
+   * @param eventHandler
+   */
   function unstable_runWithPriority(priorityLevel, eventHandler) {
     switch (priorityLevel) {
       case ImmediatePriority:
@@ -2783,6 +2889,10 @@
     }
   }
 
+  /**
+   * 
+   * @param {*} eventHandler 
+   */
   function unstable_next(eventHandler) {
     var priorityLevel;
 
@@ -2810,6 +2920,10 @@
     }
   }
 
+  /**
+   * 
+   * @param {*} callback 
+   */
   function unstable_wrapCallback(callback) {
     var parentPriorityLevel = currentPriorityLevel;
     return function () {
@@ -2825,6 +2939,12 @@
     };
   }
 
+  /**
+   * 
+   * @param priorityLevel
+   * @param callback
+   * @param options
+   */
   function unstable_scheduleCallback(priorityLevel, callback, options) {
     var currentTime = getCurrentTime();
     var startTime;
@@ -2919,10 +3039,17 @@
     }
   }
 
+  /**
+   * 
+   */
   function unstable_getFirstCallbackNode() {
     return peek(taskQueue);
   }
 
+  /**
+   * 
+   * @param {*} task 
+   */
   function unstable_cancelCallback(task) {
     // remove from the queue because you can't remove arbitrary nodes from an
     // array based heap, only the first one.)
@@ -2931,30 +3058,45 @@
     task.callback = null;
   }
 
+  /**
+   * 
+   */
   function unstable_getCurrentPriorityLevel() {
     return currentPriorityLevel;
   }
 
   var isMessageLoopRunning = false;
   var scheduledHostCallback = null;
-  var taskTimeoutID = -1; // Scheduler periodically yields in case there is other work on the main
+  var taskTimeoutID = -1; 
+  
+  // Scheduler periodically yields in case there is other work on the main
   // thread, like user events. By default, it yields multiple times per frame.
   // It does not attempt to align with frame boundaries, since most tasks don't
   // need to be frame aligned; for those that do, use requestAnimationFrame.
 
-  var frameInterval = frameYieldMs;
+  // 如果主线程上有其他工作，比如用户事件，调度程序会定期让步。 
+  // 默认情况下，它每帧产生多次。它不尝试与帧边界对齐，因为大多数任务不需要帧对齐； 
+  // 对于那些这样做的人，请使用 requestAnimationFrame。
+
+  var frameInterval = frameYieldMs;  // react 的帧间隔， 5s 一帧
+
   var startTime = -1;
 
+  /**
+   * js 引擎是否需要让出主线程
+   */
   function shouldYieldToHost() {
+    // 已经使用的时间
     var timeElapsed = getCurrentTime() - startTime;
 
     if (timeElapsed < frameInterval) {
       // The main thread has only been blocked for a really short amount of time;
       // smaller than a single frame. Don't yield yet.
+      // 已经使用的时间小于 5ms，js 引擎不需要让出主线程
       return false;
     } // The main thread has been blocked for a non-negligible amount of time. We
 
-
+    // js 引擎需要让出主线程
     return true;
   }
 
@@ -2962,6 +3104,10 @@
 
   }
 
+  /**
+   * 
+   * @param {*} fps 
+   */
   function forceFrameRate(fps) {
     if (fps < 0 || fps > 125) {
       // Using console['error'] to evade Babel and ESLint
@@ -2977,6 +3123,9 @@
     }
   }
 
+  /**
+   * 
+   */
   var performWorkUntilDeadline = function () {
     if (scheduledHostCallback !== null) {
       var currentTime = getCurrentTime(); // Keep track of the start time so we can measure how long the main thread
@@ -3043,6 +3192,10 @@
     };
   }
 
+  /**
+   * 
+   * @param {*} callback 
+   */
   function requestHostCallback(callback) {
     scheduledHostCallback = callback;
 
@@ -3052,12 +3205,20 @@
     }
   }
 
+  /**
+   * 
+   * @param {*} callback 
+   * @param {*} ms 
+   */
   function requestHostTimeout(callback, ms) {
     taskTimeoutID = localSetTimeout(function () {
       callback(getCurrentTime());
     }, ms);
   }
 
+  /**
+   * 
+   */
   function cancelHostTimeout() {
     localClearTimeout(taskTimeoutID);
     taskTimeoutID = -1;
@@ -3110,6 +3271,10 @@
     ReactSharedInternals$1.ReactDebugCurrentFrame = ReactDebugCurrentFrame;
   }
 
+  /**
+   * 
+   * @param {*} scope 
+   */
   function startTransition(scope) {
     var prevTransition = ReactCurrentBatchConfig.transition;
     ReactCurrentBatchConfig.transition = 1;
@@ -3134,7 +3299,13 @@
   }
 
   var didWarnAboutMessageChannel = false;
+
   var enqueueTaskImpl = null;
+
+  /**
+   * 
+   * @param task
+   */
   function enqueueTask(task) {
     if (enqueueTaskImpl === null) {
       try {
@@ -3171,7 +3342,13 @@
   }
 
   var actScopeDepth = 0;
+
   var didWarnNoAwaitAct = false;
+
+  /**
+   * 
+   * @param {*} callback 
+   */
   function act(callback) {
     {
       // `act` calls can be nested, so we track the depth. This represents the
@@ -3299,6 +3476,9 @@
     }
   }
 
+  /**
+   * 
+   */
   function popActScope(prevActScopeDepth) {
     {
       if (prevActScopeDepth !== actScopeDepth - 1) {
@@ -3309,6 +3489,12 @@
     }
   }
 
+  /**
+   * 
+   * @param {*} returnValue 
+   * @param {*} resolve 
+   * @param {*} reject 
+   */
   function recursivelyFlushAsyncActWork(returnValue, resolve, reject) {
     {
       var queue = ReactCurrentActQueue.current;
@@ -3337,6 +3523,10 @@
 
   var isFlushing = false;
 
+  /**
+   * 
+   * @param {*} queue 
+   */
   function flushActQueue(queue) {
     {
       if (!isFlushing) {

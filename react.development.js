@@ -2820,6 +2820,7 @@
     // 从延迟任务队列中获取时间最靠前的任务
     var timer = peek(timerQueue);
 
+    // 遍历延时任务
     while (timer !== null) {
       if (timer.callback === null) {
         // Timer was cancelled.
@@ -2836,7 +2837,6 @@
         // Remaining timers are pending.
         return;
       }
-
       timer = peek(timerQueue);
     }
   }
