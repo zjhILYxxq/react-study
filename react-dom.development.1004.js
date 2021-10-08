@@ -5218,30 +5218,72 @@
   }
 
   /**
+   * 获取 fiber tree 协调时要处理的更新
+   * 
+   * 选择策略：
+   * - 第一步, 拿到 pendingLanes(所有待处理的更新)、expiredLanes(已经过期的更新)、suspendedLanes(暂停的更新)、pingedLanes(懒加载的组件/异步数据已经拿到，对应的更新已经恢复工作了)；
+   *          pendingLanes 中会包含 expiredLanes、suspendedLanes、pingedLanes；
+   * - 第二步, 如果有 expiredLanes (已经处理过期的更新), 先选择过期的更新作为 nextLanes，优先级为 SyncLanePriority；
+   * - 第三步, 如果没有过期的更新，那么先从 pendingLanes 中选出优先级比空闲优先级高的更新，即非空闲优先级 nonIdlePendingLanes, 
+   *          然后再从 nonIdlePendingLanes 选出非阻塞的更新 nonIdleUnblockedLanes, 再从 nonIdleUnblockedLanes 中选择优先级最高的一类更新作为 nextLanes；
+   *          如果 nonIdlePendingLanes 中的更新都是已经阻塞的，那么选出已经 pinged 的更新 nonIdlePingedLanes， 再从 nonIdlePingedLanes 中选择优先级最高的一类更新作为 nextLanes;
+   * - 第四步, 如果没有过期的更新，pengdingLanes 中的更新优先级都是空闲优先级，
+   *          先从 pendingLanes 中选出非阻塞的更新 unblockedLanes， 再从 unblockedLanes 中选择优先级最高的一类更新作为 nextLanes；
+   *          如果 pendingLanes 中的更新都是阻塞的，那么选出已经 pinged 的更新，再从 pinged 的更新中选出优先级最高的一类更新作为 nextLanes；
+   * - 第五步，根据第二步、第三步、第四步中挑选出的  nextLanes，再结合 pengingLanes，从 pengdingLanes 中选出优先级和 nextLanes 一样和比 nextLanes 高的更新；
+   * 
+   * 总的来说， 从 pingLanes 选择接下来要处理的更新时，先选择过期的；如果没有过期的， 选择非空闲非暂停的且优先级最高的；如果没有非空闲非暂停的，选择非空闲暂停但已经恢复工作且优先级最高的；
+   * 如果都是空闲的，选择空闲非暂停且优先级最高的；如果没有空闲非暂停的，选择空闲暂停但已经恢复工作的 且优先级最高的；
+   * 更新初步选好以后，如果 pingingLanes 有比选好的更新优先级更高的，尽管是阻塞的，也好合并到一起；
+   * 此时如果上一次的渲染没有处理完，要比较上一次渲染和这一次的优先级，如果上一次的优先级高，继续上一次的渲染；如果上一次的优先级低，要中断上一次的渲染，开始本次渲染
+   * 
+   * 可能的情况：
+   * - 非空闲的非阻塞的更新；
+   * - 过期的低优先级更新 + 高优先级更新；
+   * - 非空闲的阻塞但已经 pinged 的 + 非空闲的阻塞的；
+   * - 空闲的非阻塞的更新；
+   * - 空闲的阻塞但已经 pinged 的 + 空闲的阻塞的；
+   * @param root 一个 fiber root node
+   * @param wipLanes workInProgressRootRenderLanes 当前渲染时正在工作的 lanes。如果 workInProgressRootRenderLanes 不为 0， 说明在渲染过程中产生了新的更新。
+   *                 产生新的更新以后，要重新计算下一次异步调度任务的 lanes 以及优先级，然后将优先级和 workInProgressRootRenderLanes 的优先级对比。
+   *                 如果新的优先级大于 workInProgressRootRenderLanes 优先级，那么下一次异步调度任务就要优先执行，原来的调度任务就会中断；
+   *                 
+   *                    
    * 
    */
   function getNextLanes(root, wipLanes) {
     // Early bailout if there's no pending work left.
+    // 所有等待处理的更新
     var pendingLanes = root.pendingLanes;
 
+    // 没有要处理的更新，直接返回 0
     if (pendingLanes === NoLanes) {
       return NoLanes;
     }
 
     var nextLanes = NoLanes;
+    // 已经暂停的更新
     var suspendedLanes = root.suspendedLanes;
-    var pingedLanes = root.pingedLanes; // Do not work on any idle work until all the non-idle work has finished,
+    // 恢复畅通的更新
+    var pingedLanes = root.pingedLanes; 
+    
+    // Do not work on any idle work until all the non-idle work has finished,
     // even if the work is suspended.
+    // 要在非空闲的更新处理完成以后，再处理空闲的更新，尽管空闲的更新是暂停的 ？？
 
+    // 获取待处理的非空闲的更新
     var nonIdlePendingLanes = pendingLanes & NonIdleLanes;
 
     if (nonIdlePendingLanes !== NoLanes) {
+      // 待处理的非空闲更新不为空
       var nonIdleUnblockedLanes = nonIdlePendingLanes & ~suspendedLanes;
 
       if (nonIdleUnblockedLanes !== NoLanes) {
+        // 非空闲且非暂停的更新
         // 从 nonIdleUnblockedLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
         nextLanes = getHighestPriorityLanes(nonIdleUnblockedLanes);
       } else {
+        // 非空闲且恢复畅通的更新
         var nonIdlePingedLanes = nonIdlePendingLanes & pingedLanes;
 
         if (nonIdlePingedLanes !== NoLanes) {
@@ -5250,27 +5292,34 @@
         }
       }
     } else {
-      // The only remaining work is Idle.
+      // The only remaining work is Idle. 处理空闲的更新
       var unblockedLanes = pendingLanes & ~suspendedLanes;
 
       if (unblockedLanes !== NoLanes) {
+        // 空闲非暂停
         // 从 unblockedLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
         nextLanes = getHighestPriorityLanes(unblockedLanes);
       } else {
         if (pingedLanes !== NoLanes) {
+          // 空闲且恢复畅通
           // 从 pingedLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
           nextLanes = getHighestPriorityLanes(pingedLanes);
         }
       }
     }
 
+    // nextLanes 为 NoLanes, 意味着待处理的更新都已经被暂停了，没有更新可处理
     if (nextLanes === NoLanes) {
       // This should only be reachable if we're suspended
       // TODO: Consider warning in this path if a fallback timer is not scheduled.
       return NoLanes;
-    } // If we're already in the middle of a render, switching lanes will interrupt
+    } 
+    
+    // If we're already in the middle of a render, switching lanes will interrupt
     // it and we'll lose our progress. We should only do this if the new lanes are
     // higher priority.
+
+    // 在协调过程中，切换 lane 会丢失当前的协调进度。我们只有在新的 lane 优先级更高时才能如此。
 
 
     if (wipLanes !== NoLanes && wipLanes !== nextLanes && // If we already suspended with a delay, then interrupting is fine. Don't
@@ -5283,11 +5332,15 @@
 
       if ( // Tests whether the next lane is equal or lower priority than the wip
       // one. This works because the bits decrease in priority as you go left.
+      // nextLane 值大于 wipLane， 意味着 nextLane 的优先级低于 wipLane，不能中断当前更新
       nextLane >= wipLane || // Default priority updates should not interrupt transition updates. The
       // only difference between default updates and transition updates is that
       // default updates do not support refresh transitions.
       nextLane === DefaultLane && (wipLane & TransitionLanes) !== NoLanes) {
         // Keep working on the existing in-progress tree. Do not interrupt.
+        // 默认优先级更新不能中断 transition 更新
+        // TODO: question 
+        // 默认优先级更新和 transition 更新的区别: 默认优先级的更新不支持刷新 transition ？？
         return wipLanes;
       }
     }
@@ -5297,13 +5350,21 @@
       // and default updates, so they render in the same batch. The only reason
       // they use separate lanes is because continuous updates should interrupt
       // transitions, but default updates should not.
+      // 当更新默认是 Sync 时，需要将连续优先级更新和默认优先级更新缠绕到一起，他们在同一批次被渲染。
+      // 当连续优先级更新需要中断 transition 更新时，连续优先级更新和默认优先级更新需要分开处理
+      // TODO: question ??
       nextLanes |= pendingLanes & DefaultLane;
-    } // Check for entangled lanes and add them to the batch.
-    //
+    } 
+    // Check for entangled lanes and add them to the batch.
+    // 检查纠缠的 lanes，并把他们添加到同一个批次中 ？？
+
     // A lane is said to be entangled with another when it's not allowed to render
     // in a batch that does not also include the other lane. Typically we do this
     // when multiple updates have the same source, and we only want to respond to
     // the most recent event from that source.
+
+    // 在一个批次中， 如果 laneA 不允许 render，且这个批次中不包含 laneB，那么 laneA 和 lane B 缠绕在一起 ？？
+    // 通常，当更新具有相同的来源时，会这么做，并且我们只想响应来自该源的最新事件 ？？ 防抖 ？？ 节流 ？？
     //
     // Note that we apply entanglements *after* checking for partial work above.
     // This means that if a lane is entangled during an interleaved event while
@@ -5365,6 +5426,12 @@
 
   /**
    * 计算更新的过期时间
+   * 过期时间计算规则：
+   * - 离散事件更新、连续事件更新，过期时间为 250 ms；
+   * - 默认事件更新、transition 更新，过期时间为 5s；
+   * - retry 类型的更新，没有过期时间；
+   * - 空闲的更新、offscreen 类型的更新，也没有过期时间；
+   * - 剩余其他类型的更新，也没有过期时间
    */
   function computeExpirationTime(lane, currentTime) {
     switch (lane) {
@@ -5431,19 +5498,34 @@
     }
   }
 
+  /**
+   * 收集 fiber root node 中已经过期的赛道
+   * 这一步做了两件事情：
+   * - 如果赛道没有过期时间，且是已经畅通的，重新计算一个过期时间；
+   * - 如果赛道有过期时间，且已经过期，将赛道标注为已过期，强制更新
+   * @param root  fiber root node
+   * @param currentTime 当前时间
+   */
   function markStarvedLanesAsExpired(root, currentTime) {
     // TODO: This gets called every time we yield. We can optimize by storing
     // the earliest expiration time on the root. Then use that to quickly bail out
     // of this function.
-    var pendingLanes = root.pendingLanes;
+    // 等待处理的更新
+    var pendingLanes = root.pendingLanes; 
+    // 暂停的更新
     var suspendedLanes = root.suspendedLanes;
+    // 恢复暂停的更新
     var pingedLanes = root.pingedLanes;
+    // fiber root node 收集的各个更新的过期时间
     var expirationTimes = root.expirationTimes; // Iterate through the pending lanes and check if we've reached their
     // expiration time. If so, we'll assume the update is being starved and mark
     // it as expired to force it to finish.
 
     var lanes = pendingLanes;
 
+    // 待处理的更新，默认的过期时间都是 -1，即永不过期，在任务调度过程中，如果更新没有过期时间，为根据更新的优先级定义一个过期时间
+    // 在任务调度过程中，如果更新还没有过期，那么他会被高优先级的更新抢道；如果更新要过期了，那么他就会被优先处理；
+    // 如果任务的优先级 < TransitionPriority, 那么它的过期时间为 -1， 即永不过期，会一直被高优先级的任务抢道
     while (lanes > 0) {
       // 从 lanes 中分离逐个分离 lane，从优先级最低的开始
       var index = pickArbitraryLaneIndex(lanes);
@@ -5454,12 +5536,25 @@
         // Found a pending lane with no expiration time. If it's not suspended, or
         // if it's pinged, assume it's CPU-bound. Compute a new expiration time
         // using the current time.
+        // 找到一个没有过期时间的赛道。如果没有被暂停，或者该赛道已经 ping 通，则假定该赛道受 CPU 限制。使用当前时间，重新计算一个过期时间
         if ((lane & suspendedLanes) === NoLanes || (lane & pingedLanes) !== NoLanes) {
           // Assumes timestamps are monotonically increasing.
+          // lane & suspendedLanes === NoLanes，表示当前赛道 lane 没有被暂停；
+          // lane & pingedLanes !== NoLanes, 表示当前赛道已经 ping 通
+          // 重新计算一个过期时间
+          /**
+            * 过期时间计算规则：
+            * - 离散事件更新、连续事件更新，过期时间为 250 ms；
+            * - 默认事件更新、transition 更新，过期时间为 5s；
+            * - retry 类型的更新，没有过期时间；
+            * - 空闲的更新、offscreen 类型的更新，也没有过期时间；
+            * - 剩余其他类型的更新，也没有过期时间
+           */
           expirationTimes[index] = computeExpirationTime(lane, currentTime);
         }
       } else if (expirationTime <= currentTime) {
         // This lane expired
+        // 如果赛道的过期时间小于当前时间，说明更新已经过期，那么将赛道标记为过期赛道
         root.expiredLanes |= lane;
       }
 
@@ -5695,7 +5790,7 @@
 
     // 如果新的更新不是空闲更新，那么它可能会解锁已经暂停的 transition
     // 此时我们需要将解锁已经暂停的 transition, 重新渲染 transition ？？
-    // TODO: study ??
+    // TODO: question ??
     if (updateLane !== IdleLane) { 
       root.suspendedLanes = NoLanes;
       root.pingedLanes = NoLanes;
@@ -5747,7 +5842,7 @@
   }
 
   /**
-   * TODO: study
+   * TODO: question
    * 标记 fiber tree 中可变读的更新 ？？
    * @param root fiber root node
    * @param updateLane 为更新分配的 lane
@@ -5827,7 +5922,7 @@
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
 
-      // TODO: study
+      // TODO: question ??
       if ( // Is this one of the newly entangled lanes?
       lane & entangledLanes | // Is this lane transitively entangled with the newly entangled lanes?
       entanglements[index] & entangledLanes) {
@@ -25551,8 +25646,10 @@
    * @param eventTime
    */
   function scheduleUpdateOnFiber(fiber, lane, eventTime) {
+    // 检查嵌套的 update，不能超过 50 个
     checkForNestedUpdates();
     warnAboutRenderPhaseUpdatesInDEV(fiber);
+    // 将为更新分配的 lane 合并到 fiber node 的 lanes 以及 parent fiber node 的 childLanes 中
     var root = markUpdateLaneFromFiberToRoot(fiber, lane);
 
     if (root === null) {
@@ -25565,20 +25662,31 @@
       }
     } // Mark that the root has a pending update.
 
-    // 标记 fiber tree 需要更新
+    // 标记 fiber tree 需要更新，将为更新分配的 lane 合并到 fiber root node 的 pendingLanes 中
     markRootUpdated(root, lane, eventTime);
 
 
+    // 如果当前 fiber tree 的协调已经开始了
     if (root === workInProgressRoot) {
       // Received an update to a tree that's in the middle of rendering. Mark
       // that there was an interleaved update work on this root. Unless the
       // `deferRenderPhaseUpdateToNextBatch` flag is off and this is a render
       // phase update. In that case, we don't treat render phase updates as if
       // they were interleaved, for backwards compat reasons.
+
+      /**
+       * 当 fiber tree 还在渲染过程中时(在上一个时间片段中，渲染阶段未结束)，接受到一个新的更新。
+       * 此时需要标记一下 fiber root 上有一个交错？的更新。除非 deferRenderPhaseUpdateToNextBatch 标志关闭，否则这是记一个
+       * 渲染阶段的更新。如果是这样，我们不会将渲染阶段更新向后兼容？？原因他们是交错的？？
+       */
       if ( (executionContext & RenderContext) === NoContext) {
+        // executionContext & RenderContext) === NoContext， 意味着 fiber tree 的协调阶段结束
+        // 那这个逻辑是什么意思 ？？
+        // TODO: question ??
         workInProgressRootUpdatedLanes = mergeLanes(workInProgressRootUpdatedLanes, lane);
       }
 
+      // TODO: question ??
       if (workInProgressRootExitStatus === RootSuspendedWithDelay) {
         // The root already suspended with a delay, which means this render
         // definitely won't finish. Since we have a new update, let's mark it as
@@ -25610,6 +25718,11 @@
   // e.g. retrying a Suspense boundary isn't an update, but it does schedule work
   // on a fiber.
 
+  /**
+   * 将为更新分配的赛道合并到 fiber node 的 lanes以及 parent fiber node 的 childLanes 中
+   * @params sourceFiber 一个 fiber node， 是一个 current fiber node 还是一个 workInProgress fiber node
+   * @params lane 为新的更新，分配的赛道
+   */
   function markUpdateLaneFromFiberToRoot(sourceFiber, lane) {
     // Update the source fiber's lanes
     sourceFiber.lanes = mergeLanes(sourceFiber.lanes, lane);
@@ -25629,6 +25742,8 @@
     var node = sourceFiber;
     var parent = sourceFiber.return;
 
+    // 将为更新分配的 lane 都合并到 parent fiber node 的 childLanes 中
+    // 一个 fiber node 的 childLanes 不为 0， 意味着 child fiber node 的更新未处理完，需要处理 child fiber node
     while (parent !== null) {
       parent.childLanes = mergeLanes(parent.childLanes, lane);
       alternate = parent.alternate;
@@ -25686,15 +25801,24 @@
   // exiting a task.
 
   /**
-   * @param root
-   * @param currentTime
+   * 为 fiber tree 的更新安排一个调度任务(有的时候，需要生成一个新的调度任务；有的时候复用原来的调度任务)
+   * 调度任务，是和 fiber root node 进行关联的
+   * 
+   * ensureRootIsScheduled 是用来调度任务的。每一个 fiber root 只有一个任务。
+   * 如果一个任务已经在调度，我们需要保证已存在任务的优先级，需要和已工作的root 的下一个级别的优先级一致？？
+   * 这个函数会在每次更新，并且在任务退出之前执行 ？？
+   * 
+   * @aram root fiber root node
+   * @param currentTime 
    */
   function ensureRootIsScheduled(root, currentTime) {
+    // 之前的调度任务
     var existingCallbackNode = root.callbackNode; // Check if any lanes are being starved by other work. If so, mark them as
     // expired so we know to work on those next.
-
+    // 标注过期的更新
     markStarvedLanesAsExpired(root, currentTime); // Determine the next lanes to work on, and their priority.
-
+    // 获取本次调度要处理的更新
+    // TODO: question 为什么这里就要获取 ？？
     var nextLanes = getNextLanes(root, root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes);
 
     if (nextLanes === NoLanes) {
@@ -25841,7 +25965,7 @@
     } // Determine the next lanes to work on, using the fields stored
     // on the root.
 
-
+    // 
     var lanes = getNextLanes(root, root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes);
 
     if (lanes === NoLanes) {
@@ -26165,6 +26289,9 @@
   // through Scheduler
 
 
+  /**
+   * 同步模式进行 fiber tree 的协调
+   */
   function performSyncWorkOnRoot(root) {
     {
       syncNestedUpdateFlag();
@@ -27209,10 +27336,11 @@
     // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
     enqueueUpdate(rootFiber, update);
     var eventTime = requestEventTime();
+    // 将为更新分配的 SyncLane 合并到 fiber node 的 lanes 以及 parent fiber node 的 childLanes 中
     var root = markUpdateLaneFromFiberToRoot(rootFiber, SyncLane);
 
     if (root !== null) {
-      // 标记 fiber tree 需要更新
+      // 标记 fiber tree 需要更新，将分配的 SyncLane 合并到 fiber root node 的 pendingLanes 中
       markRootUpdated(root, SyncLane, eventTime);
       ensureRootIsScheduled(root, eventTime);
     }
@@ -27246,10 +27374,11 @@
           // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
           enqueueUpdate(fiber, update);
           var eventTime = requestEventTime();
+          // 将为更新分配的 SyncLane 合并到 fiber node 的 lanes 以及 parent fiber node 的 childLanes 中
           var root = markUpdateLaneFromFiberToRoot(fiber, SyncLane);
 
           if (root !== null) {
-            // 标记 fiber tree 需要更新，更新的 lane 为 SyncLane
+            // 标记 fiber tree 需要更新，将为更新分配的 SyncLane 合并到 fiber root node 的 pendingLanes 中
             markRootUpdated(root, SyncLane, eventTime);
             ensureRootIsScheduled(root, eventTime);
           }
@@ -27333,10 +27462,11 @@
 
 
     var eventTime = requestEventTime();
+    // 将为更新分配的 retryLane 合并到 fiber node 的 lanes 以及 parent fiber node 的 childLanes 中
     var root = markUpdateLaneFromFiberToRoot(boundaryFiber, retryLane);
 
     if (root !== null) {
-      // 标记 fiber tree 需要更新，更新分配的 lane 为 retryLane
+      // 标记 fiber tree 需要更新，将为更新分配的 retryLane 合并到 fiber root node 的 pendingLanes 中
       markRootUpdated(root, retryLane, eventTime);
       // 
       ensureRootIsScheduled(root, eventTime);
