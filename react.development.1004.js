@@ -2680,7 +2680,7 @@
   var currentPriorityLevel = NormalPriority; // This is set while performing work, to prevent re-entrance.
   // 是否在处理调度任务
   var isPerformingWork = false;
-  // 外循环 ？？
+  // 是否安排了浏览器任务调度的 callback
   var isHostCallbackScheduled = false;
   // 
   var isHostTimeoutScheduled = false; // Capture local references to native APIs, in case a polyfill overrides them.
@@ -2735,11 +2735,12 @@
 
     if (!isHostCallbackScheduled) {
       if (peek(taskQueue) !== null) {
+        // taskQueue 中有需要处理的任务，开始 messageChannel 循环
         isHostCallbackScheduled = true;
         requestHostCallback(flushWork);
       } else {
         var firstTimer = peek(timerQueue);
-
+        // 继续处理延时任务
         if (firstTimer !== null) {
           requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);
         }
@@ -2748,7 +2749,7 @@
   }
 
   /**
-   * 
+   * 开启内循环，依次处理 taskQueue 中的任务
    * @param {*} hasTimeRemaining 分配的时间片还没有用完
    * @param {*} initialTime  初始时间
    */  
@@ -2770,6 +2771,7 @@
     try {
       if (enableProfiling) {
         try {
+          // 开始内循环工作，即处理 taskQueue 中的任务
           return workLoop(hasTimeRemaining, initialTime);
         } catch (error) {
           if (currentTask !== null) {
@@ -3036,6 +3038,8 @@
       // 而是先为第一个异步任务建立 messageChannel 回调，剩下的异步调度任务添加到 taskQueue 中
       if (!isHostCallbackScheduled && !isPerformingWork) {
         isHostCallbackScheduled = true;
+        // 设置浏览器任务调度额 callback，并通过 messageChannel.postMessage() 开始 messageChannel 循环
+        // messageChannel 循环用于去请求时间片，在每个时间片内，会进行内循环，处理 taskQueue 中的任务
         requestHostCallback(flushWork);
       }
     }
@@ -3227,16 +3231,17 @@
   }
 
   /**
-   * 设置原生的 callback 处理逻辑为 callback
+   * 安排浏览器任务调度的 callback
    * 在这里， callback 为 flushWork
-   * @param {*} callback 
+   * @param {*} callback  任务调度的 callback，为 flushWork
    */
   function requestHostCallback(callback) {
-    // 设置内循环的处理lu9oji
+    // 设置浏览器任务调度的 callback
     scheduledHostCallback = callback;
 
     // 如果 message 循环没有开始工作，要开启 message 循环
     if (!isMessageLoopRunning) {
+      // 开启 messageChannel 循环
       isMessageLoopRunning = true;
       // 开始内循环，直到任务结束或者时间片到期
       schedulePerformWorkUntilDeadline();
@@ -3244,7 +3249,7 @@
   }
 
   /**
-   * 
+   * 通过 setTimeout，延时调度 callback
    * @param {*} callback 
    * @param {*} ms 
    */
@@ -3255,7 +3260,7 @@
   }
 
   /**
-   * 
+   * 取消延时调度
    */
   function cancelHostTimeout() {
     localClearTimeout(taskTimeoutID);
@@ -3310,7 +3315,7 @@
   }
 
   /**
-   * 
+   * 启动 transition，用于类组件
    * @param {*} scope 
    */
   function startTransition(scope) {
@@ -3338,11 +3343,12 @@
 
   var didWarnAboutMessageChannel = false;
 
+  // 
   var enqueueTaskImpl = null;
 
   /**
-   * 
-   * @param task
+   * 任务入队的实现
+   * @param task 调度任务
    */
   function enqueueTask(task) {
     if (enqueueTaskImpl === null) {
@@ -3352,12 +3358,13 @@
         var requireString = ('require' + Math.random()).slice(0, 7);
         var nodeRequire = module && module[requireString]; // assuming we're in node, let's try to get node's
         // version of setImmediate, bypassing fake timers if any.
-
+        // node 环境下任务入队的实现
         enqueueTaskImpl = nodeRequire.call(module, 'timers').setImmediate;
       } catch (_err) {
         // we're in a browser
         // we can't use regular timers because they may still be faked
         // so we try MessageChannel+postMessage instead
+        // 浏览器环境下，任务入队的实现
         enqueueTaskImpl = function (callback) {
           {
             if (didWarnAboutMessageChannel === false) {
@@ -3379,6 +3386,8 @@
     return enqueueTaskImpl(task);
   }
 
+  // ?? 这个是啥 ？？
+  // TODO：study ??
   var actScopeDepth = 0;
 
   var didWarnNoAwaitAct = false;
