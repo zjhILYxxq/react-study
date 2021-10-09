@@ -2546,6 +2546,7 @@
      * @param fps
      */
     forceFrameRate = function (fps) {
+      // 125 ？？
       if (fps < 0 || fps > 125) {
         // Using console['error'] to evade Babel and ESLint
         console['error']('forceFrameRate takes a positive int between 0 and 125, ' + 'forcing frame rates higher than 125 fps is not supported');

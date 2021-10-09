@@ -2646,7 +2646,9 @@
     getCurrentTime = function () {
       return localDate.now() - initialTime;
     };
-  } // Max 31 bit integer. The max integer size in V8 for 32-bit systems.
+  } 
+  
+  // Max 31 bit integer. The max integer size in V8 for 32-bit systems.
   // Math.pow(2, 30) - 1
   // 0b111111111111111111111111111111
 
@@ -2678,7 +2680,7 @@
   var currentPriorityLevel = NormalPriority; // This is set while performing work, to prevent re-entrance.
   // 是否在处理调度任务
   var isPerformingWork = false;
-  // 
+  // 外循环 ？？
   var isHostCallbackScheduled = false;
   // 
   var isHostTimeoutScheduled = false; // Capture local references to native APIs, in case a polyfill overrides them.
@@ -2747,12 +2749,12 @@
 
   /**
    * 
-   * @param {*} hasTimeRemaining 
-   * @param {*} initialTime 
+   * @param {*} hasTimeRemaining 分配的时间片还没有用完
+   * @param {*} initialTime  初始时间
    */  
   function flushWork(hasTimeRemaining, initialTime) {
 
-
+    // 
     isHostCallbackScheduled = false;
 
     if (isHostTimeoutScheduled) {
@@ -2760,8 +2762,9 @@
       isHostTimeoutScheduled = false;
       cancelHostTimeout();
     }
-
+    // 开始内循环
     isPerformingWork = true;
+    // 
     var previousPriorityLevel = currentPriorityLevel;
 
     try {
@@ -2779,11 +2782,13 @@
         }
       } else {
         // No catch in prod code path.
+        // 开始内循环工作，即处理 taskQueue 中的任务
         return workLoop(hasTimeRemaining, initialTime);
       }
     } finally {
       currentTask = null;
       currentPriorityLevel = previousPriorityLevel;
+      // 结束内循环
       isPerformingWork = false;
     }
   }
@@ -2862,28 +2867,28 @@
   }
 
   /**
-   * 
-   * @param priorityLevel
-   * @param eventHandler
+   * 根据任务优先级执行任务
+   * @param priorityLevel 任务优先级
+   * @param eventHandler 要处理的任务
    */
   function unstable_runWithPriority(priorityLevel, eventHandler) {
     switch (priorityLevel) {
-      case ImmediatePriority:
-      case UserBlockingPriority:
-      case NormalPriority:
-      case LowPriority:
-      case IdlePriority:
+      case ImmediatePriority:    // 直接优先级
+      case UserBlockingPriority: // 用户阻塞优先级
+      case NormalPriority:   // 普通优先级
+      case LowPriority:   // 低优先级
+      case IdlePriority:  // 空闲与县级
         break;
 
       default:
-        priorityLevel = NormalPriority;
+        priorityLevel = NormalPriority;  // 没有匹配的优先级， 默认为普通优先级
     }
 
-    var previousPriorityLevel = currentPriorityLevel;
-    currentPriorityLevel = priorityLevel;
+    var previousPriorityLevel = currentPriorityLevel;  // 缓存原来的任务优先级
+    currentPriorityLevel = priorityLevel; // 设置当前任务的优先级
 
     try {
-      return eventHandler();
+      return eventHandler();   // 执行任务
     } finally {
       currentPriorityLevel = previousPriorityLevel;
     }
@@ -2940,19 +2945,22 @@
   }
 
   /**
-   * 
-   * @param priorityLevel
-   * @param callback
+   * 根据任务优先级，进行任务调度
+   * @param priorityLevel  调度优先级
+   * @param callback 回调方法
    * @param options
    */
   function unstable_scheduleCallback(priorityLevel, callback, options) {
+    // 当前时间
     var currentTime = getCurrentTime();
+    // 任务的开始时间
     var startTime;
 
     if (typeof options === 'object' && options !== null) {
       var delay = options.delay;
 
       if (typeof delay === 'number' && delay > 0) {
+        // 任务要延迟执行
         startTime = currentTime + delay;
       } else {
         startTime = currentTime;
@@ -2963,41 +2971,44 @@
 
     var timeout;
 
+    // 根据优先级，设置任务的过期时间
     switch (priorityLevel) {
       case ImmediatePriority:
-        timeout = IMMEDIATE_PRIORITY_TIMEOUT;
+        timeout = IMMEDIATE_PRIORITY_TIMEOUT;   // 任务的过期时间为 -1 ms
         break;
 
       case UserBlockingPriority:
-        timeout = USER_BLOCKING_PRIORITY_TIMEOUT;
+        timeout = USER_BLOCKING_PRIORITY_TIMEOUT;  // 任务的过期时间为 250 ms
         break;
 
       case IdlePriority:
-        timeout = IDLE_PRIORITY_TIMEOUT;
+        timeout = IDLE_PRIORITY_TIMEOUT;  // 任务的过期时间为 1073741823 ms
         break;
 
       case LowPriority:
-        timeout = LOW_PRIORITY_TIMEOUT;
+        timeout = LOW_PRIORITY_TIMEOUT;  // 任务的过期时间为 10000 ms
         break;
 
       case NormalPriority:
       default:
-        timeout = NORMAL_PRIORITY_TIMEOUT;
+        timeout = NORMAL_PRIORITY_TIMEOUT; // 任务的过期时间为 5000 ms
         break;
     }
-
+    // 设置任务的过期时间
     var expirationTime = startTime + timeout;
+    // 新建一个任务 ID 
     var newTask = {
-      id: taskIdCounter++,
-      callback: callback,
-      priorityLevel: priorityLevel,
-      startTime: startTime,
-      expirationTime: expirationTime,
-      sortIndex: -1
+      id: taskIdCounter++,  // 任务ID 是递增的，通过 id 可以判断任务创建的先后顺序。如果任务优先级相同，按照任务创建的顺序执行任务
+      callback: callback,  // 任务的 callback，没有 callback 的任务是没有意义的
+      priorityLevel: priorityLevel, // 任务的优先级
+      startTime: startTime, // 任务的开始时间
+      expirationTime: expirationTime, // 任务的过期时间
+      sortIndex: -1  // 任务用于排序的 index
     };
 
     if (startTime > currentTime) {
       // This is a delayed task.
+      // 延时任务，要添加到 timerQueue 中
       newTask.sortIndex = startTime;
       push(timerQueue, newTask);
 
@@ -3010,21 +3021,25 @@
           isHostTimeoutScheduled = true;
         } // Schedule a timeout.
 
-
+        // 延迟指定时间后，请求主线程
         requestHostTimeout(handleTimeout, startTime - currentTime);
       }
     } else {
+      // 非延迟任务，使用任务过期时间作为 sortIndex
       newTask.sortIndex = expirationTime;
+      // 将任务添加到最小堆中
       push(taskQueue, newTask);
       // wait until the next time we yield.
 
-
+      // 可以这么理解，isHostCallbackScheduled 表示已经生成一个 messageChanel 回调。
+      // 当我们在一个同步任务中，生成多个需要异步调度的任务时，并不是同时为这几个异步调度任务建立 messageChannel 回调,
+      // 而是先为第一个异步任务建立 messageChannel 回调，剩下的异步调度任务添加到 taskQueue 中
       if (!isHostCallbackScheduled && !isPerformingWork) {
         isHostCallbackScheduled = true;
         requestHostCallback(flushWork);
       }
     }
-
+    // 返回创建的任务
     return newTask;
   }
 
@@ -3047,7 +3062,7 @@
   }
 
   /**
-   * 
+   * 取消调度任务，将调度任务的 callback 变化 null，这个调度任务就没有用了
    * @param {*} task 
    */
   function unstable_cancelCallback(task) {
@@ -3059,14 +3074,17 @@
   }
 
   /**
-   * 
+   * 获取当前调度优先级
    */
   function unstable_getCurrentPriorityLevel() {
     return currentPriorityLevel;
   }
 
+  // messageChannel 循环是否已经开始工作
   var isMessageLoopRunning = false;
+  // 浏览器任务调度的 callback
   var scheduledHostCallback = null;
+  // 
   var taskTimeoutID = -1; 
   
   // Scheduler periodically yields in case there is other work on the main
@@ -3109,6 +3127,7 @@
    * @param {*} fps 
    */
   function forceFrameRate(fps) {
+    // 125 ？？
     if (fps < 0 || fps > 125) {
       // Using console['error'] to evade Babel and ESLint
       console['error']('forceFrameRate takes a positive int between 0 and 125, ' + 'forcing frame rates higher than 125 fps is not supported');
@@ -3123,37 +3142,48 @@
     }
   }
 
-  /**
-   * 
-   */
+   /**
+     * 任务调度一直进行工作直到最后期限
+     * 基于浏览器的事件循环来实现
+     */
   var performWorkUntilDeadline = function () {
     if (scheduledHostCallback !== null) {
-      var currentTime = getCurrentTime(); // Keep track of the start time so we can measure how long the main thread
+      // 获取当前时间
+      var currentTime = getCurrentTime(); 
+      // Keep track of the start time so we can measure how long the main thread
       // has been blocked.
 
+      // 当前任务调度的开始时间
       startTime = currentTime;
+      // 分配的时间片是否还设有到期
       var hasTimeRemaining = true; // If a scheduler task throws, exit the current browser task so the
       // error can be observed.
       //
       // Intentionally not using a try-catch, since that makes some debugging
       // techniques harder. Instead, if `scheduledHostCallback` errors, then
       // `hasMoreWork` will remain true, and we'll continue the work loop.
-
+      // 还有工作需要处理
       var hasMoreWork = true;
 
       try {
+        // 此时， scheduledHostCallback 为 flushWork，处理内循环
         hasMoreWork = scheduledHostCallback(hasTimeRemaining, currentTime);
       } finally {
         if (hasMoreWork) {
+          // hasMoreWork 为 true，表示当前时间片已经用完了，需要请求浏览器再分配一个时间片
           // If there's more work, schedule the next message event at the end
           // of the preceding one.
+          // 
           schedulePerformWorkUntilDeadline();
         } else {
+          // 任务结束，关闭 message 循环
           isMessageLoopRunning = false;
+          // 处理内循环的方法设置为 null
           scheduledHostCallback = null;
         }
       }
     } else {
+      // 没有处理内循环的方法，关闭 message 循环
       isMessageLoopRunning = false;
     } // Yielding to the browser will give it a chance to paint, so we can
   };
@@ -3172,14 +3202,17 @@
     // But also, it runs earlier which is the semantic we want.
     // If other browsers ever implement it, it's better to use it.
     // Although both of these would be inferior to native scheduling.
+    // node 环境使用 setImmediate
     schedulePerformWorkUntilDeadline = function () {
       localSetImmediate(performWorkUntilDeadline);
     };
   } else if (typeof MessageChannel !== 'undefined') {
+    // 使用 MessageChannel
     // DOM and Worker environments.
     // We prefer MessageChannel because of the 4ms setTimeout clamping.
     var channel = new MessageChannel();
     var port = channel.port2;
+    // 浏览器任务调度的 callback 为 performWorkUntilDeadline
     channel.port1.onmessage = performWorkUntilDeadline;
 
     schedulePerformWorkUntilDeadline = function () {
@@ -3187,20 +3220,25 @@
     };
   } else {
     // We should only fallback here in non-browser environments.
+    // 降级使用 setTimeout
     schedulePerformWorkUntilDeadline = function () {
       localSetTimeout(performWorkUntilDeadline, 0);
     };
   }
 
   /**
-   * 
+   * 设置原生的 callback 处理逻辑为 callback
+   * 在这里， callback 为 flushWork
    * @param {*} callback 
    */
   function requestHostCallback(callback) {
+    // 设置内循环的处理lu9oji
     scheduledHostCallback = callback;
 
+    // 如果 message 循环没有开始工作，要开启 message 循环
     if (!isMessageLoopRunning) {
       isMessageLoopRunning = true;
+      // 开始内循环，直到任务结束或者时间片到期
       schedulePerformWorkUntilDeadline();
     }
   }
