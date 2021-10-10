@@ -73,15 +73,25 @@
                 // this.ref.current.click();
                 // this.ref.current.click();
                 setTimeout(() => {
-                    this.handleClick2();
-                    this.handleClick2();
+                    // this.handleClick2();
+                    // this.handleClick2();
                     React.startTransition(() => {
                         this.setState({
-                            name: 'xxq'
+                            name: 'xxq1'
                         });
                     });
-                    this.handleClick2();
-                    this.handleClick2();
+                    React.startTransition(() => {
+                        this.setState({
+                            name: 'xxq2'
+                        });
+                    });
+                    React.startTransition(() => {
+                        this.setState({
+                            name: 'xxq3'
+                        });
+                    });
+                    // this.handleClick2();
+                    // this.handleClick2();
                 }, 100)
 
 

@@ -5640,7 +5640,8 @@
   }
 
   /**
-   * 
+   * 判断 lane 是否是 transition 类型的 lane
+   * @param lane
    */
   function isTransitionLane(lane) {
     return (lane & TransitionLanes) !== 0;
@@ -5741,7 +5742,7 @@
   }
 
   /**
-   * 
+   * 返回 a、b 之间的交集
    */
   function intersectLanes(a, b) {
     return a & b;
@@ -5916,17 +5917,27 @@
     // have to consider _transitive_ entanglements. For each lane that is already
     // entangled with *any* of the given lanes, that lane is now transitively
     // entangled with *all* the given lanes.
-    //
+
+    // 除了将每个给定的车道相互纠缠之外，我们还必须考虑传递纠缠。 
+    // 对于已经与任何给定车道纠缠的每条车道，该车道现在与所有给定车道传递纠缠。
+
     // Translated: If C is entangled with A, then entangling A with B also
     // entangles C with B.
-    //
+
+    // 翻译：如果C和A纠缠在一起，那么A和B的纠缠也会使C和B纠缠在一起。
+
     // If this is hard to grasp, it might help to intentionally break this
     // function and look at the tests that fail in ReactTransition-test.js. Try
     // commenting out one of the conditions below.
+
+    // 如果这很难理解，那么故意破坏这个函数并查看 ReactTransition-test.js 中失败的测试可能会有所帮助。 
+    // 尝试注释掉以下条件之一。
+
     // 将 entangledLanes 合并到 root.entangledLanes 中
     var rootEntangledLanes = root.entangledLanes |= entangledLanes;
     // 
     var entanglements = root.entanglements;
+
     var lanes = rootEntangledLanes;
 
     while (lanes) {
@@ -5935,9 +5946,14 @@
       var lane = 1 << index;
 
       // TODO: question ??
-      if ( // Is this one of the newly entangled lanes?
-      lane & entangledLanes | // Is this lane transitively entangled with the newly entangled lanes?
+      if ( 
+      // Is this one of the newly entangled lanes?  
+      // 新纠缠的 lane ？？
+      lane & entangledLanes | 
+      // Is this lane transitively entangled with the newly entangled lanes?
+      // 这条 lane 是否与新纠缠的 lane 传递纠缠
       entanglements[index] & entangledLanes) {
+        // 
         entanglements[index] |= entangledLanes;
       }
 
@@ -12174,12 +12190,13 @@
     // list of generic callbacks. Then we can have two: one for legacy roots, one
     // for concurrent roots. And this method would only flush the legacy ones.
     if (includesLegacySyncCallbacks) {
+      // 处理同步任务队列 - syncQueue 中的收集的同步任务
       flushSyncCallbacks();
     }
   }
 
   /**
-   * 处理 syncQueue 中收集的同步任务
+   * 处理同步队列 syncQueue 中收集的同步任务
    */
   function flushSyncCallbacks() {
     if (!isFlushingSyncQueue && syncQueue !== null) {
@@ -13008,6 +13025,10 @@
   // interrupted, the interleaved updates will be transferred onto the main part
   // of the queue.
   var interleavedQueues = null;
+
+  /**
+   * 
+   */
   function pushInterleavedQueue(queue) {
     if (interleavedQueues === null) {
       interleavedQueues = [queue];
@@ -13015,6 +13036,10 @@
       interleavedQueues.push(queue);
     }
   }
+
+  /**
+   * 
+   */
   function enqueueInterleavedUpdates() {
     // Transfer the interleaved updates onto the main queue. Each queue has a
     // `pending` field and an `interleaved` field. When they are not null, they
@@ -13170,9 +13195,14 @@
   }
 
   /**
-   * 
+   * 纠缠过渡？？
+   * 如果为更新分配的 lane 是 transition 类型，才会走这个逻辑
+   * @param root  fiber root node
+   * @param fiber fiber node
+   * @param lane 为更新分配的 lane
    */
   function entangleTransitions(root, fiber, lane) {
+
     var updateQueue = fiber.updateQueue;
 
     if (updateQueue === null) {
@@ -13183,23 +13213,47 @@
     var sharedQueue = updateQueue.shared;
 
     if (isTransitionLane(lane)) {
-      var queueLanes = sharedQueue.lanes; // If any entangled lanes are no longer pending on the root, then they must
+
+      // lane 是 transition 类型
+      var queueLanes = sharedQueue.lanes; 
+      
+      // If any entangled lanes are no longer pending on the root, then they must
       // have finished. We can remove them from the shared queue, which represents
       // a superset of the actually pending lanes. In some cases we may entangle
       // more than we need to, but that's OK. In fact it's worse if we *don't*
       // entangle when we should.
 
-      queueLanes = intersectLanes(queueLanes, root.pendingLanes); // Entangle the new transition lane with the other transition lanes.
+      // 如果任何纠缠的车道不再挂在根上，那么它们一定已经结束了。 
+      // 我们可以将它们从共享队列中移除，共享队列代表实际待处理通道的超集。 
+      // 在某些情况下，我们可能会比需要的更多地纠缠，但这没关系。 
+      // 事实上，如果我们不在我们应该纠缠的时候纠缠，情况会更糟。 
 
+      // 从 queueLanes 和 root.pendingLanes 中找到两者的交集
+      queueLanes = intersectLanes(queueLanes, root.pendingLanes); 
+      
+      // Entangle the new transition lane with the other transition lanes.
+      // 将新的 transition lane 和其他的 transition lanes 缠绕到一起
       var newQueueLanes = mergeLanes(queueLanes, lane);
-      sharedQueue.lanes = newQueueLanes; // Even if queue.lanes already include lane, we don't know for certain if
+
+      // 更新 sharedQueue.lanes
+      sharedQueue.lanes = newQueueLanes; 
+      
+      // Even if queue.lanes already include lane, we don't know for certain if
       // the lane finished since the last time we entangled it. So we need to
       // entangle it again, just to be sure.
+
+      // 即使 queue.lanes 已经包含了lane，我们也不确定自上次我们纠缠它以来，lane 是否已经结束。 
+      // 所以我们需要再次纠缠，只是为了确定。
 
       // 标记 fiber tree 中发生缠绕的更新 
       markRootEntangled(root, newQueueLanes);
     }
   }
+
+  /**
+   * @param workInProgress
+   * @param capturedUpdate
+   */
   function enqueueCapturedUpdate(workInProgress, capturedUpdate) {
     // Captured updates are updates that are thrown by a child during the render
     // phase. They should be discarded if the render is aborted. Therefore,
@@ -13373,6 +13427,13 @@
     return prevState;
   }
 
+  /**
+   * 
+   * @param workInProgress
+   * @param props
+   * @param instance
+   * @param renderLanes
+   */
   function processUpdateQueue(workInProgress, props, instance, renderLanes) {
     // This is always non-null on a ClassComponent or HostRoot
     var queue = workInProgress.updateQueue;
@@ -13730,6 +13791,7 @@
       // 将新建的 update 对象添加的 fiber node 的 updateqQueue 队列中
       enqueueUpdate(fiber, update);
       // 为更新安排一个调度任务，用于处理更新
+      // 调度策略：会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -13773,9 +13835,11 @@
       // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
       enqueueUpdate(fiber, update);
       // 为更新安排一个调度任务，用于处理更新
+      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
+        // 
         entangleTransitions(root, fiber, lane);
       }
 
@@ -13814,9 +13878,11 @@
       // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
       enqueueUpdate(fiber, update);
       // 为更新安排一个调度任务，用于处理更新
+      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
+        // 
         entangleTransitions(root, fiber, lane);
       }
 
@@ -17269,6 +17335,7 @@
    */
   function forceStoreRerender(fiber) {
     // 为更新安排一个调度任务，用于处理更新
+    // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
     scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
   }
 
@@ -17810,6 +17877,7 @@
 
       var eventTime = requestEventTime();
       // 为更新安排一个调度任务，用于处理更新
+      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -17905,6 +17973,7 @@
 
       var eventTime = requestEventTime();
       // 为更新安排一个调度任务，用于处理更新
+      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -17971,18 +18040,28 @@
       queue.pending = update;
     }
   }
-
+  /**
+   * 
+   * @param root
+   * @param queue
+   * @param lane
+   */
   function entangleTransitionUpdate(root, queue, lane) {
     if (isTransitionLane(lane)) {
-      var queueLanes = queue.lanes; // If any entangled lanes are no longer pending on the root, then they
+      var queueLanes = queue.lanes; 
+      
+      // If any entangled lanes are no longer pending on the root, then they
       // must have finished. We can remove them from the shared queue, which
       // represents a superset of the actually pending lanes. In some cases we
       // may entangle more than we need to, but that's OK. In fact it's worse if
       // we *don't* entangle when we should.
 
-      queueLanes = intersectLanes(queueLanes, root.pendingLanes); // Entangle the new transition lane with the other transition lanes.
+      queueLanes = intersectLanes(queueLanes, root.pendingLanes); 
+      
+      // Entangle the new transition lane with the other transition lanes.
 
       var newQueueLanes = mergeLanes(queueLanes, lane);
+      // 
       queue.lanes = newQueueLanes; // Even if queue.lanes already include lane, we don't know for certain if
       // the lane finished since the last time we entangled it. So we need to
       // entangle it again, just to be sure.
@@ -21961,6 +22040,7 @@
 
           var eventTime = NoTimestamp;
           // 为更新安排一个调度任务，用于处理更新
+          // (会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
           scheduleUpdateOnFiber(current, attemptHydrationAtLane, eventTime);
         }
       } // If we have scheduled higher pri work above, this will probably just abort the render
@@ -25685,6 +25765,7 @@
 
   /**
    * 为更新安排一个调度任务，用于处理更新
+   * 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
    * @param fiber
    * @param lane
    * @param eventTime
@@ -25742,7 +25823,7 @@
         markRootSuspended$1(root, workInProgressRootRenderLanes);
       }
     }
-    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
     ensureRootIsScheduled(root, eventTime);
 
     if (lane === SyncLane && executionContext === NoContext && (fiber.mode & ConcurrentMode) === NoMode && // Treat `act` as if it's inside `batchedUpdates`, even in legacy mode.
@@ -25854,8 +25935,9 @@
    * 
    * 获取本次调度要处理的更新，然后根据更新的优先级，决定任务调度的策略
    * 调度策略：
-   * - 如果更新优先级是 SyncLane，？？
-   * - 如果更新优先级不是 SyncLane，则根据对应的优先级通过 Scheduler 进行调度
+   * - 如果更新优先级是 SyncLane, 将 callback 收集到同步队列 syncQueue 中，然后通过微任务进行任务调度；
+   *   处理过程中，如果出现了异常，会在下一个时间片内优先处理；
+   * - 如果更新优先级不是 SyncLane，则根据对应的优先级使用 Scheduler 通过宏任务进行调度；
    * 
    * @aram root fiber root node
    * @param currentTime 
@@ -26071,7 +26153,7 @@
         prepareFreshStack(root, NoLanes);
         // 标记 fiber tree 中暂停的更新
         markRootSuspended$1(root, lanes);
-        // 为 fiber tree 的更新安排一个调度任务
+        // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
         ensureRootIsScheduled(root, now());
         throw fatalError;
       } // Check if this render may have yielded to a concurrent event, and if so,
@@ -26104,7 +26186,7 @@
           prepareFreshStack(root, NoLanes);
           // 标记 fiber tree 中暂停的更新
           markRootSuspended$1(root, lanes);
-          // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+          // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
           ensureRootIsScheduled(root, now());
           throw _fatalError;
         }
@@ -26116,7 +26198,7 @@
       root.finishedLanes = lanes;
       finishConcurrentRender(root, exitStatus, lanes);
     }
-    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
     ensureRootIsScheduled(root, now());
 
     if (root.callbackNode === originalCallbackNode) {
@@ -26381,7 +26463,7 @@
     if (!includesSomeLane(lanes, SyncLane)) {
       // There's no remaining sync work left.
       // lanes 中不包含 SyncLane，
-      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
       ensureRootIsScheduled(root, now());
       return null;
     }
@@ -26422,7 +26504,7 @@
       prepareFreshStack(root, NoLanes);
       // 标记 fiber tree 中暂停的更新
       markRootSuspended$1(root, lanes);
-      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
       ensureRootIsScheduled(root, now());
       throw fatalError;
     } // We now have a consistent tree. Because this is a sync render, we
@@ -26434,7 +26516,7 @@
     root.finishedLanes = lanes;
     commitRoot(root); // Before exiting, make sure there's a callback scheduled for the next
     // pending level.
-    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
     ensureRootIsScheduled(root, now());
     return null;
   }
@@ -26448,11 +26530,12 @@
     if (lanes !== NoLanes) {
       // 标记 fiber tree 中发生缠绕的更新
       markRootEntangled(root, mergeLanes(lanes, SyncLane));
-      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
       ensureRootIsScheduled(root, now());
 
       if ((executionContext & (RenderContext | CommitContext)) === NoContext) {
         resetRenderTimer();
+        // 处理同步任务队列 - syncQueue 中的收集的同步任务
         flushSyncCallbacks();
       }
     }
@@ -26544,6 +26627,7 @@
       // the stack.
 
       if ((executionContext & (RenderContext | CommitContext)) === NoContext) {
+        // 处理同步任务队列 - syncQueue 中的收集的同步任务
         flushSyncCallbacks();
       }
     }
@@ -27215,7 +27299,7 @@
     // Always call this before exiting `commitRoot`, to ensure that any
     // additional work on this root is scheduled.
 
-    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
     ensureRootIsScheduled(root, now());
 
     if (hasUncaughtError) {
@@ -27260,7 +27344,7 @@
       nestedUpdateCount = 0;
     } // If layout work was scheduled, flush it now.
 
-
+    // 处理同步任务队列 - syncQueue 中的收集的同步任务
     flushSyncCallbacks();
 
     {
@@ -27322,6 +27406,9 @@
     }
   }
 
+  /**
+   * 
+   */
   function flushPassiveEffectsImpl() {
     if (rootWithPendingPassiveEffects === null) {
       return false;
@@ -27344,8 +27431,11 @@
     }
 
     var prevExecutionContext = executionContext;
+
     executionContext |= CommitContext;
+
     commitPassiveUnmountEffects(root.current);
+
     commitPassiveMountEffects(root, root.current); // TODO: Move to commitPassiveMountEffects
 
     {
@@ -27367,6 +27457,7 @@
     }
 
     executionContext = prevExecutionContext;
+    // 处理同步任务队列 - syncQueue 中的收集的同步任务
     flushSyncCallbacks(); // If additional passive effects were scheduled, increment a counter. If this
     // exceeds the limit, we'll fire a warning.
 
@@ -27386,6 +27477,10 @@
   function isAlreadyFailedLegacyErrorBoundary(instance) {
     return legacyErrorBoundariesThatAlreadyFailed !== null && legacyErrorBoundariesThatAlreadyFailed.has(instance);
   }
+
+  /**
+   * @param instance
+   */
   function markLegacyErrorBoundaryAsFailed(instance) {
     if (legacyErrorBoundariesThatAlreadyFailed === null) {
       legacyErrorBoundariesThatAlreadyFailed = new Set([instance]);
@@ -27394,6 +27489,9 @@
     }
   }
 
+  /**
+   * 
+   */
   function prepareToThrowUncaughtError(error) {
     if (!hasUncaughtError) {
       hasUncaughtError = true;
@@ -27422,7 +27520,7 @@
     if (root !== null) {
       // 标记 fiber tree 需要更新，将分配的 SyncLane 合并到 fiber root node 的 pendingLanes 中
       markRootUpdated(root, SyncLane, eventTime);
-      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
       ensureRootIsScheduled(root, eventTime);
     }
   }
@@ -27461,7 +27559,7 @@
           if (root !== null) {
             // 标记 fiber tree 需要更新，将为更新分配的 SyncLane 合并到 fiber root node 的 pendingLanes 中
             markRootUpdated(root, SyncLane, eventTime);
-            // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+            // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
             ensureRootIsScheduled(root, eventTime);
           }
 
@@ -27522,7 +27620,7 @@
         workInProgressRootPingedLanes = mergeLanes(workInProgressRootPingedLanes, pingedLanes);
       }
     }
-    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
     ensureRootIsScheduled(root, eventTime);
   }
 
@@ -27550,7 +27648,7 @@
     if (root !== null) {
       // 标记 fiber tree 需要更新，将为更新分配的 retryLane 合并到 fiber root node 的 pendingLanes 中
       markRootUpdated(root, retryLane, eventTime);
-      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
+      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
       ensureRootIsScheduled(root, eventTime);
     }
   }
@@ -28194,6 +28292,7 @@
 
       if (needsRemount || needsRender) {
         // 为更新安排一个调度任务，用于处理更新
+        // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
 
@@ -29168,9 +29267,11 @@
     // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
     enqueueUpdate(current$1, update);
     // 为更新安排一个调度任务，用于处理更新
+    // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
     var root = scheduleUpdateOnFiber(current$1, lane, eventTime);
 
     if (root !== null) {
+      // 
       entangleTransitions(root, current$1, lane);
     }
 
@@ -29212,6 +29313,7 @@
         var eventTime = requestEventTime();
         flushSync(function () {
           // 为更新安排一个调度任务，用于处理更新
+          // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
           return scheduleUpdateOnFiber(fiber, SyncLane, eventTime);
         }); // If we're still blocked after this, we need to increase
         // the priority of any promises resolving within this
@@ -29253,6 +29355,7 @@
     var eventTime = requestEventTime();
     var lane = SyncLane;
     // 为更新安排一个调度任务，用于处理更新
+    // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
@@ -29268,6 +29371,7 @@
     var eventTime = requestEventTime();
     var lane = SelectiveHydrationLane;
     // 为更新安排一个调度任务，用于处理更新
+    // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
@@ -29292,7 +29396,8 @@
       * - 如果都不符合上述情况，返回默认事件优先级，即 16；
     */
     var lane = requestUpdateLane(fiber);
-    // // 为更新安排一个调度任务，用于处理更新
+    // 为更新安排一个调度任务，用于处理更新
+    // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
@@ -29440,6 +29545,7 @@
 
         fiber.memoizedProps = _assign({}, fiber.memoizedProps);
         // 为更新安排一个调度任务，用于处理更新
+        // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
     };
@@ -29458,6 +29564,7 @@
 
         fiber.memoizedProps = _assign({}, fiber.memoizedProps);
         // 为更新安排一个调度任务，用于处理更新
+        // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
     };
@@ -29476,6 +29583,7 @@
 
         fiber.memoizedProps = _assign({}, fiber.memoizedProps);
         // 为更新安排一个调度任务，用于处理更新
+        // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
     }; // Support DevTools props for function components, forwardRef, memo, host components, etc.
@@ -29488,6 +29596,7 @@
         fiber.alternate.pendingProps = fiber.pendingProps;
       }
       // 为更新安排一个调度任务，用于处理更新
+      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
@@ -29508,6 +29617,7 @@
         fiber.alternate.pendingProps = fiber.pendingProps;
       }
       // 为更新安排一个调度任务，用于处理更新
+      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
     /**
@@ -29515,6 +29625,7 @@
      */
     scheduleUpdate = function (fiber) {
       // 为更新安排一个调度任务，用于处理更新
+      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
