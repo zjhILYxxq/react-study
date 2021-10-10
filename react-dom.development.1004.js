@@ -12179,13 +12179,14 @@
   }
 
   /**
-   * 
+   * 处理 syncQueue 中收集的同步任务
    */
   function flushSyncCallbacks() {
     if (!isFlushingSyncQueue && syncQueue !== null) {
       // Prevent re-entrance.
       isFlushingSyncQueue = true;
       var i = 0;
+      // 获取之前的优先级
       var previousUpdatePriority = getCurrentUpdatePriority();
 
       try {
@@ -12195,14 +12196,15 @@
         // 设置更新优先级为离散事件优先级，即 1
         setCurrentUpdatePriority(DiscreteEventPriority);
 
+        // 遍历 syncQueue 列表，依次处理 syncQueue 中收集的同步任务
         for (; i < queue.length; i++) {
           var callback = queue[i];
 
           do {
+            // 处理同步任务
             callback = callback(isSync);
           } while (callback !== null);
         }
-
         syncQueue = null;
         includesLegacySyncCallbacks = false;
       } catch (error) {
@@ -12211,10 +12213,11 @@
           syncQueue = syncQueue.slice(i + 1);
         } // Resume flushing in the next tick
 
-
+        // 处理同步任务的时候发生异常，那么就需要在下一个时间片以直接优先级处理同步任务
         scheduleCallback(ImmediatePriority, flushSyncCallbacks);
         throw error;
       } finally {
+        // 恢复原来的更新优先级
         setCurrentUpdatePriority(previousUpdatePriority);
         isFlushingSyncQueue = false;
       }
@@ -12222,7 +12225,7 @@
 
     return null;
   }
-
+  // react 的版本
   var ReactVersion = '18.0.0-f2c381131-20211004';
 
   var SCHEDULING_PROFILER_VERSION = 1;
@@ -25739,7 +25742,7 @@
         markRootSuspended$1(root, workInProgressRootRenderLanes);
       }
     }
-
+    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
     ensureRootIsScheduled(root, eventTime);
 
     if (lane === SyncLane && executionContext === NoContext && (fiber.mode & ConcurrentMode) === NoMode && // Treat `act` as if it's inside `batchedUpdates`, even in legacy mode.
@@ -25849,6 +25852,11 @@
    * 如果一个任务已经在调度，我们需要保证已存在任务的优先级，需要和已工作的root 的下一个级别的优先级一致？？
    * 这个函数会在每次更新，并且在任务退出之前执行 ？？
    * 
+   * 获取本次调度要处理的更新，然后根据更新的优先级，决定任务调度的策略
+   * 调度策略：
+   * - 如果更新优先级是 SyncLane，？？
+   * - 如果更新优先级不是 SyncLane，则根据对应的优先级通过 Scheduler 进行调度
+   * 
    * @aram root fiber root node
    * @param currentTime 
    */
@@ -25856,18 +25864,18 @@
     // 之前的调度任务
     var existingCallbackNode = root.callbackNode; // Check if any lanes are being starved by other work. If so, mark them as
     // expired so we know to work on those next.
-    // 标注过期的更新
+    // 标注过期的更新(过期的更新怎么处理？？)
     markStarvedLanesAsExpired(root, currentTime); // Determine the next lanes to work on, and their priority.
-    // 获取本次调度要处理的更新
-    // TODO: question 为什么这里就要获取 ？？
+    // 获取本次调度要处理的更新，然后根据优先级，决定任务调度的策略
     /**
-     * 
+     * lane 选择的策略:
+     * - 
      */
     var nextLanes = getNextLanes(root, root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes);
 
+    // 没有新的更新要处理，结束任务调度
     if (nextLanes === NoLanes) {
       // Special case: There's nothing to work on.
-      // 没有新的更新要处理，结束任务调度
       if (existingCallbackNode !== null) {
         cancelCallback$1(existingCallbackNode);
       }
@@ -25883,7 +25891,9 @@
 
     var existingCallbackPriority = root.callbackPriority;
 
-    if (existingCallbackPriority === newCallbackPriority && // Special case related to `act`. If the currently scheduled task is a
+    if (existingCallbackPriority === newCallbackPriority && 
+    
+    // Special case related to `act`. If the currently scheduled task is a
     // Scheduler task, rather than an `act` task, cancel it and re-scheduled
     // on the `act` queue.
     !( ReactCurrentActQueue.current !== null && existingCallbackNode !== fakeActCallbackNode)) {
@@ -25910,38 +25920,47 @@
     var newCallbackNode;
 
     // 根据分配的 lanes 的最高优先级，进行任务调度
-
     if (newCallbackPriority === SyncLane) {
+      // 分配的 SyncLane
       // Special case: Sync React callbacks are scheduled on a special
       // internal queue
       if (root.tag === LegacyRoot) {
         if ( ReactCurrentActQueue.isBatchingLegacy !== null) {
           ReactCurrentActQueue.didScheduleLegacyUpdate = true;
         }
-        // legency 模式下的同步任务调度
+        // legency 模式下的同步任务调度，实际做的是把 callback 添加到 syncQueue 中
         scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null, root));
       } else {
         // concurrent 模式下的同步任务调度
         // 和 scheduleLegacySyncCallback 的区别是，不会设置 includesLegacySyncCallbacks 为 true
+        // 实际做的也是把 callback 添加到 syncQueue 中
         scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
       }
 
+      // 分配的 lane 是 SyncLane, 才需要使用微任务处理 ？？
       {
-        // Flush the queue in a microtask.
+        // Flush the queue in a microtask.  在微任务中刷新任务队列
         if ( ReactCurrentActQueue.current !== null) {
           // Inside `act`, use our internal `act` queue so that these get flushed
           // at the end of the current scope even when using the sync version
           // of `act`.
+
+          // 在 `act` 中，使用我们内部的 `act` 队列，
+          // 这样即使在使用 `act` 的同步版本时，这些队列也会在当前范围的末尾被刷新。
+          // TODO: study ?? 测试用例会走这个分支？？
           ReactCurrentActQueue.current.push(flushSyncCallbacks);
         } else {
           // 使用微任务进行异步任务调度 - flushSyncCallbacks
+          // 使用 queueMicrotask、promise 等进行微任务调度 ？？
           scheduleMicrotask(flushSyncCallbacks);
         }
       }
 
       newCallbackNode = null;
     } else {
+      // 分配的 lane 不是 SyncLane，使用宏任务进行任务调度 ？？
       var schedulerPriorityLevel;
+
       // 根据为更新分配的 lane 的优先级，确定任务调度优先级
       switch (lanesToEventPriority(nextLanes)) {
         case DiscreteEventPriority:
@@ -26052,6 +26071,7 @@
         prepareFreshStack(root, NoLanes);
         // 标记 fiber tree 中暂停的更新
         markRootSuspended$1(root, lanes);
+        // 为 fiber tree 的更新安排一个调度任务
         ensureRootIsScheduled(root, now());
         throw fatalError;
       } // Check if this render may have yielded to a concurrent event, and if so,
@@ -26084,6 +26104,7 @@
           prepareFreshStack(root, NoLanes);
           // 标记 fiber tree 中暂停的更新
           markRootSuspended$1(root, lanes);
+          // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
           ensureRootIsScheduled(root, now());
           throw _fatalError;
         }
@@ -26095,7 +26116,7 @@
       root.finishedLanes = lanes;
       finishConcurrentRender(root, exitStatus, lanes);
     }
-
+    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
     ensureRootIsScheduled(root, now());
 
     if (root.callbackNode === originalCallbackNode) {
@@ -26360,6 +26381,7 @@
     if (!includesSomeLane(lanes, SyncLane)) {
       // There's no remaining sync work left.
       // lanes 中不包含 SyncLane，
+      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
       ensureRootIsScheduled(root, now());
       return null;
     }
@@ -26400,6 +26422,7 @@
       prepareFreshStack(root, NoLanes);
       // 标记 fiber tree 中暂停的更新
       markRootSuspended$1(root, lanes);
+      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
       ensureRootIsScheduled(root, now());
       throw fatalError;
     } // We now have a consistent tree. Because this is a sync render, we
@@ -26411,7 +26434,7 @@
     root.finishedLanes = lanes;
     commitRoot(root); // Before exiting, make sure there's a callback scheduled for the next
     // pending level.
-
+    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
     ensureRootIsScheduled(root, now());
     return null;
   }
@@ -26425,6 +26448,7 @@
     if (lanes !== NoLanes) {
       // 标记 fiber tree 中发生缠绕的更新
       markRootEntangled(root, mergeLanes(lanes, SyncLane));
+      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
       ensureRootIsScheduled(root, now());
 
       if ((executionContext & (RenderContext | CommitContext)) === NoContext) {
@@ -27066,6 +27090,7 @@
     if ((finishedWork.subtreeFlags & PassiveMask) !== NoFlags || (finishedWork.flags & PassiveMask) !== NoFlags) {
       if (!rootDoesHavePassiveEffects) {
         rootDoesHavePassiveEffects = true;
+        // 根据任务优先级，调度任务
         scheduleCallback$1(NormalPriority, function () {
           flushPassiveEffects();
           return null;
@@ -27186,10 +27211,11 @@
 
     {
       onCommitRoot$1();
-    } // Always call this before exiting `commitRoot`, to ensure that any
+    } 
+    // Always call this before exiting `commitRoot`, to ensure that any
     // additional work on this root is scheduled.
 
-
+    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
     ensureRootIsScheduled(root, now());
 
     if (hasUncaughtError) {
@@ -27287,6 +27313,7 @@
 
       if (!rootDoesHavePassiveEffects) {
         rootDoesHavePassiveEffects = true;
+        // 根据任务优先级，调度任务
         scheduleCallback$1(NormalPriority, function () {
           flushPassiveEffects();
           return null;
@@ -27395,6 +27422,7 @@
     if (root !== null) {
       // 标记 fiber tree 需要更新，将分配的 SyncLane 合并到 fiber root node 的 pendingLanes 中
       markRootUpdated(root, SyncLane, eventTime);
+      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
       ensureRootIsScheduled(root, eventTime);
     }
   }
@@ -27433,6 +27461,7 @@
           if (root !== null) {
             // 标记 fiber tree 需要更新，将为更新分配的 SyncLane 合并到 fiber root node 的 pendingLanes 中
             markRootUpdated(root, SyncLane, eventTime);
+            // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
             ensureRootIsScheduled(root, eventTime);
           }
 
@@ -27493,7 +27522,7 @@
         workInProgressRootPingedLanes = mergeLanes(workInProgressRootPingedLanes, pingedLanes);
       }
     }
-
+    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
     ensureRootIsScheduled(root, eventTime);
   }
 
@@ -27521,7 +27550,7 @@
     if (root !== null) {
       // 标记 fiber tree 需要更新，将为更新分配的 retryLane 合并到 fiber root node 的 pendingLanes 中
       markRootUpdated(root, retryLane, eventTime);
-      // 
+      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，安排不同的调度策略 ？？)
       ensureRootIsScheduled(root, eventTime);
     }
   }
@@ -27836,22 +27865,27 @@
     {
       // If we're currently inside an `act` scope, bypass Scheduler and push to
       // the `act` queue instead.
-      // 如果当前我们在一个 act 作用域内，绕过调度器并推送到 act 对垒中
+      // 如果当前我们在一个 act 作用域内，绕过调度器并推送到 act 队列中
       var actQueue = ReactCurrentActQueue.current;
-
+      // 测试用例会走这个分支？
       if (actQueue !== null) {
         actQueue.push(callback);
         return fakeActCallbackNode;
       } else {
+        // 使用调度器，根据任务优先级，进行任务调度
         return scheduleCallback(priorityLevel, callback);
       }
     }
   }
 
+  /**
+   * 
+   */
   function cancelCallback$1(callbackNode) {
     if ( callbackNode === fakeActCallbackNode) {
       return;
-    } // In production, always call Scheduler. This function will be stripped out.
+    } 
+    // In production, always call Scheduler. This function will be stripped out.
 
 
     return cancelCallback(callbackNode);

@@ -133,6 +133,7 @@
     ReactCurrentBatchConfig._updatedFibers = new Set();
   }
 
+  // 测试用的 ？？
   var ReactCurrentActQueue = {
     current: null,
     // Our internal tests use a custom implementation of `act` that works by
@@ -142,6 +143,7 @@
     // is check if a `jest` global is defined.
     disableActWarning: false,
     // Used to reproduce behavior of `batchedUpdates` in legacy mode.
+    // 用于在传统模式下重现 batchedUpdates 的行为
     isBatchingLegacy: false,
     didScheduleLegacyUpdate: false
   };
@@ -3406,6 +3408,7 @@
       if (ReactCurrentActQueue.current === null) {
         // This is the outermost `act` scope. Initialize the queue. The reconciler
         // will detect the queue and use it instead of Scheduler.
+        // 这是最外层的 `act` 作用域。 初始化队列。 调和器将检测队列并使用它而不是调度器。
         ReactCurrentActQueue.current = [];
       }
 
@@ -3417,10 +3420,20 @@
         // set to `true` while the given callback is executed, not for updates
         // triggered during an async event, because this is how the legacy
         // implementation of `act` behaved.
+
+        // 用于在传统模式下重现 `batchedUpdates` 的行为。 
+        // 仅有的在执行给定的回调时设置为 `true`，而不是在异步事件期间触发的更新，
+        // 因为这是 `act` 的旧实现的行为方式。
+
         ReactCurrentActQueue.isBatchingLegacy = true;
-        result = callback(); // Replicate behavior of original `act` implementation in legacy mode,
+        result = callback(); 
+        
+        // Replicate behavior of original `act` implementation in legacy mode,
         // which flushed updates immediately after the scope function exits, even
         // if it's an async function.
+
+        // 在传统模式下复制原始 `act` 实现的行为，
+        // 即使它是一个异步函数，它也会在作用域函数退出后立即刷新更新。
 
         if (!prevIsBatchingLegacy && ReactCurrentActQueue.didScheduleLegacyUpdate) {
           var queue = ReactCurrentActQueue.current;
@@ -3438,7 +3451,9 @@
       }
 
       if (result !== null && typeof result === 'object' && typeof result.then === 'function') {
-        var thenableResult = result; // The callback is an async function (i.e. returned a promise). Wait
+        var thenableResult = result; 
+        
+        // The callback is an async function (i.e. returned a promise). Wait
         // for it to resolve before exiting the current scope.
 
         var wasAwaited = false;
