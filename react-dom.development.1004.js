@@ -13762,6 +13762,7 @@
      * setState,修改类组件的 state，
      */
     enqueueSetState: function (inst, payload, callback) {
+      // debugger
       // 根据类组件实例获取对应的 fiber node
       var fiber = get(inst);
       // 返回一个时间戳，标记更新发生的时间
@@ -25644,6 +25645,7 @@
   // between the first and second call.
 
   var currentEventTime = NoTimestamp;
+  // 
   var currentEventTransitionLane = NoLanes;
 
   /**
@@ -25717,7 +25719,8 @@
       // 
       if (currentEventTransitionLane === NoLane) {
         // All transitions within the same event are assigned the same lane.
-        // 同一个事件内部的 transition 都分配相同的 lane ？？
+        // 同一个事件内部的 transition 都分配相同的 lane
+        // 为啥呢 ？？
         currentEventTransitionLane = claimNextTransitionLane();
       }
 
@@ -25974,6 +25977,8 @@
     var existingCallbackPriority = root.callbackPriority;
 
     if (existingCallbackPriority === newCallbackPriority && 
+      // newCallbackPriority 优先级和 existingCallbackPriority 相等，优先级没有变化
+      // 不需要重新安排一个任务调度，用来的任务调度就会一并处理本次更新
     
     // Special case related to `act`. If the currently scheduled task is a
     // Scheduler task, rather than an `act` task, cancel it and re-scheduled
@@ -26087,13 +26092,17 @@
    * @param didiTimeout
    */
   function performConcurrentWorkOnRoot(root, didTimeout) {
+    // debugger
     {
       resetNestedUpdateFlag();
-    } // Since we know we're in a React event, we can clear the current
+    } 
+    // Since we know we're in a React event, we can clear the current
     // event time. The next update will compute a new event time.
 
-
+    // 清空 currentEventTime
     currentEventTime = NoTimestamp;
+
+    // 清空 currentEventTransitionLane
     currentEventTransitionLane = NoLanes;
 
     if ((executionContext & (RenderContext | CommitContext)) !== NoContext) {
@@ -26448,6 +26457,7 @@
    * 同步模式进行 fiber tree 的协调
    */
   function performSyncWorkOnRoot(root) {
+    // debugger
     {
       syncNestedUpdateFlag();
     }

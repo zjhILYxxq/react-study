@@ -71,14 +71,12 @@
                 // this.ref.current.click();
                 // this.ref.current.click();
                 // this.ref.current.click();
-                // this.ref.current.click();
+                this.ref.current.click();
                 setTimeout(() => {
                     // this.handleClick2();
                     // this.handleClick2();
-                    React.startTransition(() => {
-                        this.setState({
+                    this.setState({
                             name: 'xxq1'
-                        });
                     });
                     React.startTransition(() => {
                         this.setState({
@@ -90,8 +88,13 @@
                             name: 'xxq3'
                         });
                     });
-                    // this.handleClick2();
-                    // this.handleClick2();
+                    React.startTransition(() => {
+                        this.setState({
+                            name: 'xxq4'
+                        });
+                    });
+                    this.handleClick2();
+                    this.handleClick2();
                 }, 100)
 
 
@@ -99,12 +102,14 @@
             }
 
             handleClick2() {
-                debugger
-                this.setState((preState) => {
-                    return {
-                        count: preState.count + 1
-                    }
+                React.startTransition(() => {
+                    this.setState((preState) => {
+                        return {
+                            count: preState.count + 1
+                        }
+                    });
                 });
+                
             }
 
             render() {
