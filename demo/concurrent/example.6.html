@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.1004.js"></script>
+    <script src="../../react-dom.development.1004.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+    <style>
+        html, body {
+            height: 100%;
+        }
+        #app {
+            position: relative;
+            height: 100%;
+        }
+        .child {
+            position: absolute;
+            height: 100%;
+            width: 50%;
+            left: 50%;
+        }
+        .parent {
+            position: absolute;
+            height: 100%;
+            width: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+
+    const names = Array(20000).fill('aaaaaasss');
+
+    class Parent extends React.Component {
+
+        state = {
+            query1: '',
+        }
+
+
+        changeHandler = (e) => {
+            // console.log('changeHandler');
+            // this.setState({
+            //     query2: e.target.value
+            // });
+            React.startTransition(() => {
+                this.setState({
+                    query1: e.target.value
+                });
+            });
+        }
+
+
+        render() {
+            return (
+                <React.Fragment>
+                    <div class="parent">
+                        <input onChange={(e) => this.changeHandler(e)}  type="text" />
+                        {names.map((name, i) => (
+                            <ListItem key={i} name={this.state.query1} />
+                        ))}
+                    </div>
+                    <Child/>
+                </React.Fragment>
+            )
+        }
+    }
+
+
+
+    class Child extends React.Component {
+
+        state = {
+            query2: '',
+        }
+
+
+        changeHandler = (e) => {
+            // console.log('changeHandler');
+            // this.setState({
+            //     query2: e.target.value
+            // });
+            React.startTransition(() => {
+                this.setState({
+                    query2: e.target.value
+                });
+            });
+        }
+
+        render() {
+            return (
+                <div class="child">
+                    <input onChange={(e) => this.changeHandler(e)}  type="text" />
+                    {names.map((name, i) => (
+                        <ListItem key={i} name={this.state.query2} />
+                    ))}
+                </div>
+            )
+        }
+    }
+
+    class ListItem extends React.Component {
+
+
+        render() {
+            return <div>{this.props.name}</div>
+        }
+    }
+
+    // ReactDOM.render(<FilterList />, document.getElementById('app'));
+
+    ReactDOM.createRoot(document.getElementById('app')).render(<Parent/>);
+
+
+        
+    </script>
+</body>

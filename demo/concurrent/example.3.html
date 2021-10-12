@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.1004.js"></script>
+    <script src="../../react-dom.development.1004.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+    <style>
+        .App {
+            font-family: sans-serif;
+        }
+
+        .employee {
+            border: 1px solid lightgray;
+            padding: 4px;
+            margin-bottom: 2px;
+            width: 200px;
+        }
+
+        input {
+            margin-left: 5px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            border: 1px solid lightgray;
+            padding: 5px;
+            border-radius: 4px;
+            width: 150px;
+        }
+
+        .highlight {
+            background-color: yellowgreen;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+
+    const names = Array(20000).fill('aaaaaasss');
+
+    class FilterList extends React.Component {
+
+        state = {
+            query: ''
+        }
+
+        changeHandler = (e) => {
+            console.log('changeHandler');
+            this.setState({
+                query: e.target.value
+            });
+            // React.startTransition(() => {
+            //     this.setState({
+            //         query: e.target.value
+            //     });
+            // });
+        }
+
+        render() {
+            return (
+                <div>
+                <input onChange={(e) => this.changeHandler(e)}  type="text" />
+                {names.map((name, i) => (
+                    <ListItem key={i} name={this.state.query} />
+                ))}
+                </div>
+            );
+        }
+    }
+
+    class ListItem extends React.Component {
+
+
+        render() {
+            return <div>{this.props.name}</div>
+        }
+    }
+
+    ReactDOM.render(<FilterList />, document.getElementById('app'));
+
+    // ReactDOM.createRoot(document.getElementById('app')).render(<FilterList/>);
+
+
+        
+    </script>
+</body>
