@@ -5862,7 +5862,6 @@
   }
 
   /**
-   * TODO: question
    * 标记 fiber tree 中可变读的更新 ？？
    * @param root fiber root node
    * @param updateLane 为更新分配的 lane
@@ -16947,8 +16946,9 @@
     {
       warnAboutMultipleRenderersDEV(source);
     }
-    // 
+    // function, 获取版本号
     var getVersion = source._getVersion;
+    // 获取当前版本好
     var version = getVersion(source._source); 
     
     // Is it safe for this component to read from this source during the current render?
@@ -17110,6 +17110,7 @@
 
     dispatcher.useEffect(function () {
       debugger
+      // getSnapshot，获取源数据
       refs.getSnapshot = getSnapshot; 
       
       // Normally the dispatch function for a state hook never changes,
@@ -17120,14 +17121,17 @@
       // 状态钩子的分派函数通常不会改变，但在某些情况下，该钩子会重新创建队列，以避免来自陈旧源的更新。
       // 下面的handleChange()需要引用分派函数而不需要重新订阅，因此我们使用ref来确保它始终具有最新的版本。
 
+      // setSnapshot, 即 setState，修改源数据
       refs.setSnapshot = setSnapshot; 
       
       // Check for a possible change between when we last rendered now.
       // 检查一个可能的变化 ？？
 
+      // 源数据可能发生了变化 ？？
       var maybeNewVersion = getVersion(source._source);
 
       if (!objectIs(version, maybeNewVersion)) {
+        // 
         var maybeNewSnapshot = getSnapshot(source._source);
 
         {
@@ -17137,6 +17141,7 @@
         }
 
         if (!objectIs(snapshot, maybeNewSnapshot)) {
+          // setSnapshot， 是一个 setState，触发更新
           setSnapshot(maybeNewSnapshot);
           /**
             * 为此次更新分配一个 lane
@@ -17174,6 +17179,7 @@
         var latestSetSnapshot = refs.setSnapshot;
 
         try {
+          // 实际是调用 setState 修改 state
           latestSetSnapshot(latestGetSnapshot(source._source)); 
           
           // Record a pending mutable source update with the same expiration time.
