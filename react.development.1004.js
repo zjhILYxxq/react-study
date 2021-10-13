@@ -2480,23 +2480,31 @@
     return newElement;
   }
 
+  /**
+   * 创建一个可变数据源
+   * @param {*} source 
+   * @param {*} getVersion 
+   */
   function createMutableSource(source, getVersion) {
+    // 创建一个可变数据源
     var mutableSource = {
-      _getVersion: getVersion,
-      _source: source,
+      _getVersion: getVersion,  // 版本变化
+      _source: source, // 元数据
       _workInProgressVersionPrimary: null,
       _workInProgressVersionSecondary: null
     };
 
     {
       mutableSource._currentPrimaryRenderer = null;
-      mutableSource._currentSecondaryRenderer = null; // Used to detect side effects that update a mutable source during render.
+      mutableSource._currentSecondaryRenderer = null; 
+      
+      // Used to detect side effects that update a mutable source during render.
       // See https://github.com/facebook/react/issues/19948
 
       mutableSource._currentlyRenderingFiber = null;
       mutableSource._initialVersionAsOfFirstRender = null;
     }
-
+    // 返回可变数据源，类似 context
     return mutableSource;
   }
 

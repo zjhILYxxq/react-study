@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.1004.js"></script>
+    <script src="../../react-dom.development.1004.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+        const ref = {
+            current: {
+                count: 0
+            },
+            listeners: []
+        };
+
+        const mutableSource = React.unstable_createMutableSource(ref, () => ref.current);
+
+        const getSnapshot = (ref) => ref.current;
+
+        const subscribe = (ref, callback) => {
+            ref.listeners.push(callback);
+            return () => {
+                ref.listeners.splice(ref.listeners.indexOf(callback), 1);
+            };
+        };
+
+        const useJSObject = () => {
+            return React.unstable_useMutableSource(mutableSource, getSnapshot, subscribe);
+        };
+
+        const setJSObjectAndEmit = (value) => {
+            ref.current = value;
+            ref.listeners.forEach((listener) => listener());
+        };
+
+        function App() {
+            debugger
+            const obj = useJSObject();
+            
+            return (
+                <div>
+                    <button onClick={() => setJSObjectAndEmit({count: obj.count + 1})}>+</button>
+                    <div>{obj.count}</div>
+                </div>
+            )
+        }
+
+        ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+    </script>
+</body>

@@ -13217,8 +13217,6 @@
 
     var updateQueue = fiber.updateQueue;
 
-    console.log('fiber', fiber.type.name);
-
     if (updateQueue === null) {
       // Only occurs if the fiber has been unmounted.
       return;
@@ -16219,9 +16217,16 @@
     rendererSigil$1 = {};
   }
 
+  /**
+   * 
+   */
   function markSourceAsDirty(mutableSource) {
     workInProgressSources.push(mutableSource);
   }
+
+  /**
+   * 
+   */
   function resetWorkInProgressVersions() {
     for (var i = 0; i < workInProgressSources.length; i++) {
       var mutableSource = workInProgressSources[i];
@@ -16233,11 +16238,20 @@
 
     workInProgressSources.length = 0;
   }
+
+
+  /**
+   * 
+   */
   function getWorkInProgressVersion(mutableSource) {
     {
       return mutableSource._workInProgressVersionPrimary;
     }
   }
+
+  /**
+   * 
+   */
   function setWorkInProgressVersion(mutableSource, version) {
     {
       mutableSource._workInProgressVersionPrimary = version;
@@ -16869,6 +16883,9 @@
     return [hook.memoizedState, dispatch];
   }
 
+  /**
+   * 
+   */
   function rerenderReducer(reducer, initialArg, init) {
     var hook = updateWorkInProgressHook();
     var queue = hook.queue;
@@ -16920,23 +16937,39 @@
     return [newState, dispatch];
   }
 
+  /**
+   * 
+   * @param root
+   * @param source
+   * @param getSnapshot
+   */
   function readFromUnsubscribedMutableSource(root, source, getSnapshot) {
     {
       warnAboutMultipleRenderersDEV(source);
     }
-
+    // 
     var getVersion = source._getVersion;
-    var version = getVersion(source._source); // Is it safe for this component to read from this source during the current render?
+    var version = getVersion(source._source); 
+    
+    // Is it safe for this component to read from this source during the current render?
 
-    var isSafeToReadFromSource = false; // Check the version first.
+    // 在协调过程中读取 source 是否是安全的？ 默认不安全
+    var isSafeToReadFromSource = false; 
+    
+    // Check the version first.
     // If this render has already been started with a specific version,
     // we can use it alone to determine if we can safely read from the source.
+
+    // 先检查版本。
+    // 如果这个渲染已经从一个特定的版本开始，我们可以单独使用它来确定是否可以安全地从 mutableSource 中读取数据。
 
     var currentRenderVersion = getWorkInProgressVersion(source);
 
     if (currentRenderVersion !== null) {
       // It's safe to read if the store hasn't been mutated since the last time
       // we read something.
+      // 如果自上次读取内容以来，存储没有发生突变，则读取是安全的。
+      // 版本没有发生变化，则读取数据是安全的 ？？
       isSafeToReadFromSource = currentRenderVersion === version;
     } else {
       // If there's no version, then this is the first time we've read from the
@@ -16953,17 +16986,32 @@
       // lanes, since that guarantees that the value we're about to read from
       // the source is consistent with the values that we read during the most
       // recent mutation.
+
+      // 如果没有版本，那么这是我们第一次在当前渲染过程中读取 mutableSource，所以我们需要做更多的工作。
+      // 我们需要确定的是，是否有任何已订阅源的钩子，如果有，是否有任何尚未同步的未处理的 mutations。
+
+      // 如果没有未处理的 mutations， root.mutableReadLanes 是空，可以安全读取
+
+      // 如果有未处理的 mutations，在 render lanes 包含待处理的 mutation lanes 的情况, 可以安全读取
+      // 因为这保证了我们将要从源读取的值与我们在最近的修改期间读取的值一致。
+
+      // 如果 renderLanes 中包含 root.mutableReadLanes，读取是安全的
       isSafeToReadFromSource = isSubsetOfLanes(renderLanes, root.mutableReadLanes);
-      // renderLanes 中不包含 root.mutableReadLanes， 意味着？？
+      // renderLanes 中不包含 root.mutableReadLanes， 读取是不安全的
       if (isSafeToReadFromSource) {
         // If it's safe to read from this source during the current render,
         // store the version in case other components read from it.
         // A changed version number will let those components know to throw and restart the render.
+
+        // 如果在当前呈现期间从该源代码读取是安全的，则存储该版本，以备其他组件从中读取。
+        // 更改的版本号将让这些组件知道要抛出并重新启动渲染。
+
         setWorkInProgressVersion(source, version);
       }
     }
 
     if (isSafeToReadFromSource) {
+      // 读取 mutable surce 数据
       var snapshot = getSnapshot(source._source);
 
       {
@@ -16971,7 +17019,7 @@
           error('Mutable source should not return a function as the snapshot value. ' + 'Functions may close over mutable values and cause tearing.');
         }
       }
-
+      // 返回读取的数据
       return snapshot;
     } else {
       // This handles the special case of a mutable source being shared between renderers.
@@ -16983,7 +17031,19 @@
       //
       // This can lead to tearing in the first renderer when it resumes,
       // but there's nothing we can do about that (short of throwing here and refusing to continue the render).
-      markSourceAsDirty(source); // Intentioally throw an error to force React to retry synchronously. During
+
+      // 这将处理在呈现程序之间共享可变源的特殊情况。
+      // 在这种情况下，如果源在第一和第二呈现程序之间发生了变化，
+      // 第二个呈现程序不知道它需要在展开期间重置WIP版本(因为钩子只有在源被写入其WIP版本时才会将源标记为dirty)。
+      // 这将导致这个泪滴检查再次抛出，最终对用户可见。
+
+
+      // 我们可以通过显式地将源标记为dirty来避免这种无限循环。
+      // 这可能导致在第一个渲染器恢复时撕裂，但我们对此无能为力(除了在这里抛出并拒绝继续渲染)。
+
+      markSourceAsDirty(source); 
+      
+      // Intentioally throw an error to force React to retry synchronously. During
       // the synchronous retry, it will block interleaved mutations, so we should
       // get a consistent read. Therefore, the following error should never be
       // visible to the user.
@@ -16994,21 +17054,35 @@
     }
   }
 
+  /**
+   * 
+   * @param hook
+   * @param source
+   * @param getSnapshot
+   * @param subscribe
+   */
   function useMutableSource(hook, source, getSnapshot, subscribe) {
+    debugger
+    // 当前的 fiber tree 的 root 节点
     var root = getWorkInProgressRoot();
 
     if (root === null) {
       throw Error( 'Expected a work-in-progress root. This is a bug in React. Please file an issue.' );
     }
 
+    // 函数，生成版本号
     var getVersion = source._getVersion;
+    // 根据源数据 source 生成版本号
     var version = getVersion(source._source);
+    // 
     var dispatcher = ReactCurrentDispatcher$1.current; // eslint-disable-next-line prefer-const
 
     var _dispatcher$useState = dispatcher.useState(function () {
       return readFromUnsubscribedMutableSource(root, source, getSnapshot);
     }),
+        // state
         currentSnapshot = _dispatcher$useState[0],
+        // setState
         setSnapshot = _dispatcher$useState[1];
 
     var snapshot = currentSnapshot; // Grab a handle to the state hook as well.
@@ -17018,22 +17092,38 @@
     var memoizedState = hook.memoizedState;
     var refs = memoizedState.refs;
     var prevGetSnapshot = refs.getSnapshot;
+    //
     var prevSource = memoizedState.source;
+    // 
     var prevSubscribe = memoizedState.subscribe;
+    // 
     var fiber = currentlyRenderingFiber$1;
+    // 
     hook.memoizedState = {
       refs: refs,
       source: source,
       subscribe: subscribe
-    }; // Sync the values needed by our subscription handler after each commit.
+    }; 
+    
+    // Sync the values needed by our subscription handler after each commit.
+    // 在每次提交后同步订阅处理程序需要的值
 
     dispatcher.useEffect(function () {
-      refs.getSnapshot = getSnapshot; // Normally the dispatch function for a state hook never changes,
+      debugger
+      refs.getSnapshot = getSnapshot; 
+      
+      // Normally the dispatch function for a state hook never changes,
       // but this hook recreates the queue in certain cases  to avoid updates from stale sources.
       // handleChange() below needs to reference the dispatch function without re-subscribing,
       // so we use a ref to ensure that it always has the latest version.
 
-      refs.setSnapshot = setSnapshot; // Check for a possible change between when we last rendered now.
+      // 状态钩子的分派函数通常不会改变，但在某些情况下，该钩子会重新创建队列，以避免来自陈旧源的更新。
+      // 下面的handleChange()需要引用分派函数而不需要重新订阅，因此我们使用ref来确保它始终具有最新的版本。
+
+      refs.setSnapshot = setSnapshot; 
+      
+      // Check for a possible change between when we last rendered now.
+      // 检查一个可能的变化 ？？
 
       var maybeNewVersion = getVersion(source._source);
 
@@ -17068,18 +17158,25 @@
 
         // 如果源在渲染和现在之间发生了变化，可能已经从旧源安排了状态更新。
         // 纠缠更新，以便它们在同一批次中渲染。
+
         // 标记 fiber tree 中发生缠绕的更新
         markRootEntangled(root, root.mutableReadLanes);
       }
-    }, [getSnapshot, source, subscribe]); // If we got a new source or subscribe function, re-subscribe in a passive effect.
+    }, [getSnapshot, source, subscribe]); 
+    
+    // If we got a new source or subscribe function, re-subscribe in a passive effect.
+    // 如果我们得到一个新的源或订阅函数，以被动的方式重新订阅。
 
     dispatcher.useEffect(function () {
+      debugger
       var handleChange = function () {
         var latestGetSnapshot = refs.getSnapshot;
         var latestSetSnapshot = refs.setSnapshot;
 
         try {
-          latestSetSnapshot(latestGetSnapshot(source._source)); // Record a pending mutable source update with the same expiration time.
+          latestSetSnapshot(latestGetSnapshot(source._source)); 
+          
+          // Record a pending mutable source update with the same expiration time.
           /**
             * 为此次更新分配一个 lane
             * 分配规则:
@@ -17112,7 +17209,9 @@
       }
 
       return unsubscribe;
-    }, [source, subscribe]); // If any of the inputs to useMutableSource change, reading is potentially unsafe.
+    }, [source, subscribe]); 
+    
+    // If any of the inputs to useMutableSource change, reading is potentially unsafe.
     //
     // If either the source or the subscription have changed we can't can't trust the update queue.
     // Maybe the source changed in a way that the old subscription ignored but the new one depends on.
@@ -17124,11 +17223,23 @@
     // In both cases, we need to throw away pending updates (since they are no longer relevant)
     // and treat reading from the source as we do in the mount case.
 
+    // 如果要使用 useMutableSource 的任何输入发生了变化，读取就可能是不安全的。
+    // 如果源或订阅发生了变化，我们不能不能信任更新队列。也许源更改了，旧订阅忽略了，但新订阅依赖。
+    // 如果 getSnapshot 函数改变了，我们也不应该依赖更新队列。
+    // 底层源可能在触发最后一个“change”事件和处理当前呈现(使用新的getSnapshot函数)之间发生了变化。
+    // 在这两种情况下，我们都需要丢弃挂起的更新(因为它们不再相关)，并将从源读取操作视为挂载情况。
+
+
     if (!objectIs(prevGetSnapshot, getSnapshot) || !objectIs(prevSource, source) || !objectIs(prevSubscribe, subscribe)) {
       // Create a new queue and setState method,
       // So if there are interleaved updates, they get pushed to the older queue.
       // When this becomes current, the previous queue and dispatch method will be discarded,
       // including any interleaving updates that occur.
+
+      // getSnapshot、source、subscribe 发生变化，都需要丢弃原来的更新
+
+      // 创建一个新的队列和setState方法，如果有交错更新，它们会被推到旧队列。
+      // 当它变成当前值时，之前的队列和分派方法将被丢弃，包括发生的任何交叉更新。
       var newQueue = {
         pending: null,
         interleaved: null,
@@ -17147,6 +17258,12 @@
     return snapshot;
   }
 
+  /**
+   * 挂载阶段，执行 useMutableSource
+   * @param souce  mutableSouce
+   * @param getSnapshot
+   * @param subscribe
+   */
   function mountMutableSource(source, getSnapshot, subscribe) {
     var hook = mountWorkInProgressHook();
     hook.memoizedState = {
@@ -17160,6 +17277,12 @@
     return useMutableSource(hook, source, getSnapshot, subscribe);
   }
 
+  /**
+   * 更新阶段，执行 useMutableSource
+   * @param source
+   * @param getSnapshot
+   * @param subscribe
+   */
   function updateMutableSource(source, getSnapshot, subscribe) {
     var hook = updateWorkInProgressHook();
     return useMutableSource(hook, source, getSnapshot, subscribe);
