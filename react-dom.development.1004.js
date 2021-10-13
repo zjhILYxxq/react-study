@@ -17060,10 +17060,14 @@
           var lane = requestUpdateLane(fiber);
           // 标记 fiber tree 中可变读的更新 ？？
           markRootMutableRead(root, lane);
-        } // If the source mutated between render and now,
+        } 
+        
+        // If the source mutated between render and now,
         // there may be state updates already scheduled from the old source.
         // Entangle the updates so that they render in the same batch.
 
+        // 如果源在渲染和现在之间发生了变化，可能已经从旧源安排了状态更新。
+        // 纠缠更新，以便它们在同一批次中渲染。
         // 标记 fiber tree 中发生缠绕的更新
         markRootEntangled(root, root.mutableReadLanes);
       }
