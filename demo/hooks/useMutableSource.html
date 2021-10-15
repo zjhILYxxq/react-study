@@ -13,7 +13,7 @@
     <script type="text/babel">
         const ref = {
             current: {
-                count: 0
+                value: 0
             },
             listeners: []
         };
@@ -30,7 +30,7 @@
         };
 
         const useJSObject = () => {
-            return React.unstable_useMutableSource(mutableSource, getSnapshot, subscribe);
+            return React.unstable_useMutableSource(mutableSource, (ref) => ref.current, subscribe);
         };
 
         const setJSObjectAndEmit = (value) => {
@@ -39,13 +39,16 @@
         };
 
         function App() {
-            debugger
             const obj = useJSObject();
+
+            const handleChange = (e) => {
+                setJSObjectAndEmit({value: e.target.value});
+            }
             
             return (
                 <div>
-                    <button onClick={() => setJSObjectAndEmit({count: obj.count + 1})}>+</button>
-                    <div>{obj.count}</div>
+                    <input onChange={handleChange} />
+                    {Array(50000).fill('a').map(item => <div>{obj.value}</div>)}
                 </div>
             )
         }
