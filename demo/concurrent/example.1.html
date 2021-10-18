@@ -37,31 +37,28 @@
     <script type="text/babel">
         function App() {
             const [visible, setVisible] = React.useState(false);
-            const [value, setValue] = React.useState('');
-            const [isPending, start] = React.useTransition();
+            const [isPending, startTransition] = React.useTransition();
 
-            const changeValue = (val) => {
-                console.log(val.length);
-                setTimeout(() => {
-                    setValue(val);
-                }, 100)
+            const handleVisible = () => {
+                startTransition(() => {
+                    setVisible(true);
+                });
             }
+    
+
             return <div>
-                <button onClick={() => setVisible(true)}>显示</button>
-                <input onChange={(e) => start(changeValue(e.target.value))}/>
-                <input onChange={(e) => changeValue(e.target.value)}/>
-                <div>{value.length}</div>
+                <button onClick={handleVisible}>显示</button>
                 {visible && (
                     <div className="box">
-                        {Array(20000).fill('a').map(item => <span>{item}</span>)}    
+                        {Array(1000).fill('a').map(item => <span>{item}</span>)}    
                     </div>
                 )}
             </div>
         }
 
-        // ReactDOM.render(<App />, document.getElementById('app'));
+        ReactDOM.render(<App />, document.getElementById('app'));
 
-        new ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+        // ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
     
     </script>
 </body>
