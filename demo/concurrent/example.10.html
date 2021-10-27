@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.1004.js"></script>
+    <script src="../../react-dom.development.1004.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+    <style>
+        .box {
+            height: 50px;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+
+    function App() {
+        const [count, setCount] = React.useState(0);
+        const [isPending, startTransition] = React.useTransition();
+        const [x, setX] = React.useState(0);
+
+        const handleClick = () => {
+            setTimeout(() => setCount(count + 1), 0);
+        }
+        
+        const handleMouseMove = (e) => {
+            setX(e.pageX);
+        }
+
+        return (
+            <div>
+                <div className="box" onMouseMove={handleMouseMove}>x:{x}</div>
+                <button onClick={handleClick}>+</button>
+                {Array(50000).fill('a').map(item => <div>{count}</div>)}
+            </div>
+            
+        )
+    }
+
+    const rootElement = document.getElementById("app");
+
+    ReactDOM.createRoot(rootElement).render(<React.Fragment>
+        <App />
+    </React.Fragment>);
+    </script>
+</body>

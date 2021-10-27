@@ -15,26 +15,63 @@
 
 
         function App() {
-            const [value, setValue] = React.useState("");
+            const [value1, setValue1] = React.useState("");
+            const [value2, setValue2] = React.useState("");
             const [isPending, startTransition] = React.useTransition();
 
             const handleValueChange = (e) => {
-                startTransition(() => setValue(e.target.value))
+                setValue1(e.target.value);
+                startTransition(() => setValue2(e.target.value))
             };
             return (
                 <div>
                 <input onChange={handleValueChange} />
-                {Array(1000)
+                <div>{value1}</div>
+                {Array(1)
                     .fill("a")
                     .map((item) => (
-                    <div>{value}</div>
+                    <div>{value2}</div>
                     ))}
                 </div>
             );
         }
+
+        class Parent extends React.Component {
+            state = {
+                value1: '',
+                value2: ''
+            }
+            handleValueChange(value) {
+                debugger
+                this.setState({
+                    value1: value
+                });
+
+                React.startTransition(() => {
+                    this.setState({
+                        value2: value
+                    })
+                });
+            }
+
+            render() {
+                return (
+                    <div>
+                    <input onChange={(e) => this.handleValueChange(e.target.value)} />
+                    <div>{this.state.value1}</div>
+                    {Array(10000)
+                        .fill("a")
+                        .map((item) => (
+                        <div>{this.state.value2}</div>
+                        ))}
+                    </div>
+                )
+            }
+
+        }
         const rootElement = document.getElementById("app");
 
-        ReactDOM.createRoot(rootElement).render(<App />);
+        ReactDOM.createRoot(rootElement).render(<Parent />);
     
     </script>
 </body>

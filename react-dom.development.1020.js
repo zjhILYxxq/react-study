@@ -1126,7 +1126,14 @@
 
                 if (c < 0 || sampleLines[s] !== controlLines[c]) {
                   // V8 adds a "new" prefix for native classes. Let's remove it to make it prettier.
-                  var _frame = '\n' + sampleLines[s].replace(' at new ', ' at ');
+                  var _frame = '\n' + sampleLines[s].replace(' at new ', ' at '); // If our component frame is labeled "<anonymous>"
+                  // but we have a user-provided "displayName"
+                  // splice it in to make the stack more readable.
+
+
+                  if (fn.displayName && _frame.includes('<anonymous>')) {
+                    _frame = _frame.replace('<anonymous>', fn.displayName);
+                  }
 
                   {
                     if (typeof fn === 'function') {
@@ -4440,16 +4447,6 @@
   var StaticMask = LayoutStatic | PassiveStatic | RefStatic;
 
   var ReactCurrentOwner = ReactSharedInternals.ReactCurrentOwner;
-
-  /**
-   * 根据指定的 fiber node，找到离它最近的已挂载好的 fiber node
-   * fiber node 是初次挂载:
-   * - 如果 fiber node 的 flags 为 Placement 或者 Hydrating，说明 对应的 dom 节点的还有可能没有添加到 dom tree 上，此时要找对应的 dom 节点已经在 dom tree
-   * 上的 fiber node，最后有可能会找到 container fiber node；
-   * 
-   * 如果 fiber node 的 flags 不为 placement 或者 Hydrating
-   * @param fiber fiber noe
-   */
   function getNearestMountedFiber(fiber) {
     var node = fiber;
     var nearestMounted = fiber;
@@ -4487,11 +4484,6 @@
 
     return null;
   }
-
-  /**
-   * 
-   * @param fiber
-   */
   function getSuspenseInstanceFromFiber(fiber) {
     if (fiber.tag === SuspenseComponent) {
       var suspenseState = fiber.memoizedState;
@@ -4511,25 +4503,12 @@
 
     return null;
   }
-
-  /**
-   * 根据 fiber node 获取容器节点
-   * @param fiber fiber node
-   */
   function getContainerFromFiber(fiber) {
     return fiber.tag === HostRoot ? fiber.stateNode.containerInfo : null;
   }
-
-  /**
-   * 判断 fiber node 是否已经挂载
-   */
   function isFiberMounted(fiber) {
     return getNearestMountedFiber(fiber) === fiber;
   }
-
-  /**
-   * 判断类组件 fiber node 是否已经挂载
-   */
   function isMounted(component) {
     {
       var owner = ReactCurrentOwner.current;
@@ -4982,114 +4961,111 @@
   var NoLane =
   /*                          */
   0;
-  var SyncLane =                      // 0000 0000 0000 0000 0000 0000 0000 0001
+  var SyncLane =
   /*                        */
   1;
-  var InputContinuousHydrationLane =  //  0000 0000 0000 0000 0000 0000 0000 0010
+  var InputContinuousHydrationLane =
   /*    */
   2;
-  var InputContinuousLane =           //  0000 0000 0000 0000 0000 0000 0000 0100
+  var InputContinuousLane =
   /*            */
   4;
-  var DefaultHydrationLane =          //  0000 0000 0000 0000 0000 0000 0000 1000
+  var DefaultHydrationLane =
   /*            */
   8;
-  var DefaultLane =                   //  0000 0000 0000 0000 0000 0000 0001 0000 
+  var DefaultLane =
   /*                    */
   16;
-  var TransitionHydrationLane =       //  0000 0000 0000 0000 0000 0000 0010 0000
+  var TransitionHydrationLane =
   /*                */
   32;
-  var TransitionLanes =               //  0000 0000 0011 1111 1111 1111 1100 0000
+  var TransitionLanes =
   /*                       */
   4194240;
-  var TransitionLane1 =               //  0000 0000 0000 0000 0000 0000 0100 0000
+  var TransitionLane1 =
   /*                        */
   64;
-  var TransitionLane2 =               //  0000 0000 0000 0000 0000 0000 1000 0000
+  var TransitionLane2 =
   /*                        */
   128;
-  var TransitionLane3 =               //  0000 0000 0000 0000 0000 0001 0000 0000
+  var TransitionLane3 =
   /*                        */
   256;
-  var TransitionLane4 =               //  0000 0000 0000 0000 0000 0010 0000 0000
+  var TransitionLane4 =
   /*                        */
   512;
-  var TransitionLane5 =               //  0000 0000 0000 0000 0000 0100 0000 0000
+  var TransitionLane5 =
   /*                        */
   1024;
-  var TransitionLane6 =               //  0000 0000 0000 0000 0000 1000 0000 0000
+  var TransitionLane6 =
   /*                        */
   2048;
-  var TransitionLane7 =               //  0000 0000 0000 0000 0001 0000 0000 0000
+  var TransitionLane7 =
   /*                        */
   4096;
-  var TransitionLane8 =               //  0000 0000 0000 0000 0010 0000 0000 0000
+  var TransitionLane8 =
   /*                        */
   8192;
-  var TransitionLane9 =               //  0000 0000 0000 0000 0100 0000 0000 0000
+  var TransitionLane9 =
   /*                        */
   16384;
-  var TransitionLane10 =              //  0000 0000 0000 0000 1000 0000 0000 0000
+  var TransitionLane10 =
   /*                       */
   32768;
-  var TransitionLane11 =              //  0000 0000 0000 0001 0000 0000 0000 0000
+  var TransitionLane11 =
   /*                       */
   65536;
-  var TransitionLane12 =              //  0000 0000 0000 0010 0000 0000 0000 0000
+  var TransitionLane12 =
   /*                       */
   131072;
-  var TransitionLane13 =              //  0000 0000 0000 0100 0000 0000 0000 0000
+  var TransitionLane13 =
   /*                       */
   262144;
-  var TransitionLane14 =              //  0000 0000 0000 1000 0000 0000 0000 0000
+  var TransitionLane14 =
   /*                       */
   524288;
-  var TransitionLane15 =              //  0000 0000 0001 0000 0000 0000 0000 0000
+  var TransitionLane15 =
   /*                       */
   1048576;
-  var TransitionLane16 =              //  0000 0000 0010 0000 0000 0000 0000 0000
+  var TransitionLane16 =
   /*                       */
   2097152;
-  var RetryLanes =                    //  0000 0111 1100 0000 0000 0000 0000 0000
+  var RetryLanes =
   /*                            */
   130023424;
-  var RetryLane1 =                    //  0000 0000 0100 0000 0000 0000 0000 0000
+  var RetryLane1 =
   /*                             */
   4194304;
-  var RetryLane2 =                    //  0000 0000 1000 0000 0000 0000 0000 0000
+  var RetryLane2 =
   /*                             */
   8388608;
-  var RetryLane3 =                    //  0000 0001 0000 0000 0000 0000 0000 0000
+  var RetryLane3 =
   /*                             */
   16777216;
-  var RetryLane4 =                    //  0000 0010 0000 0000 0000 0000 0000 0000
+  var RetryLane4 =
   /*                             */
   33554432;
-  var RetryLane5 =                    //  0000 0100 0000 0000 0000 0000 0000 0000
+  var RetryLane5 =
   /*                             */
   67108864;
-  var SomeRetryLane = RetryLane1;   
-  var SelectiveHydrationLane =        //  0000 1000 0000 0000 0000 0000 0000 0000
+  var SomeRetryLane = RetryLane1;
+  var SelectiveHydrationLane =
   /*          */
   134217728;
-  var NonIdleLanes =                  //  0000 1111 1111 1111 1111 1111 1111 1111
+  var NonIdleLanes =
   /*                                 */
   268435455;
-  var IdleHydrationLane =             //  0001 0000 0000 0000 0000 0000 0000 0000
+  var IdleHydrationLane =
   /*               */
   268435456;
-  var IdleLane =                      //  0010 0000 0000 0000 0000 0000 0000 0000
+  var IdleLane =
   /*                       */
   536870912;
-  var OffscreenLane =                 //  0100 0000 0000 0000 0000 0000 0000 0000
+  var OffscreenLane =
   /*                   */
   1073741824; // This function is used for the experimental scheduling profiler (react-devtools-scheduling-profiler)
   // It should be kept in sync with the Lanes values above.
 
-  /**
-   * 
-   */
   function getLabelForLane(lane) {
     {
       if (lane & SyncLane) {
@@ -5145,30 +5121,25 @@
   var nextTransitionLane = TransitionLane1;
   var nextRetryLane = RetryLane1;
 
-  /**
-   * 从 lanes 中找出优先级最高的 lanes
-   * 如果是 transition、retry 类型的 lane，会存在多条
-   */
   function getHighestPriorityLanes(lanes) {
-    // 从 lanes 中选出优先级最高的 lane，即最靠右的 lane
     switch (getHighestPriorityLane(lanes)) {
       case SyncLane:
-        return SyncLane;  // SyncLane 只有一条
+        return SyncLane;
 
       case InputContinuousHydrationLane:
-        return InputContinuousHydrationLane;  // InputContinuousHydrationLane 只有一条
+        return InputContinuousHydrationLane;
 
       case InputContinuousLane:
-        return InputContinuousLane; // InputContinuousLane 只有一条
+        return InputContinuousLane;
 
       case DefaultHydrationLane:
-        return DefaultHydrationLane;  // DefaultHydrationLane 只有一条
+        return DefaultHydrationLane;
 
       case DefaultLane:
-        return DefaultLane; // DefaultLane 只有一条
+        return DefaultLane;
 
       case TransitionHydrationLane:
-        return TransitionHydrationLane; // TransitionHydrationLane 只有一条
+        return TransitionHydrationLane;
 
       case TransitionLane1:
       case TransitionLane2:
@@ -5186,26 +5157,26 @@
       case TransitionLane14:
       case TransitionLane15:
       case TransitionLane16:
-        return lanes & TransitionLanes; // TransitionLanes 有 16 条
+        return lanes & TransitionLanes;
 
       case RetryLane1:
       case RetryLane2:
       case RetryLane3:
       case RetryLane4:
       case RetryLane5:
-        return lanes & RetryLanes; // RetryLanes 有 5 条
+        return lanes & RetryLanes;
 
       case SelectiveHydrationLane:
-        return SelectiveHydrationLane; // InputContinuousHydrationLane 只有一条
+        return SelectiveHydrationLane;
 
       case IdleHydrationLane:
-        return IdleHydrationLane; // SelectiveHydrationLane 只有一条
+        return IdleHydrationLane;
 
       case IdleLane:
-        return IdleLane; // IdleLane 只有一条
+        return IdleLane;
 
       case OffscreenLane:
-        return OffscreenLane; // OffscreenLane 只有一条
+        return OffscreenLane;
 
       default:
         {
@@ -5217,130 +5188,68 @@
     }
   }
 
-  /**
-   * 获取 fiber tree 协调时要处理的更新
-   * 
-   * 选择策略：
-   * - 第一步, 拿到 pendingLanes(所有待处理的更新)、expiredLanes(已经过期的更新)、suspendedLanes(暂停的更新)、pingedLanes(懒加载的组件/异步数据已经拿到，对应的更新已经恢复工作了)；
-   *          pendingLanes 中会包含 expiredLanes、suspendedLanes、pingedLanes；
-   * - 第二步, 如果有 expiredLanes (已经处理过期的更新), 先选择过期的更新作为 nextLanes，优先级为 SyncLanePriority；
-   * - 第三步, 如果没有过期的更新，那么先从 pendingLanes 中选出优先级比空闲优先级高的更新，即非空闲优先级 nonIdlePendingLanes, 
-   *          然后再从 nonIdlePendingLanes 选出非阻塞的更新 nonIdleUnblockedLanes, 再从 nonIdleUnblockedLanes 中选择优先级最高的一类更新作为 nextLanes；
-   *          如果 nonIdlePendingLanes 中的更新都是已经阻塞的，那么选出已经 pinged 的更新 nonIdlePingedLanes， 再从 nonIdlePingedLanes 中选择优先级最高的一类更新作为 nextLanes;
-   * - 第四步, 如果没有过期的更新，pengdingLanes 中的更新优先级都是空闲优先级，
-   *          先从 pendingLanes 中选出非阻塞的更新 unblockedLanes， 再从 unblockedLanes 中选择优先级最高的一类更新作为 nextLanes；
-   *          如果 pendingLanes 中的更新都是阻塞的，那么选出已经 pinged 的更新，再从 pinged 的更新中选出优先级最高的一类更新作为 nextLanes；
-   * - 第五步，根据第二步、第三步、第四步中挑选出的  nextLanes，再结合 pengingLanes，从 pengdingLanes 中选出优先级和 nextLanes 一样和比 nextLanes 高的更新；
-   * 
-   * 总的来说， 从 pingLanes 选择接下来要处理的更新时，先选择过期的；如果没有过期的， 选择非空闲非暂停的且优先级最高的；如果没有非空闲非暂停的，选择非空闲暂停但已经恢复工作且优先级最高的；
-   * 如果都是空闲的，选择空闲非暂停且优先级最高的；如果没有空闲非暂停的，选择空闲暂停但已经恢复工作的 且优先级最高的；
-   * 更新初步选好以后，如果 pingingLanes 有比选好的更新优先级更高的，尽管是阻塞的，也好合并到一起；
-   * 此时如果上一次的渲染没有处理完，要比较上一次渲染和这一次的优先级，如果上一次的优先级高，继续上一次的渲染；如果上一次的优先级低，要中断上一次的渲染，开始本次渲染
-   * 
-   * 可能的情况：
-   * - 非空闲的非阻塞的更新；
-   * - 过期的低优先级更新 + 高优先级更新；
-   * - 非空闲的阻塞但已经 pinged 的 + 非空闲的阻塞的；
-   * - 空闲的非阻塞的更新；
-   * - 空闲的阻塞但已经 pinged 的 + 空闲的阻塞的；
-   * @param root 一个 fiber root node
-   * @param wipLanes workInProgressRootRenderLanes 当前渲染时正在工作的 lanes。如果 workInProgressRootRenderLanes 不为 0， 说明在渲染过程中产生了新的更新。
-   *                 产生新的更新以后，要重新计算下一次异步调度任务的 lanes 以及优先级，然后将优先级和 workInProgressRootRenderLanes 的优先级对比。
-   *                 如果新的优先级大于 workInProgressRootRenderLanes 优先级，那么下一次异步调度任务就要优先执行，原来的调度任务就会中断；
-   *                 
-   *                    
-   * 
-   */
   function getNextLanes(root, wipLanes) {
     // Early bailout if there's no pending work left.
-    // 所有等待处理的更新
     var pendingLanes = root.pendingLanes;
 
-    // 没有要处理的更新，直接返回 0
     if (pendingLanes === NoLanes) {
       return NoLanes;
     }
 
     var nextLanes = NoLanes;
-    // 已经暂停的更新
     var suspendedLanes = root.suspendedLanes;
-    // 恢复畅通的更新
-    var pingedLanes = root.pingedLanes; 
-    
-    // Do not work on any idle work until all the non-idle work has finished,
+    var pingedLanes = root.pingedLanes; // Do not work on any idle work until all the non-idle work has finished,
     // even if the work is suspended.
-    // 要在非空闲的更新处理完成以后，再处理空闲的更新，尽管空闲的更新是暂停的 ？？
 
-    // 获取待处理的非空闲的更新
     var nonIdlePendingLanes = pendingLanes & NonIdleLanes;
 
     if (nonIdlePendingLanes !== NoLanes) {
-      // 待处理的非空闲更新不为空
       var nonIdleUnblockedLanes = nonIdlePendingLanes & ~suspendedLanes;
 
       if (nonIdleUnblockedLanes !== NoLanes) {
-        // 非空闲且非暂停的更新
-        // 从 nonIdleUnblockedLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
         nextLanes = getHighestPriorityLanes(nonIdleUnblockedLanes);
       } else {
-        // 非空闲且恢复畅通的更新
         var nonIdlePingedLanes = nonIdlePendingLanes & pingedLanes;
 
         if (nonIdlePingedLanes !== NoLanes) {
-          // 从 nonIdlePingedLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
           nextLanes = getHighestPriorityLanes(nonIdlePingedLanes);
         }
       }
     } else {
-      // The only remaining work is Idle. 处理空闲的更新
+      // The only remaining work is Idle.
       var unblockedLanes = pendingLanes & ~suspendedLanes;
 
       if (unblockedLanes !== NoLanes) {
-        // 空闲非暂停
-        // 从 unblockedLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
         nextLanes = getHighestPriorityLanes(unblockedLanes);
       } else {
         if (pingedLanes !== NoLanes) {
-          // 空闲且恢复畅通
-          // 从 pingedLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
           nextLanes = getHighestPriorityLanes(pingedLanes);
         }
       }
     }
 
-    // nextLanes 为 NoLanes, 意味着待处理的更新都已经被暂停了，没有更新可处理
     if (nextLanes === NoLanes) {
       // This should only be reachable if we're suspended
       // TODO: Consider warning in this path if a fallback timer is not scheduled.
       return NoLanes;
-    } 
-    
-    // If we're already in the middle of a render, switching lanes will interrupt
+    } // If we're already in the middle of a render, switching lanes will interrupt
     // it and we'll lose our progress. We should only do this if the new lanes are
     // higher priority.
-
-    // 在协调过程中，切换 lane 会丢失当前的协调进度。我们只有在新的 lane 优先级更高时才能如此。
 
 
     if (wipLanes !== NoLanes && wipLanes !== nextLanes && // If we already suspended with a delay, then interrupting is fine. Don't
     // bother waiting until the root is complete.
     (wipLanes & suspendedLanes) === NoLanes) {
-      // 从 nextLanes 中选出优先级最高的 lane，即最靠右的 lane
       var nextLane = getHighestPriorityLane(nextLanes);
-      // 从 wipLanes 中选出优先级最高的 lane，即最靠右的 lane
       var wipLane = getHighestPriorityLane(wipLanes);
 
       if ( // Tests whether the next lane is equal or lower priority than the wip
       // one. This works because the bits decrease in priority as you go left.
-      // nextLane 值大于 wipLane， 意味着 nextLane 的优先级低于 wipLane，不能中断当前更新
       nextLane >= wipLane || // Default priority updates should not interrupt transition updates. The
       // only difference between default updates and transition updates is that
       // default updates do not support refresh transitions.
       nextLane === DefaultLane && (wipLane & TransitionLanes) !== NoLanes) {
         // Keep working on the existing in-progress tree. Do not interrupt.
-        // 默认优先级更新不能中断 transition 更新
-        // TODO: question ？？
-        // 默认优先级更新和 transition 更新的区别: 默认优先级的更新不支持刷新 transition ？？
         return wipLanes;
       }
     }
@@ -5350,80 +5259,52 @@
       // and default updates, so they render in the same batch. The only reason
       // they use separate lanes is because continuous updates should interrupt
       // transitions, but default updates should not.
-      // 当更新默认是 Sync 时，需要将连续优先级更新和默认优先级更新缠绕到一起，他们在同一批次被渲染。
-      // 当连续优先级更新需要中断 transition 更新时，连续优先级更新和默认优先级更新需要分开处理
-      // TODO: question ??
       nextLanes |= pendingLanes & DefaultLane;
-    } 
-    // Check for entangled lanes and add them to the batch.
-    // 检查纠缠的 lanes，并把他们添加到同一个批次中 ？？
-
+    } // Check for entangled lanes and add them to the batch.
+    //
     // A lane is said to be entangled with another when it's not allowed to render
     // in a batch that does not also include the other lane. Typically we do this
     // when multiple updates have the same source, and we only want to respond to
     // the most recent event from that source.
-
-    // 在一个批次中， 如果 laneA 不允许 render，且这个批次中不包含 laneB，那么 laneA 和 lane B 缠绕在一起 ？？
-    // 通常，当更新具有相同的来源时，会这么做，并且我们只想响应来自该源的最新事件 ？？ 防抖 ？？ 节流 ？？
-
+    //
     // Note that we apply entanglements *after* checking for partial work above.
     // This means that if a lane is entangled during an interleaved event while
     // it's already rendering, we won't interrupt it. This is intentional, since
     // entanglement is usually "best effort": we'll try our best to render the
     // lanes in the same batch, but it's not worth throwing out partially
     // completed work in order to do it.
-
-    // 注意，我们是在检查上述部分工作之后开始使用纠缠 ？？
-    // 这意味着如果一个 lane 在渲染过程中，如果在交错事件期间(??)发生纠缠(??)，我们是不会中断它的。
-    // 这是故意的，因为纠缠(??)通常是尽力而为。
-    // 我们要尽可能在同一个批次中处理 lanes，但是为了完成它而放弃部分完成的工作是不值得的。 ？？
-
     // TODO: Reconsider this. The counter-argument is that the partial work
     // represents an intermediate state, which we don't want to show to the user.
     // And by spending extra time finishing it, we're increasing the amount of
     // time it takes to show the final state, which is what they are actually
     // waiting for.
-
-    // 重新考虑。相反的观点是，部分工作代表了一个我们不想向用户展示的中间状态。
-    // 通过花费额外的时间来完成它，我们增加了显示最终状态所需要的时间，这正是他们实际等待的状态 ？？
-    
     //
     // For those exceptions where entanglement is semantically important, like
     // useMutableSource, we should ensure that there is no partial work at the
     // time we apply the entanglement.
 
-    // 
 
-    // entangledLanes 意味着是 transition 类型的 lane
     var entangledLanes = root.entangledLanes;
 
     if (entangledLanes !== NoLanes) {
       var entanglements = root.entanglements;
-      // nextLanes 中包含 transition 类型的 lane
       var lanes = nextLanes & entangledLanes;
 
       while (lanes > 0) {
-        // // 从 lanes 中分离逐个分离 lane，从优先级最低的开始
         var index = pickArbitraryLaneIndex(lanes);
         var lane = 1 << index;
-        // 发生缠绕的 lanes 要一并处理 ？？
-        // 保证 transition 类型的一起处理，之前已经处理的 transilition 类型的不会丢掉
         nextLanes |= entanglements[index];
         lanes &= ~lane;
       }
     }
+
     return nextLanes;
   }
-
-  /**
-   * 
-   */
   function getMostRecentEventTime(root, lanes) {
     var eventTimes = root.eventTimes;
     var mostRecentEventTime = NoTimestamp;
 
     while (lanes > 0) {
-      // 从 lanes 中分离逐个分离 lane，从优先级最低的开始
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
       var eventTime = eventTimes[index];
@@ -5438,15 +5319,6 @@
     return mostRecentEventTime;
   }
 
-  /**
-   * 计算更新的过期时间
-   * 过期时间计算规则：
-   * - 离散事件更新、连续事件更新，过期时间为 250 ms；
-   * - 默认事件更新、transition 更新，过期时间为 5s；
-   * - retry 类型的更新，没有过期时间；
-   * - 空闲的更新、offscreen 类型的更新，也没有过期时间；
-   * - 剩余其他类型的更新，也没有过期时间
-   */
   function computeExpirationTime(lane, currentTime) {
     switch (lane) {
       case SyncLane:
@@ -5512,36 +5384,20 @@
     }
   }
 
-  /**
-   * 收集 fiber root node 中已经过期的赛道
-   * 这一步做了两件事情：
-   * - 如果赛道没有过期时间，且是已经畅通的，重新计算一个过期时间；
-   * - 如果赛道有过期时间，且已经过期，将赛道标注为已过期，强制更新
-   * @param root  fiber root node
-   * @param currentTime 当前时间
-   */
   function markStarvedLanesAsExpired(root, currentTime) {
     // TODO: This gets called every time we yield. We can optimize by storing
     // the earliest expiration time on the root. Then use that to quickly bail out
     // of this function.
-    // 等待处理的更新
-    var pendingLanes = root.pendingLanes; 
-    // 暂停的更新
+    var pendingLanes = root.pendingLanes;
     var suspendedLanes = root.suspendedLanes;
-    // 恢复暂停的更新
     var pingedLanes = root.pingedLanes;
-    // fiber root node 收集的各个更新的过期时间
     var expirationTimes = root.expirationTimes; // Iterate through the pending lanes and check if we've reached their
     // expiration time. If so, we'll assume the update is being starved and mark
     // it as expired to force it to finish.
 
     var lanes = pendingLanes;
 
-    // 待处理的更新，默认的过期时间都是 -1，即永不过期，在任务调度过程中，如果更新没有过期时间，为根据更新的优先级定义一个过期时间
-    // 在任务调度过程中，如果更新还没有过期，那么他会被高优先级的更新抢道；如果更新要过期了，那么他就会被优先处理；
-    // 如果任务的优先级 < TransitionPriority, 那么它的过期时间为 -1， 即永不过期，会一直被高优先级的任务抢道
     while (lanes > 0) {
-      // 从 lanes 中分离逐个分离 lane，从优先级最低的开始
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
       var expirationTime = expirationTimes[index];
@@ -5550,25 +5406,12 @@
         // Found a pending lane with no expiration time. If it's not suspended, or
         // if it's pinged, assume it's CPU-bound. Compute a new expiration time
         // using the current time.
-        // 找到一个没有过期时间的赛道。如果没有被暂停，或者该赛道已经 ping 通，则假定该赛道受 CPU 限制。使用当前时间，重新计算一个过期时间
         if ((lane & suspendedLanes) === NoLanes || (lane & pingedLanes) !== NoLanes) {
           // Assumes timestamps are monotonically increasing.
-          // lane & suspendedLanes === NoLanes，表示当前赛道 lane 没有被暂停；
-          // lane & pingedLanes !== NoLanes, 表示当前赛道已经 ping 通
-          // 重新计算一个过期时间
-          /**
-            * 过期时间计算规则：
-            * - 离散事件更新、连续事件更新，过期时间为 250 ms；
-            * - 默认事件更新、transition 更新，过期时间为 5s；
-            * - retry 类型的更新，没有过期时间；
-            * - 空闲的更新、offscreen 类型的更新，也没有过期时间；
-            * - 剩余其他类型的更新，也没有过期时间
-           */
           expirationTimes[index] = computeExpirationTime(lane, currentTime);
         }
       } else if (expirationTime <= currentTime) {
         // This lane expired
-        // 如果赛道的过期时间小于当前时间，说明更新已经过期，那么将赛道标记为过期赛道
         root.expiredLanes |= lane;
       }
 
@@ -5577,18 +5420,9 @@
   } // This returns the highest priority pending lanes regardless of whether they
   // are suspended.
 
-  /**
-   * 
-   * @param root fiber root node
-   */
   function getHighestPriorityPendingLanes(root) {
-    // 从 pendingLanes 中找到优先级最高的 lanes (如果是 transitionLanes、retryLanes，会有多条)
     return getHighestPriorityLanes(root.pendingLanes);
   }
-
-  /**
-   * @param root fiber root node
-   */
   function getLanesToRetrySynchronouslyOnError(root) {
     var everythingButOffscreen = root.pendingLanes & ~OffscreenLane;
 
@@ -5602,60 +5436,28 @@
 
     return NoLanes;
   }
-
-  /**
-   * 判断 lanes 中是否包含非空闲的 lane
-   */
   function includesNonIdleWork(lanes) {
     return (lanes & NonIdleLanes) !== NoLanes;
   }
-
-  /**
-   * 判断 lanes 中是否只包含 retry 类型的 lane
-   */
   function includesOnlyRetries(lanes) {
     return (lanes & RetryLanes) === lanes;
   }
-
-  /**
-   * 判断 lanes 是否只包含 transition 类型的 lane
-   */
   function includesOnlyTransitions(lanes) {
     return (lanes & TransitionLanes) === lanes;
   }
-
-  /**
-   * 判断 lanes 中是否包含同步更新
-   * @param root
-   * @param lanes
-   */
   function includesBlockingLane(root, lanes) {
 
-    // 默认的同步 lanes()
     var SyncDefaultLanes = InputContinuousHydrationLane | InputContinuousLane | DefaultHydrationLane | DefaultLane;
-
     return (lanes & SyncDefaultLanes) !== NoLanes;
   }
-  /**
-   * 判断是否存在已过期的更新
-   */
   function includesExpiredLane(root, lanes) {
     // This is a separate check from includesBlockingLane because a lane can
     // expire after a render has already started.
     return (lanes & root.expiredLanes) !== NoLanes;
   }
-
-  /**
-   * 判断 lane 是否是 transition 类型的 lane
-   * @param lane
-   */
   function isTransitionLane(lane) {
     return (lane & TransitionLanes) !== 0;
   }
-
-  /**
-   * 
-   */
   function claimNextTransitionLane() {
     // Cycle through the lanes, assigning each new transition to the next lane.
     // In most cases, this means every transition gets its own lane, until we
@@ -5669,10 +5471,6 @@
 
     return lane;
   }
-
-  /**
-   * 
-   */
   function claimNextRetryLane() {
     var lane = nextRetryLane;
     nextRetryLane <<= 1;
@@ -5683,96 +5481,49 @@
 
     return lane;
   }
-
-  /**
-   * 从 lanes 中选出优先级最高的 lane，即最靠右的 lane
-   * @param lanes
-   */
   function getHighestPriorityLane(lanes) {
     return lanes & -lanes;
   }
-
-  /**
-   * 
-   */
   function pickArbitraryLane(lanes) {
     // This wrapper function gets inlined. Only exists so to communicate that it
     // doesn't matter which bit is selected; you can pick any bit without
     // affecting the algorithms where its used. Here I'm using
     // getHighestPriorityLane because it requires the fewest operations.
-    // 从 lanes 中选出优先级最高的 lane，即最靠右的 lane
     return getHighestPriorityLane(lanes);
   }
 
-  /**
-   * 从 lanes 中选出优先级最低的 lane，返回对应的 index
-   * 常用于从 lanes 逐个分离 lane
-   */
   function pickArbitraryLaneIndex(lanes) {
     return 31 - clz32(lanes);
   }
 
-  /**
-   * 返回 lane 对应的 index
-   */
   function laneToIndex(lane) {
     return pickArbitraryLaneIndex(lane);
   }
 
-  /**
-   * 判断 a、b 中是否包含相同的 lane
-   */
   function includesSomeLane(a, b) {
     return (a & b) !== NoLanes;
   }
-
-  /**
-   * 判断 subset 是否是 set 的子集，即 set 中包含 subset
-   */
   function isSubsetOfLanes(set, subset) {
     return (set & subset) === subset;
   }
-
-  /**
-   * 将 a、b 合并
-   */
   function mergeLanes(a, b) {
     return a | b;
   }
-
-  /**
-   * 从 set 中移除 subset
-   */
   function removeLanes(set, subset) {
     return set & ~subset;
   }
-
-  /**
-   * 返回 a、b 之间的交集
-   */
   function intersectLanes(a, b) {
     return a & b;
   } // Seems redundant, but it changes the type from a single lane (used for
   // updates) to a group of lanes (used for flushing work).
 
-  /**
-   * 
-   */
   function laneToLanes(lane) {
     return lane;
   }
-
-  /**
-   * 
-   */
   function higherPriorityLane(a, b) {
     // This works because the bit ranges decrease in priority as you go left.
     return a !== NoLane && a < b ? a : b;
   }
-
-  /**
-   * 
-   */
   function createLaneMap(initial) {
     // Intentionally pushing one by one.
     // https://v8.dev/blog/elements-kinds#avoid-creating-holes
@@ -5784,17 +5535,8 @@
 
     return laneMap;
   }
-
-  /**
-   * 标记 fiber tree 需要更新
-   * @param root  fiber tree
-   * @param updateLane 为更新分配的 lane
-   * @param eventTime 发生更新的时间
-   */
   function markRootUpdated(root, updateLane, eventTime) {
-    // 将为更新分配的 lane 合并的 fiber root node 的 pendingLanes 中
-    root.pendingLanes |= updateLane; 
-    // If there are any suspended transitions, it's possible this new update
+    root.pendingLanes |= updateLane; // If there are any suspended transitions, it's possible this new update
     // could unblock them. Clear the suspended lanes so that we can try rendering
     // them again.
     //
@@ -5807,102 +5549,54 @@
     // idle updates until after all the regular updates have finished; there's no
     // way it could unblock a transition.
 
-    // 如果新的更新不是空闲更新，那么它可能会解锁已经暂停的 transition
-    // 此时我们需要将解锁已经暂停的 transition, 重新渲染 transition ？？
-    // TODO: question ??
-    if (updateLane !== IdleLane) { 
+    if (updateLane !== IdleLane) {
       root.suspendedLanes = NoLanes;
       root.pingedLanes = NoLanes;
     }
 
     var eventTimes = root.eventTimes;
-    // lane 对应的 index， 0 - 31
     var index = laneToIndex(updateLane); // We can always overwrite an existing timestamp because we prefer the most
     // recent event, and we assume time is monotonically increasing.
-    // 记录更新发生的时间
+
     eventTimes[index] = eventTime;
   }
-
-  /**
-   * 标记 fiber tree 中被暂停的更新
-   * @param root fiber root node
-   * @param suspenedLanes 被暂停的更新
-   */
   function markRootSuspended(root, suspendedLanes) {
-    // 将被暂停的 lanes 合并到 fiber root node 的 suspendedLanes 中
-    // (只有 transition 类型的 lane 才会被暂停 ？？)
     root.suspendedLanes |= suspendedLanes;
-    // 从 pingedLanes 中移除已经暂停的 lanes
     root.pingedLanes &= ~suspendedLanes; // The suspended lanes are no longer CPU-bound. Clear their expiration times.
-    // 更新的过期时间
+
     var expirationTimes = root.expirationTimes;
     var lanes = suspendedLanes;
 
-    // 由于 suspendedLanes 已经被暂停，设置对应的过期时间为 NoTimestamp: -1, 即没有过期时间
     while (lanes > 0) {
-      // 从 lanes 中选出优先级最低的 lane
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
       expirationTimes[index] = NoTimestamp;
       lanes &= ~lane;
     }
   }
-
-  /**
-   * 标记 fiber tree 中恢复畅通的更新
-   * @param root fiber root node
-   * @param pingedLanes 已经畅通的更新
-   * @param eventTime
-   */
   function markRootPinged(root, pingedLanes, eventTime) {
-    // 将 pingedLanes 合并到 root.pingedLanes 中
-    // 并且将 pingedLanes 从 root.suspendedLanes 移除
     root.pingedLanes |= root.suspendedLanes & pingedLanes;
   }
-
-  /**
-   * 标记 fiber tree 中可变读的更新 ？？
-   * @param root fiber root node
-   * @param updateLane 为更新分配的 lane
-   */
   function markRootMutableRead(root, updateLane) {
     root.mutableReadLanes |= updateLane & root.pendingLanes;
   }
-
-  /**
-   * 标记 fiber tree 结束协调过程
-   * @param root fiber root node
-   * @param remainingLanes 未处理的更新
-   */
   function markRootFinished(root, remainingLanes) {
-    // 已经处理的更新
     var noLongerPendingLanes = root.pendingLanes & ~remainingLanes;
-    // 协调结束后还未处理的更新
     root.pendingLanes = remainingLanes; // Let's try everything again
-    // 清空暂停的更新 ？？
+
     root.suspendedLanes = 0;
-    // 清空恢复畅通的更新 ？？
     root.pingedLanes = 0;
-    // 从未处理的更新中选出过期的更新
     root.expiredLanes &= remainingLanes;
-    // 从未处理的更新中选出可变读的更新 ？？
     root.mutableReadLanes &= remainingLanes;
-    // 从未处理的更新中选出纠缠的更新
     root.entangledLanes &= remainingLanes;
 
-    //  ？？
     var entanglements = root.entanglements;
-    // 更新发生的时间
     var eventTimes = root.eventTimes;
-    // 更新过期的时间
     var expirationTimes = root.expirationTimes; // Clear the lanes that no longer have pending work
 
     var lanes = noLongerPendingLanes;
 
-    // 已经处理的更新，将 eventTime、expirationTime、entanglement 清空
     while (lanes > 0) {
-      // pickArbitraryLaneIndex 用于从 lanes 中分离 lane
-      // 从优先级最低的 lane 开始分离
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
       entanglements[index] = NoLanes;
@@ -5911,71 +5605,36 @@
       lanes &= ~lane;
     }
   }
-
-  /**
-   * 标记 fiber tree 中发生缠绕的更新 ？？
-   * @param root  fiber root node
-   * @param entangledLanes 发生缠绕的更新
-   */
   function markRootEntangled(root, entangledLanes) {
     // In addition to entangling each of the given lanes with each other, we also
     // have to consider _transitive_ entanglements. For each lane that is already
     // entangled with *any* of the given lanes, that lane is now transitively
     // entangled with *all* the given lanes.
-
-    // 除了将每个给定的车道相互纠缠之外，我们还必须考虑传递纠缠。 
-    // 对于已经与任何给定车道纠缠的每条车道，该车道现在与所有给定车道传递纠缠。
-
+    //
     // Translated: If C is entangled with A, then entangling A with B also
     // entangles C with B.
-
-    // 翻译：如果C和A纠缠在一起，那么A和B的纠缠也会使C和B纠缠在一起。
-
+    //
     // If this is hard to grasp, it might help to intentionally break this
     // function and look at the tests that fail in ReactTransition-test.js. Try
     // commenting out one of the conditions below.
-
-    // 如果这很难理解，那么故意破坏这个函数并查看 ReactTransition-test.js 中失败的测试可能会有所帮助。 
-    // 尝试注释掉以下条件之一。
-
-    // 将 entangledLanes 合并到 root.entangledLanes 中
-    // entangledLanes 只是某个 fiber node 的 transitionLanes
-    // 而 rootEntangledLanes 是所有的 fiber node 的 transitionLanes
     var rootEntangledLanes = root.entangledLanes |= entangledLanes;
-    
     var entanglements = root.entanglements;
-    // 所有等待处理的 transition 类型的 lane
     var lanes = rootEntangledLanes;
 
     while (lanes) {
-      // 从 lanes 中分离逐个分离 lane，从优先级最低的开始
       var index = pickArbitraryLaneIndex(lanes);
       var lane = 1 << index;
 
-      // TODO: question ??
-      if ( 
-      // Is this one of the newly entangled lanes?  
-      // 新纠缠的 lane ？？
-      lane & entangledLanes | 
-      // Is this lane transitively entangled with the newly entangled lanes?
-      // 这条 lane 是否与新纠缠的 lane 传递纠缠
+      if ( // Is this one of the newly entangled lanes?
+      lane & entangledLanes | // Is this lane transitively entangled with the newly entangled lanes?
       entanglements[index] & entangledLanes) {
-        // 
         entanglements[index] |= entangledLanes;
       }
 
       lanes &= ~lane;
     }
-    
   }
-
-  /**
-   * 
-   * @param root
-   * @param renderLanes
-   */
   function getBumpedLaneForHydration(root, renderLanes) {
-    // 从 renderLanes 中选出优先级最高的 lane，即最靠右的 lane
     var renderLane = getHighestPriorityLane(renderLanes);
     var lane;
 
@@ -6091,32 +5750,18 @@
 
     return 31 - (log(lanes) / LN2 | 0) | 0;
   }
-  // 离散事件优先级
-  var DiscreteEventPriority = SyncLane;  // SyncLane 为 1
-  // 连续事件优先级
-  var ContinuousEventPriority = InputContinuousLane;  // InputContinuousLane 为 4
-  // 默认事件优先级
-  var DefaultEventPriority = DefaultLane;  // DefaultLane 为 16
-  // 空闲事件优先级
-  var IdleEventPriority = IdleLane;  // IdleLane 为 536870912
-  // 当前更新优先级
+
+  var DiscreteEventPriority = SyncLane;
+  var ContinuousEventPriority = InputContinuousLane;
+  var DefaultEventPriority = DefaultLane;
+  var IdleEventPriority = IdleLane;
   var currentUpdatePriority = NoLane;
-  /**
-   * 获取当前更新优先级
-   */
   function getCurrentUpdatePriority() {
     return currentUpdatePriority;
   }
-  /**
-   * 设置当前更新优先级
-   */
   function setCurrentUpdatePriority(newPriority) {
     currentUpdatePriority = newPriority;
   }
-
-  /**
-   * 以 priority 指定的优先级，执行 fn
-   */
   function runWithPriority(priority, fn) {
     var previousPriority = currentUpdatePriority;
 
@@ -6127,51 +5772,30 @@
       currentUpdatePriority = previousPriority;
     }
   }
-
-  /**
-   * 从 a、b 中返回优先级较高的。数值越小，优先级越高
-   */
   function higherEventPriority(a, b) {
     return a !== 0 && a < b ? a : b;
   }
-
-  /**
-   * 从 a、b 中返回优先级较低的，数值越小，优先级越高
-   */
   function lowerEventPriority(a, b) {
     return a === 0 || a > b ? a : b;
   }
-
-  /**
-   * 判断 a 的优先级是否高于 b, 数值越小，优先级越高
-   */
   function isHigherEventPriority(a, b) {
     return a !== 0 && a < b;
   }
-
-  /**
-   * 返回 lanes 中优先级最高的 lane 对应的优先级
-   */
   function lanesToEventPriority(lanes) {
-    // 从 lanes 中选出优先级最高的 lane，即最靠右的 lane
     var lane = getHighestPriorityLane(lanes);
 
-    // 如果 lane 的值小于等于 DiscreteEventPriority，那么就是离散事件优先级
     if (!isHigherEventPriority(DiscreteEventPriority, lane)) {
       return DiscreteEventPriority;
     }
 
-    // 如果 lane 的值小于等于 ContinuousEventPriority，那么就是连续事件优先级
     if (!isHigherEventPriority(ContinuousEventPriority, lane)) {
       return ContinuousEventPriority;
     }
-    
-    // 如果 lane 是非空闲的 lane，那么优先级为默认事件优先级
+
     if (includesNonIdleWork(lane)) {
       return DefaultEventPriority;
     }
 
-    // 空闲事件优先级
     return IdleEventPriority;
   }
 
@@ -6217,7 +5841,7 @@
   }
   var discreteReplayableEvents = ['mousedown', 'mouseup', 'touchcancel', 'touchend', 'touchstart', 'auxclick', 'dblclick', 'pointercancel', 'pointerdown', 'pointerup', 'dragend', 'dragstart', 'drop', 'compositionend', 'compositionstart', 'keydown', 'keypress', 'keyup', 'input', 'textInput', // Intentionally camelCase
   'copy', 'cut', 'paste', 'click', 'change', 'contextmenu', 'reset', 'submit'];
-  function isReplayableDiscreteEvent(eventType) {
+  function isDiscreteEventThatRequiresHydration(eventType) {
     return discreteReplayableEvents.indexOf(eventType) > -1;
   }
 
@@ -6329,6 +5953,7 @@
 
     return existingQueuedEvent;
   }
+
   function queueIfContinuousEvent(blockedOn, domEventName, eventSystemFlags, targetContainer, nativeEvent) {
     // These set relatedTarget to null because the replayed event will be treated as if we
     // moved from outside the window (no target) onto the target once it hydrates.
@@ -6403,7 +6028,6 @@
           var root = nearestMounted.stateNode;
 
           if (root.isDehydrated) {
-            // 根据 nearestMounted 获取容器节点
             queuedTarget.blockedOn = getContainerFromFiber(nearestMounted); // We don't currently have a way to increase the priority of
             // a root other than sync.
 
@@ -6599,25 +6223,20 @@
   function isEnabled() {
     return _enabled;
   }
-
-  /**
-   * 根据优先级，创建对应的包装监听器
-   */
   function createEventListenerWrapperWithPriority(targetContainer, domEventName, eventSystemFlags) {
-    // 根据时间类型获取优先级
     var eventPriority = getEventPriority(domEventName);
     var listenerWrapper;
 
     switch (eventPriority) {
-      case DiscreteEventPriority:    // 离散事件优先级
+      case DiscreteEventPriority:
         listenerWrapper = dispatchDiscreteEvent;
         break;
 
-      case ContinuousEventPriority:   // 连续事件优先级
+      case ContinuousEventPriority:
         listenerWrapper = dispatchContinuousEvent;
         break;
 
-      case DefaultEventPriority:   // 默认事件优先级
+      case DefaultEventPriority:
       default:
         listenerWrapper = dispatchEvent;
         break;
@@ -6626,16 +6245,12 @@
     return listenerWrapper.bind(null, domEventName, eventSystemFlags, targetContainer);
   }
 
-  /**
-   * 派发离散的事件
-   */
   function dispatchDiscreteEvent(domEventName, eventSystemFlags, container, nativeEvent) {
     var previousPriority = getCurrentUpdatePriority();
     var prevTransition = ReactCurrentBatchConfig.transition;
     ReactCurrentBatchConfig.transition = 0;
 
     try {
-      // 设置当前更新优先级为 DiscreteEventPriority，即 SyncLane 1
       setCurrentUpdatePriority(DiscreteEventPriority);
       dispatchEvent(domEventName, eventSystemFlags, container, nativeEvent);
     } finally {
@@ -6644,16 +6259,12 @@
     }
   }
 
-  /**
-   * 派发连续的事件
-   */
   function dispatchContinuousEvent(domEventName, eventSystemFlags, container, nativeEvent) {
     var previousPriority = getCurrentUpdatePriority();
     var prevTransition = ReactCurrentBatchConfig.transition;
     ReactCurrentBatchConfig.transition = 0;
 
     try {
-      // 设置当前的更新优先级为 ContinuousEventPriority， 即 InputContinuousLane， 为 4
       setCurrentUpdatePriority(ContinuousEventPriority);
       dispatchEvent(domEventName, eventSystemFlags, container, nativeEvent);
     } finally {
@@ -6662,9 +6273,6 @@
     }
   }
 
-  /**
-   * 派发普通事件
-   */
   function dispatchEvent(domEventName, eventSystemFlags, targetContainer, nativeEvent) {
     if (!_enabled) {
       return;
@@ -6677,7 +6285,7 @@
 
     var allowReplay = (eventSystemFlags & IS_CAPTURE_PHASE) === 0;
 
-    if (allowReplay && hasQueuedDiscreteEvents() && isReplayableDiscreteEvent(domEventName)) {
+    if (allowReplay && hasQueuedDiscreteEvents() && isDiscreteEventThatRequiresHydration(domEventName)) {
       // If we already have a queue of discrete events, and this is another discrete
       // event, then we can't dispatch it regardless of its target, since they
       // need to dispatch in order.
@@ -6698,7 +6306,7 @@
     }
 
     if (allowReplay) {
-      if ( isReplayableDiscreteEvent(domEventName)) {
+      if ( isDiscreteEventThatRequiresHydration(domEventName)) {
         // This this to be replayed later once the target is available.
         queueDiscreteEvent(blockedOn, domEventName, eventSystemFlags, targetContainer, nativeEvent);
         return;
@@ -6753,7 +6361,6 @@
           if (root.isDehydrated) {
             // If this happens during a replay something went wrong and it might block
             // the whole system.
-            // 根据 nearestMounted 获取容器节点
             return getContainerFromFiber(nearestMounted);
           }
 
@@ -6772,10 +6379,6 @@
 
     return null;
   }
-
-  /**
-   * 根据事件名称获取对应的优先级
-   */
   function getEventPriority(domEventName) {
     switch (domEventName) {
       // Used by SimpleEventPlugin:
@@ -6836,7 +6439,7 @@
       case 'popstate':
       case 'select':
       case 'selectstart':
-        return DiscreteEventPriority;   // 离散事件优先级， 1
+        return DiscreteEventPriority;
 
       case 'drag':
       case 'dragenter':
@@ -6859,7 +6462,7 @@
       case 'mouseleave':
       case 'pointerenter':
       case 'pointerleave':
-        return ContinuousEventPriority;  // 连续事件优先级， 4
+        return ContinuousEventPriority;
 
       case 'message':
         {
@@ -6870,7 +6473,7 @@
 
           switch (schedulerPriority) {
             case ImmediatePriority:
-              return DiscreteEventPriority;  
+              return DiscreteEventPriority;
 
             case UserBlockingPriority:
               return ContinuousEventPriority;
@@ -6889,7 +6492,7 @@
         }
 
       default:
-        return DefaultEventPriority;  // 默认事件优先级， 16
+        return DefaultEventPriority;
     }
   }
 
@@ -8357,7 +7960,9 @@
 
 
     for (var i = 0; i < keysA.length; i++) {
-      if (!hasOwnProperty.call(objB, keysA[i]) || !objectIs(objA[keysA[i]], objB[keysA[i]])) {
+      var currentKey = keysA[i];
+
+      if (!hasOwnProperty.call(objB, currentKey) || !objectIs(objA[currentKey], objB[currentKey])) {
         return false;
       }
     }
@@ -11203,33 +10808,22 @@
     precacheFiberNode(internalInstanceHandle, textNode);
     return textNode;
   }
-
-  /**
-   * 获取当前事件优先级
-   */
   function getCurrentEventPriority() {
     var currentEvent = window.event;
 
-    // 没有事件，返回 默认事件优先级 16
     if (currentEvent === undefined) {
       return DefaultEventPriority;
     }
-    // 根据事件类型，获取优先级
+
     return getEventPriority(currentEvent.type);
   }
   // if a component just imports ReactDOM (e.g. for findDOMNode).
   // Some environments might not have setTimeout or clearTimeout.
 
   var scheduleTimeout = typeof setTimeout === 'function' ? setTimeout : undefined;
-
   var cancelTimeout = typeof clearTimeout === 'function' ? clearTimeout : undefined;
-
   var noTimeout = -1;
-
   var localPromise = typeof Promise === 'function' ? Promise : undefined; // -------------------
-
-  // 微任务调度
-  // 实现微任务: queueMicrotask、promise、setTiemout
   var scheduleMicrotask = typeof queueMicrotask === 'function' ? queueMicrotask : typeof localPromise !== 'undefined' ? function (callback) {
     return localPromise.resolve(null).then(callback).catch(handleErrorInNextTick);
   } : scheduleTimeout; // TODO: Determine the best fallback here.
@@ -11238,9 +10832,7 @@
     setTimeout(function () {
       throw error;
     });
-  } 
-
-  // -------------------
+  } // -------------------
   function commitMount(domElement, type, newProps, internalInstanceHandle) {
     // Despite the naming that might imply otherwise, this method only
     // fires if there is an `Update` effect scheduled during mounting.
@@ -11252,7 +10844,6 @@
       domElement.focus();
     }
   }
-
   function commitUpdate(domElement, updatePayload, type, oldProps, newProps, internalInstanceHandle) {
     // Update the props handle so that we know which props are the ones with
     // with current event handlers.
@@ -11260,19 +10851,15 @@
 
     updateProperties(domElement, updatePayload, type, oldProps, newProps);
   }
-
   function resetTextContent(domElement) {
     setTextContent(domElement, '');
   }
-
   function commitTextUpdate(textInstance, oldText, newText) {
     textInstance.nodeValue = newText;
   }
-
   function appendChild(parentInstance, child) {
     parentInstance.appendChild(child);
   }
-
   function appendChildToContainer(container, child) {
     var parentNode;
 
@@ -11452,6 +11039,10 @@
           if (nodeData === SUSPENSE_START_DATA || nodeData === SUSPENSE_FALLBACK_START_DATA || nodeData === SUSPENSE_PENDING_START_DATA) {
             break;
           }
+
+          if (nodeData === SUSPENSE_END_DATA) {
+            return null;
+          }
         }
       }
     }
@@ -11464,6 +11055,12 @@
   }
   function getFirstHydratableChild(parentInstance) {
     return getNextHydratable(parentInstance.firstChild);
+  }
+  function getFirstHydratableChildWithinContainer(parentContainer) {
+    return getNextHydratable(parentContainer.firstChild);
+  }
+  function getFirstHydratableChildWithinSuspenseInstance(parentInstance) {
+    return getNextHydratable(parentInstance.nextSibling);
   }
   function hydrateInstance(instance, type, props, rootContainerInstance, hostContext, internalInstanceHandle) {
     precacheFiberNode(internalInstanceHandle, instance); // TODO: Possibly defer this until the commit phase where all the events
@@ -11565,12 +11162,26 @@
       warnForUnmatchedText(textInstance, text);
     }
   }
-  function didNotHydrateContainerInstance(parentContainer, instance) {
+  function didNotHydrateInstanceWithinContainer(parentContainer, instance) {
     {
       if (instance.nodeType === ELEMENT_NODE) {
         warnForDeletedHydratableElement(parentContainer, instance);
       } else if (instance.nodeType === COMMENT_NODE) ; else {
         warnForDeletedHydratableText(parentContainer, instance);
+      }
+    }
+  }
+  function didNotHydrateInstanceWithinSuspenseInstance(parentInstance, instance) {
+    {
+      // $FlowFixMe: Only Element or Document can be parent nodes.
+      var parentNode = parentInstance.parentNode;
+
+      if (parentNode !== null) {
+        if (instance.nodeType === ELEMENT_NODE) {
+          warnForDeletedHydratableElement(parentNode, instance);
+        } else if (instance.nodeType === COMMENT_NODE) ; else {
+          warnForDeletedHydratableText(parentNode, instance);
+        }
       }
     }
   }
@@ -11583,14 +11194,28 @@
       }
     }
   }
-  function didNotFindHydratableContainerInstance(parentContainer, type, props) {
+  function didNotFindHydratableInstanceWithinContainer(parentContainer, type, props) {
     {
       warnForInsertedHydratedElement(parentContainer, type);
     }
   }
-  function didNotFindHydratableContainerTextInstance(parentContainer, text) {
+  function didNotFindHydratableTextInstanceWithinContainer(parentContainer, text) {
     {
       warnForInsertedHydratedText(parentContainer, text);
+    }
+  }
+  function didNotFindHydratableInstanceWithinSuspenseInstance(parentInstance, type, props) {
+    {
+      // $FlowFixMe: Only Element or Document can be parent nodes.
+      var parentNode = parentInstance.parentNode;
+      if (parentNode !== null) warnForInsertedHydratedElement(parentNode, type);
+    }
+  }
+  function didNotFindHydratableTextInstanceWithinSuspenseInstance(parentInstance, text) {
+    {
+      // $FlowFixMe: Only Element or Document can be parent nodes.
+      var parentNode = parentInstance.parentNode;
+      if (parentNode !== null) warnForInsertedHydratedText(parentNode, text);
     }
   }
   function didNotFindHydratableInstance(parentType, parentProps, parentInstance, type, props) {
@@ -12152,21 +11777,12 @@
     }
   }
 
-  // legency 模式，ReactDOM.render 方式创建的 fiber root
   var LegacyRoot = 0;
-  // concurrent 模式，ReactDOM.createRoot 方式创建的 fiber root
   var ConcurrentRoot = 1;
-  // 同步任务队列
-  var syncQueue = null;
-  // 是否包含 legacy 模式下的同步调度 ？？
-  var includesLegacySyncCallbacks = false;
-  //
-  var isFlushingSyncQueue = false;
 
-  /**
-   * 同步调度
-   * @param callback
-   */
+  var syncQueue = null;
+  var includesLegacySyncCallbacks = false;
+  var isFlushingSyncQueue = false;
   function scheduleSyncCallback(callback) {
     // Push this callback into an internal queue. We'll flush these either in
     // the next tick, or earlier if something calls `flushSyncCallbackQueue`.
@@ -12178,19 +11794,10 @@
       syncQueue.push(callback);
     }
   }
-
-  /**
-   * legacy 模式下的同步调度
-   */
   function scheduleLegacySyncCallback(callback) {
     includesLegacySyncCallbacks = true;
     scheduleSyncCallback(callback);
   }
-
-
-  /**
-   * legacy 模式下刷新同步调度队列
-   */
   function flushSyncCallbacksOnlyInLegacyMode() {
     // Only flushes the queue if there's a legacy sync callback scheduled.
     // TODO: There's only a single type of callback: performSyncOnWorkOnRoot. So
@@ -12198,38 +11805,31 @@
     // list of generic callbacks. Then we can have two: one for legacy roots, one
     // for concurrent roots. And this method would only flush the legacy ones.
     if (includesLegacySyncCallbacks) {
-      // 处理同步任务队列 - syncQueue 中的收集的同步任务
       flushSyncCallbacks();
     }
   }
-
-  /**
-   * 处理同步队列 syncQueue 中收集的同步任务
-   */
   function flushSyncCallbacks() {
     if (!isFlushingSyncQueue && syncQueue !== null) {
       // Prevent re-entrance.
       isFlushingSyncQueue = true;
       var i = 0;
-      // 获取之前的优先级
       var previousUpdatePriority = getCurrentUpdatePriority();
 
       try {
         var isSync = true;
         var queue = syncQueue; // TODO: Is this necessary anymore? The only user code that runs in this
         // queue is in the render or commit phases.
-        // 设置更新优先级为离散事件优先级，即 1
+
         setCurrentUpdatePriority(DiscreteEventPriority);
 
-        // 遍历 syncQueue 列表，依次处理 syncQueue 中收集的同步任务
         for (; i < queue.length; i++) {
           var callback = queue[i];
 
           do {
-            // 处理同步任务
             callback = callback(isSync);
           } while (callback !== null);
         }
+
         syncQueue = null;
         includesLegacySyncCallbacks = false;
       } catch (error) {
@@ -12238,11 +11838,10 @@
           syncQueue = syncQueue.slice(i + 1);
         } // Resume flushing in the next tick
 
-        // 处理同步任务的时候发生异常，那么就需要在下一个时间片以直接优先级处理同步任务
+
         scheduleCallback(ImmediatePriority, flushSyncCallbacks);
         throw error;
       } finally {
-        // 恢复原来的更新优先级
         setCurrentUpdatePriority(previousUpdatePriority);
         isFlushingSyncQueue = false;
       }
@@ -12250,8 +11849,8 @@
 
     return null;
   }
-  // react 的版本
-  var ReactVersion = '18.0.0-f2c381131-20211004';
+
+  var ReactVersion = '18.0.0-f6abf4b40-20211020';
 
   var SCHEDULING_PROFILER_VERSION = 1;
 
@@ -12813,14 +12412,12 @@
       var alternate = node.alternate;
 
       if (!isSubsetOfLanes(node.childLanes, renderLanes)) {
-        // 如果 node.childLanes 中不包含 renderLanes，将 renderLanes 合并到 node.childLanes 中
         node.childLanes = mergeLanes(node.childLanes, renderLanes);
 
         if (alternate !== null) {
           alternate.childLanes = mergeLanes(alternate.childLanes, renderLanes);
         }
       } else if (alternate !== null && !isSubsetOfLanes(alternate.childLanes, renderLanes)) {
-        // 如果 alternate.childLanes 中不包含 renderLanes， 将 renderLanes 合并到 alternate.childLanes 中
         alternate.childLanes = mergeLanes(alternate.childLanes, renderLanes);
       } else {
         // Neither alternate was updated, which means the rest of the
@@ -12862,7 +12459,6 @@
             if (fiber.tag === ClassComponent) {
               // Schedule a force update on the work-in-progress.
               var lane = pickArbitraryLane(renderLanes);
-              // 为本次更新创建一个 update 对象
               var update = createUpdate(NoTimestamp, lane);
               update.tag = ForceUpdate; // TODO: Because we don't have a work-in-progress, this will add the
               // update to the current fiber, too, which means it will persist even if
@@ -12980,7 +12576,6 @@
         if (firstContext !== null) {
           if (includesSomeLane(dependencies.lanes, renderLanes)) {
             // Context list has a pending update. Mark that this fiber performed work.
-            // 如果 dependencies.lanes 和 renderLanes 中包含相同的 lane
             markWorkInProgressReceivedUpdate();
           } // Reset the work-in-progress list
 
@@ -13033,10 +12628,6 @@
   // interrupted, the interleaved updates will be transferred onto the main part
   // of the queue.
   var interleavedQueues = null;
-
-  /**
-   * 
-   */
   function pushInterleavedQueue(queue) {
     if (interleavedQueues === null) {
       interleavedQueues = [queue];
@@ -13044,10 +12635,6 @@
       interleavedQueues.push(queue);
     }
   }
-
-  /**
-   * 
-   */
   function enqueueInterleavedUpdates() {
     // Transfer the interleaved updates onto the main queue. Each queue has a
     // `pending` field and an `interleaved` field. When they are not null, they
@@ -13124,12 +12711,6 @@
       workInProgress.updateQueue = clone;
     }
   }
-
-  /**
-   * 为更新创建一个 update 对象
-   * @param eventTime 更新发生的时间
-   * @param lane 为更新分配的 lane
-   */
   function createUpdate(eventTime, lane) {
     var update = {
       eventTime: eventTime,
@@ -13141,15 +12722,7 @@
     };
     return update;
   }
-
-  /**
-   * 将 update 对象添加到 fiber node 的 updateQueue 队列中
-   * @param fiber fiber node
-   * @param update update 对象
-   * @param lane 为更新分配的 lane
-   */
   function enqueueUpdate(fiber, update, lane) {
-    // fiber node 的 updateQueue 对象
     var updateQueue = fiber.updateQueue;
 
     if (updateQueue === null) {
@@ -13160,13 +12733,11 @@
     var sharedQueue = updateQueue.shared;
 
     if (isInterleavedUpdate(fiber)) {
-      // TODO: question 什么时候才是交错的更新 ？？
       var interleaved = sharedQueue.interleaved;
 
       if (interleaved === null) {
         // This is the first update. Create a circular list.
-        update.next = update; 
-        // At the end of the current render, this queue's interleaved updates will
+        update.next = update; // At the end of the current render, this queue's interleaved updates will
         // be transferred to the pending queue.
 
         pushInterleavedQueue(sharedQueue);
@@ -13177,13 +12748,10 @@
 
       sharedQueue.interleaved = update;
     } else {
-      // 将 fiber node 的所有 update 对象构成一个环
-      // pengding 指向最后一个 update 对象， pengding.next 指向第一个  update 对象
       var pending = sharedQueue.pending;
 
       if (pending === null) {
         // This is the first update. Create a circular list.
-        // 创建一个环形链表
         update.next = update;
       } else {
         update.next = pending.next;
@@ -13201,16 +12769,7 @@
       }
     }
   }
-
-  /**
-   * 把所有的 transition lane 纠缠到一起的意思，就是未处理所有的 transiton lane 要一并处理
-   * 如果为更新分配的 lane 是 transition 类型，才会走这个逻辑
-   * @param root  fiber root node
-   * @param fiber fiber node
-   * @param lane 为更新分配的 lane
-   */
   function entangleTransitions(root, fiber, lane) {
-
     var updateQueue = fiber.updateQueue;
 
     if (updateQueue === null) {
@@ -13221,50 +12780,22 @@
     var sharedQueue = updateQueue.shared;
 
     if (isTransitionLane(lane)) {
-
-      // lane 是 transition 类型
-      // queueLanes 是 transition 类型的 lane 的合集 ？？
-      var queueLanes = sharedQueue.lanes; 
-      
-      // If any entangled lanes are no longer pending on the root, then they must
+      var queueLanes = sharedQueue.lanes; // If any entangled lanes are no longer pending on the root, then they must
       // have finished. We can remove them from the shared queue, which represents
       // a superset of the actually pending lanes. In some cases we may entangle
       // more than we need to, but that's OK. In fact it's worse if we *don't*
       // entangle when we should.
 
-      // 如果任何纠缠的车道不再挂在根上，那么它们一定已经结束了。 
-      // 我们可以将它们从共享队列中移除，共享队列代表实际待处理通道的超集。 
-      // 在某些情况下，我们可能会比需要的更多地纠缠，但这没关系。 
-      // 事实上，如果我们不在我们应该纠缠的时候纠缠，情况会更糟。 
+      queueLanes = intersectLanes(queueLanes, root.pendingLanes); // Entangle the new transition lane with the other transition lanes.
 
-      // 从 queueLanes 和 root.pendingLanes 中找到两者的交集
-      // 如果 transiton 类型的 lane 已经完成了，那么在 root.pendingLanes 中已经不存在了
-      // 要从 queueLanes 中移除已经完成的 transition 类型的 lane
-      queueLanes = intersectLanes(queueLanes, root.pendingLanes); 
-      
-      // Entangle the new transition lane with the other transition lanes.
-      // 将新的 transition lane 和原来未处理的 transition lane 合并到一起
       var newQueueLanes = mergeLanes(queueLanes, lane);
-
-      // 更新 sharedQueue.lanes
-      sharedQueue.lanes = newQueueLanes; 
-      
-      // Even if queue.lanes already include lane, we don't know for certain if
+      sharedQueue.lanes = newQueueLanes; // Even if queue.lanes already include lane, we don't know for certain if
       // the lane finished since the last time we entangled it. So we need to
       // entangle it again, just to be sure.
 
-      // 即使 queue.lanes 已经包含了lane，我们也不确定自上次我们纠缠它以来，lane 是否已经结束。 
-      // 所以我们需要再次纠缠，只是为了确定。
-
-      // 标记 fiber tree 中发生缠绕的更新 
       markRootEntangled(root, newQueueLanes);
     }
   }
-
-  /**
-   * @param workInProgress
-   * @param capturedUpdate
-   */
   function enqueueCapturedUpdate(workInProgress, capturedUpdate) {
     // Captured updates are updates that are thrown by a child during the render
     // phase. They should be discarded if the render is aborted. Therefore,
@@ -13438,13 +12969,6 @@
     return prevState;
   }
 
-  /**
-   * 
-   * @param workInProgress
-   * @param props
-   * @param instance
-   * @param renderLanes
-   */
   function processUpdateQueue(workInProgress, props, instance, renderLanes) {
     // This is always non-null on a ClassComponent or HostRoot
     var queue = workInProgress.updateQueue;
@@ -13518,7 +13042,6 @@
           // Priority is insufficient. Skip this update. If this is the first
           // skipped update, the previous update/state is the new base
           // update/state.
-          // renderLanes 中不包含 updateLane，意味着该 update 不处理
           var clone = {
             eventTime: updateEventTime,
             lane: updateLane,
@@ -13765,31 +13288,13 @@
     }
   }
 
-  // 类组件的 updater，用于更新类组件实例的 state
   var classComponentUpdater = {
-    // 判断类组件是否已经挂载好
     isMounted: isMounted,
-    /**
-     * setState,修改类组件的 state，
-     */
     enqueueSetState: function (inst, payload, callback) {
-      // 根据类组件实例获取对应的 fiber node
       var fiber = get(inst);
-      // 返回一个时间戳，标记更新发生的时间
       var eventTime = requestEventTime();
-      /**
-        * 为此次更新分配一个 lane
-        * 分配规则:
-        * - 如果是 legency 模式，分配 SyncLane；
-        * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
-        * - 如果是 transition， 分配 transitionLane；
-        * - 根据当前事件优先级，分配对应的 lane；
-        * - 如果都不符合上述情况，返回默认事件优先级，即 16；
-      */
       var lane = requestUpdateLane(fiber);
-      // 为本次更新创建一个 update 对象
       var update = createUpdate(eventTime, lane);
-      // update 对象的负载，用于计算新的 state
       update.payload = payload;
 
       if (callback !== undefined && callback !== null) {
@@ -13799,39 +13304,22 @@
 
         update.callback = callback;
       }
-      // 将新建的 update 对象添加的 fiber node 的 updateqQueue 队列中
+
       enqueueUpdate(fiber, update);
-      // 为更新安排一个调度任务，用于处理更新
-      // 调度策略：会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
-        // 将所有未处理的 transition 类型的 lane 合并到一起，一并处理
         entangleTransitions(root, fiber, lane);
       }
 
       {
-        // 标注已经为 state 更新安排任务调度
         markStateUpdateScheduled(fiber, lane);
       }
     },
-    /**
-     * 以 replace 的方式进行更新
-     */
     enqueueReplaceState: function (inst, payload, callback) {
       var fiber = get(inst);
       var eventTime = requestEventTime();
-      /**
-        * 为此次更新分配一个 lane
-        * 分配规则:
-        * - 如果是 legency 模式，分配 SyncLane；
-        * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
-        * - 如果是 transition， 分配 transitionLane；
-        * - 根据当前事件优先级，分配对应的 lane；
-        * - 如果都不符合上述情况，返回默认事件优先级，即 16；
-      */
       var lane = requestUpdateLane(fiber);
-      // 为本次更新创建一个 update 对象
       var update = createUpdate(eventTime, lane);
       update.tag = ReplaceState;
       update.payload = payload;
@@ -13843,14 +13331,11 @@
 
         update.callback = callback;
       }
-      // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
+
       enqueueUpdate(fiber, update);
-      // 为更新安排一个调度任务，用于处理更新
-      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
-        // 将所有未处理的 transition 类型的 lane 合并到一起，一并处理(如果有过期的，要优先处理)
         entangleTransitions(root, fiber, lane);
       }
 
@@ -13858,24 +13343,10 @@
         markStateUpdateScheduled(fiber, lane);
       }
     },
-
-    /**
-     * 强制更新
-     */
     enqueueForceUpdate: function (inst, callback) {
       var fiber = get(inst);
       var eventTime = requestEventTime();
-      /**
-        * 为此次更新分配一个 lane
-        * 分配规则:
-        * - 如果是 legency 模式，分配 SyncLane；
-        * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
-        * - 如果是 transition， 分配 transitionLane；
-        * - 根据当前事件优先级，分配对应的 lane；
-        * - 如果都不符合上述情况，返回默认事件优先级，即 16；
-      */
       var lane = requestUpdateLane(fiber);
-      // 为本次更新创建一个 update 对象
       var update = createUpdate(eventTime, lane);
       update.tag = ForceUpdate;
 
@@ -13886,14 +13357,11 @@
 
         update.callback = callback;
       }
-      // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
+
       enqueueUpdate(fiber, update);
-      // 为更新安排一个调度任务，用于处理更新
-      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
-        // 将所有未处理的 transition 类型的 lane 合并到一起，一并处理(如果有过期的，要优先处理)
         entangleTransitions(root, fiber, lane);
       }
 
@@ -13903,9 +13371,6 @@
     }
   };
 
-  /**
-   * 检查类组件是否需要重新更新
-   */
   function checkShouldComponentUpdate(workInProgress, ctor, oldProps, newProps, oldState, newState, nextContext) {
     var instance = workInProgress.stateNode;
 
@@ -13939,9 +13404,6 @@
     return true;
   }
 
-  /**
-   * 
-   */
   function checkClassInstance(workInProgress, ctor, newProps) {
     var instance = workInProgress.stateNode;
 
@@ -15862,7 +15324,7 @@
   function enterHydrationState(fiber) {
 
     var parentInstance = fiber.stateNode.containerInfo;
-    nextHydratableInstance = getFirstHydratableChild(parentInstance);
+    nextHydratableInstance = getFirstHydratableChildWithinContainer(parentInstance);
     hydrationParentFiber = fiber;
     isHydrating = true;
     return true;
@@ -15870,8 +15332,8 @@
 
   function reenterHydrationStateFromDehydratedSuspenseInstance(fiber, suspenseInstance) {
 
-    nextHydratableInstance = getNextHydratableSibling(suspenseInstance);
-    popToNextHostParent(fiber);
+    nextHydratableInstance = getFirstHydratableChildWithinSuspenseInstance(suspenseInstance);
+    hydrationParentFiber = fiber;
     isHydrating = true;
     return true;
   }
@@ -15880,11 +15342,16 @@
     {
       switch (returnFiber.tag) {
         case HostRoot:
-          didNotHydrateContainerInstance(returnFiber.stateNode.containerInfo, instance);
+          didNotHydrateInstanceWithinContainer(returnFiber.stateNode.containerInfo, instance);
           break;
 
         case HostComponent:
           didNotHydrateInstance(returnFiber.type, returnFiber.memoizedProps, returnFiber.stateNode, instance);
+          break;
+
+        case SuspenseComponent:
+          var suspenseState = returnFiber.memoizedState;
+          if (suspenseState.dehydrated !== null) didNotHydrateInstanceWithinSuspenseInstance(suspenseState.dehydrated, instance);
           break;
       }
     }
@@ -15915,12 +15382,12 @@
               case HostComponent:
                 var type = fiber.type;
                 var props = fiber.pendingProps;
-                didNotFindHydratableContainerInstance(parentContainer, type);
+                didNotFindHydratableInstanceWithinContainer(parentContainer, type);
                 break;
 
               case HostText:
                 var text = fiber.pendingProps;
-                didNotFindHydratableContainerTextInstance(parentContainer, text);
+                didNotFindHydratableTextInstanceWithinContainer(parentContainer, text);
                 break;
             }
 
@@ -15953,6 +15420,25 @@
             break;
           }
 
+        case SuspenseComponent:
+          {
+            var suspenseState = returnFiber.memoizedState;
+            var _parentInstance = suspenseState.dehydrated;
+            if (_parentInstance !== null) switch (fiber.tag) {
+              case HostComponent:
+                var _type2 = fiber.type;
+                var _props2 = fiber.pendingProps;
+                didNotFindHydratableInstanceWithinSuspenseInstance(_parentInstance, _type2);
+                break;
+
+              case HostText:
+                var _text2 = fiber.pendingProps;
+                didNotFindHydratableTextInstanceWithinSuspenseInstance(_parentInstance, _text2);
+                break;
+            }
+            break;
+          }
+
         default:
           return;
       }
@@ -15969,6 +15455,8 @@
 
           if (instance !== null) {
             fiber.stateNode = instance;
+            hydrationParentFiber = fiber;
+            nextHydratableInstance = getFirstHydratableChild(instance);
             return true;
           }
 
@@ -15982,6 +15470,9 @@
 
           if (textInstance !== null) {
             fiber.stateNode = textInstance;
+            hydrationParentFiber = fiber; // Text Instances don't have children so there's nothing to hydrate.
+
+            nextHydratableInstance = null;
             return true;
           }
 
@@ -16006,6 +15497,10 @@
               var dehydratedFragment = createFiberFromDehydratedFragment(suspenseInstance);
               dehydratedFragment.return = fiber;
               fiber.child = dehydratedFragment;
+              hydrationParentFiber = fiber; // While a Suspense Instance does have children, we won't step into
+              // it during the first pass. Instead, we'll reenter it later.
+
+              nextHydratableInstance = null;
               return true;
             }
           }
@@ -16040,6 +15535,7 @@
       // We use this as a heuristic. It's based on intuition and not data so it
       // might be flawed or unnecessary.
       nextInstance = getNextHydratableSibling(firstAttemptedInstance);
+      var prevHydrationParentFiber = hydrationParentFiber;
 
       if (!nextInstance || !tryHydrate(fiber, nextInstance)) {
         // Nothing to hydrate. Make it an insertion.
@@ -16053,11 +15549,8 @@
       // fiber associated with it.
 
 
-      deleteHydratableInstance(hydrationParentFiber, firstAttemptedInstance);
+      deleteHydratableInstance(prevHydrationParentFiber, firstAttemptedInstance);
     }
-
-    hydrationParentFiber = fiber;
-    nextHydratableInstance = getFirstHydratableChild(nextInstance);
   }
 
   function prepareToHydrateHostInstance(fiber, rootContainerInstance, hostContext) {
@@ -16209,16 +15702,9 @@
     rendererSigil$1 = {};
   }
 
-  /**
-   * 
-   */
   function markSourceAsDirty(mutableSource) {
     workInProgressSources.push(mutableSource);
   }
-
-  /**
-   * 
-   */
   function resetWorkInProgressVersions() {
     for (var i = 0; i < workInProgressSources.length; i++) {
       var mutableSource = workInProgressSources[i];
@@ -16230,20 +15716,11 @@
 
     workInProgressSources.length = 0;
   }
-
-
-  /**
-   * 
-   */
   function getWorkInProgressVersion(mutableSource) {
     {
       return mutableSource._workInProgressVersionPrimary;
     }
   }
-
-  /**
-   * 
-   */
   function setWorkInProgressVersion(mutableSource, version) {
     {
       mutableSource._workInProgressVersionPrimary = version;
@@ -16282,6 +15759,31 @@
     {
       return null;
     } // We check the cache on the stack first, since that's the one any new Caches
+  }
+
+  var ReactCurrentActQueue = ReactSharedInternals.ReactCurrentActQueue;
+  function isActEnvironment(fiber) {
+    {
+      var isReactActEnvironmentGlobal = // $FlowExpectedError – Flow doesn't know about IS_REACT_ACT_ENVIRONMENT global
+      typeof IS_REACT_ACT_ENVIRONMENT !== 'undefined' ? IS_REACT_ACT_ENVIRONMENT : undefined;
+
+      if (fiber.mode & ConcurrentMode) {
+        if (!isReactActEnvironmentGlobal && ReactCurrentActQueue.current !== null) {
+          // TODO: Include link to relevant documentation page.
+          error('The current testing environment is not configured to support ' + 'act(...)');
+        }
+
+        return isReactActEnvironmentGlobal;
+      } else {
+        // Legacy mode. We preserve the behavior of React 17's act. It assumes an
+        // act environment whenever `jest` is defined, but you can still turn off
+        // spurious warnings by setting IS_REACT_ACT_ENVIRONMENT explicitly
+        // to false.
+        // $FlowExpectedError - Flow doesn't know about jest
+        var jestIsDefined = typeof jest !== 'undefined';
+        return  jestIsDefined && isReactActEnvironmentGlobal !== false;
+      }
+    }
   }
 
   var ReactCurrentDispatcher$1 = ReactSharedInternals.ReactCurrentDispatcher,
@@ -16562,7 +16064,7 @@
     } else {
       workInProgress.flags &= ~(Passive | Update);
     }
-    // 从 current.lanes 中移除 lanes
+
     current.lanes = removeLanes(current.lanes, lanes);
   }
   function resetHooksAfterThrow() {
@@ -16725,9 +16227,6 @@
     return [hook.memoizedState, dispatch];
   }
 
-  /**
-   * 
-   */
   function updateReducer(reducer, initialArg, init) {
     var hook = updateWorkInProgressHook();
     var queue = hook.queue;
@@ -16782,7 +16281,6 @@
           // Priority is insufficient. Skip this update. If this is the first
           // skipped update, the previous update/state is the new base
           // update/state.
-          // 如果 renderLanes 中不包含 updateLane，意味着该 update 不需要处理
           var clone = {
             lane: updateLane,
             action: update.action,
@@ -16875,9 +16373,6 @@
     return [hook.memoizedState, dispatch];
   }
 
-  /**
-   * 
-   */
   function rerenderReducer(reducer, initialArg, init) {
     var hook = updateWorkInProgressHook();
     var queue = hook.queue;
@@ -16929,40 +16424,23 @@
     return [newState, dispatch];
   }
 
-  /**
-   * 
-   * @param root
-   * @param source
-   * @param getSnapshot
-   */
   function readFromUnsubscribedMutableSource(root, source, getSnapshot) {
     {
       warnAboutMultipleRenderersDEV(source);
     }
-    // function, 获取版本号
-    var getVersion = source._getVersion;
-    // 获取当前版本好
-    var version = getVersion(source._source); 
-    
-    // Is it safe for this component to read from this source during the current render?
 
-    // 在协调过程中读取 source 是否是安全的？ 默认不安全
-    var isSafeToReadFromSource = false; 
-    
-    // Check the version first.
+    var getVersion = source._getVersion;
+    var version = getVersion(source._source); // Is it safe for this component to read from this source during the current render?
+
+    var isSafeToReadFromSource = false; // Check the version first.
     // If this render has already been started with a specific version,
     // we can use it alone to determine if we can safely read from the source.
-
-    // 先检查版本。
-    // 如果这个渲染已经从一个特定的版本开始，我们可以单独使用它来确定是否可以安全地从 mutableSource 中读取数据。
 
     var currentRenderVersion = getWorkInProgressVersion(source);
 
     if (currentRenderVersion !== null) {
       // It's safe to read if the store hasn't been mutated since the last time
       // we read something.
-      // 如果自上次读取内容以来，存储没有发生突变，则读取是安全的。
-      // 版本没有发生变化，则读取数据是安全的 ？？
       isSafeToReadFromSource = currentRenderVersion === version;
     } else {
       // If there's no version, then this is the first time we've read from the
@@ -16979,32 +16457,17 @@
       // lanes, since that guarantees that the value we're about to read from
       // the source is consistent with the values that we read during the most
       // recent mutation.
-
-      // 如果没有版本，那么这是我们第一次在当前渲染过程中读取 mutableSource，所以我们需要做更多的工作。
-      // 我们需要确定的是，是否有任何已订阅源的钩子，如果有，是否有任何尚未同步的未处理的 mutations。
-
-      // 如果没有未处理的 mutations， root.mutableReadLanes 是空，可以安全读取
-
-      // 如果有未处理的 mutations，在 render lanes 包含待处理的 mutation lanes 的情况, 可以安全读取
-      // 因为这保证了我们将要从源读取的值与我们在最近的修改期间读取的值一致。
-
-      // 如果 renderLanes 中包含 root.mutableReadLanes，读取是安全的
       isSafeToReadFromSource = isSubsetOfLanes(renderLanes, root.mutableReadLanes);
-      // renderLanes 中不包含 root.mutableReadLanes， 读取是不安全的
+
       if (isSafeToReadFromSource) {
         // If it's safe to read from this source during the current render,
         // store the version in case other components read from it.
         // A changed version number will let those components know to throw and restart the render.
-
-        // 如果在当前呈现期间从该源代码读取是安全的，则存储该版本，以备其他组件从中读取。
-        // 更改的版本号将让这些组件知道要抛出并重新启动渲染。
-
         setWorkInProgressVersion(source, version);
       }
     }
 
     if (isSafeToReadFromSource) {
-      // 读取 mutable surce 数据
       var snapshot = getSnapshot(source._source);
 
       {
@@ -17012,7 +16475,7 @@
           error('Mutable source should not return a function as the snapshot value. ' + 'Functions may close over mutable values and cause tearing.');
         }
       }
-      // 返回读取的数据
+
       return snapshot;
     } else {
       // This handles the special case of a mutable source being shared between renderers.
@@ -17024,19 +16487,7 @@
       //
       // This can lead to tearing in the first renderer when it resumes,
       // but there's nothing we can do about that (short of throwing here and refusing to continue the render).
-
-      // 这将处理在呈现程序之间共享可变源的特殊情况。
-      // 在这种情况下，如果源在第一和第二呈现程序之间发生了变化，
-      // 第二个呈现程序不知道它需要在展开期间重置WIP版本(因为钩子只有在源被写入其WIP版本时才会将源标记为dirty)。
-      // 这将导致这个泪滴检查再次抛出，最终对用户可见。
-
-
-      // 我们可以通过显式地将源标记为dirty来避免这种无限循环。
-      // 这可能导致在第一个渲染器恢复时撕裂，但我们对此无能为力(除了在这里抛出并拒绝继续渲染)。
-
-      markSourceAsDirty(source); 
-      
-      // Intentioally throw an error to force React to retry synchronously. During
+      markSourceAsDirty(source); // Intentioally throw an error to force React to retry synchronously. During
       // the synchronous retry, it will block interleaved mutations, so we should
       // get a consistent read. Therefore, the following error should never be
       // visible to the user.
@@ -17047,35 +16498,21 @@
     }
   }
 
-  /**
-   * 
-   * @param hook
-   * @param source
-   * @param getSnapshot
-   * @param subscribe
-   */
   function useMutableSource(hook, source, getSnapshot, subscribe) {
-    debugger
-    // 当前的 fiber tree 的 root 节点
     var root = getWorkInProgressRoot();
 
     if (root === null) {
       throw Error( 'Expected a work-in-progress root. This is a bug in React. Please file an issue.' );
     }
 
-    // 函数，生成版本号
     var getVersion = source._getVersion;
-    // 根据源数据 source 生成版本号
     var version = getVersion(source._source);
-    // 
     var dispatcher = ReactCurrentDispatcher$1.current; // eslint-disable-next-line prefer-const
 
     var _dispatcher$useState = dispatcher.useState(function () {
       return readFromUnsubscribedMutableSource(root, source, getSnapshot);
     }),
-        // state
         currentSnapshot = _dispatcher$useState[0],
-        // setState
         setSnapshot = _dispatcher$useState[1];
 
     var snapshot = currentSnapshot; // Grab a handle to the state hook as well.
@@ -17085,46 +16522,26 @@
     var memoizedState = hook.memoizedState;
     var refs = memoizedState.refs;
     var prevGetSnapshot = refs.getSnapshot;
-    //
     var prevSource = memoizedState.source;
-    // 
     var prevSubscribe = memoizedState.subscribe;
-    // 
     var fiber = currentlyRenderingFiber$1;
-    // 
     hook.memoizedState = {
       refs: refs,
       source: source,
       subscribe: subscribe
-    }; 
-    
-    // Sync the values needed by our subscription handler after each commit.
-    // 在每次提交后同步订阅处理程序需要的值
+    }; // Sync the values needed by our subscription handler after each commit.
 
     dispatcher.useEffect(function () {
-      debugger
-      // getSnapshot，获取源数据
-      refs.getSnapshot = getSnapshot; 
-      
-      // Normally the dispatch function for a state hook never changes,
+      refs.getSnapshot = getSnapshot; // Normally the dispatch function for a state hook never changes,
       // but this hook recreates the queue in certain cases  to avoid updates from stale sources.
       // handleChange() below needs to reference the dispatch function without re-subscribing,
       // so we use a ref to ensure that it always has the latest version.
 
-      // 状态钩子的分派函数通常不会改变，但在某些情况下，该钩子会重新创建队列，以避免来自陈旧源的更新。
-      // 下面的handleChange()需要引用分派函数而不需要重新订阅，因此我们使用ref来确保它始终具有最新的版本。
+      refs.setSnapshot = setSnapshot; // Check for a possible change between when we last rendered now.
 
-      // setSnapshot, 即 setState，修改源数据
-      refs.setSnapshot = setSnapshot; 
-      
-      // Check for a possible change between when we last rendered now.
-      // 检查一个可能的变化 ？？
-
-      // 源数据可能发生了变化 ？？
       var maybeNewVersion = getVersion(source._source);
 
       if (!objectIs(version, maybeNewVersion)) {
-        // 
         var maybeNewSnapshot = getSnapshot(source._source);
 
         {
@@ -17134,59 +16551,27 @@
         }
 
         if (!objectIs(snapshot, maybeNewSnapshot)) {
-          // setSnapshot， 是一个 setState，触发更新
           setSnapshot(maybeNewSnapshot);
-          /**
-            * 为此次更新分配一个 lane
-            * 分配规则:
-            * - 如果是 legency 模式，分配 SyncLane；
-            * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
-            * - 如果是 transition， 分配 transitionLane；
-            * - 根据当前事件优先级，分配对应的 lane；
-            * - 如果都不符合上述情况，返回默认事件优先级，即 16；
-          */
           var lane = requestUpdateLane(fiber);
-          // 标记 fiber tree 中可变读的更新 ？？
           markRootMutableRead(root, lane);
-        } 
-        
-        // If the source mutated between render and now,
+        } // If the source mutated between render and now,
         // there may be state updates already scheduled from the old source.
         // Entangle the updates so that they render in the same batch.
 
-        // 如果源在渲染和现在之间发生了变化，可能已经从旧源安排了状态更新。
-        // 纠缠更新，以便它们在同一批次中渲染。
 
-        // 标记 fiber tree 中发生缠绕的更新
         markRootEntangled(root, root.mutableReadLanes);
       }
-    }, [getSnapshot, source, subscribe]); 
-    
-    // If we got a new source or subscribe function, re-subscribe in a passive effect.
-    // 如果我们得到一个新的源或订阅函数，以被动的方式重新订阅。
+    }, [getSnapshot, source, subscribe]); // If we got a new source or subscribe function, re-subscribe in a passive effect.
 
     dispatcher.useEffect(function () {
-      debugger
       var handleChange = function () {
         var latestGetSnapshot = refs.getSnapshot;
         var latestSetSnapshot = refs.setSnapshot;
 
         try {
-          // 实际是调用 setState 修改 state
-          latestSetSnapshot(latestGetSnapshot(source._source)); 
-          
-          // Record a pending mutable source update with the same expiration time.
-          /**
-            * 为此次更新分配一个 lane
-            * 分配规则:
-            * - 如果是 legency 模式，分配 SyncLane；
-            * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
-            * - 如果是 transition， 分配 transitionLane；
-            * - 根据当前事件优先级，分配对应的 lane；
-            * - 如果都不符合上述情况，返回默认事件优先级，即 16；
-          */
+          latestSetSnapshot(latestGetSnapshot(source._source)); // Record a pending mutable source update with the same expiration time.
+
           var lane = requestUpdateLane(fiber);
-          // 标记 fiber tree 中可变读的更新 ？？
           markRootMutableRead(root, lane);
         } catch (error) {
           // A selector might throw after a source mutation.
@@ -17208,9 +16593,7 @@
       }
 
       return unsubscribe;
-    }, [source, subscribe]); 
-    
-    // If any of the inputs to useMutableSource change, reading is potentially unsafe.
+    }, [source, subscribe]); // If any of the inputs to useMutableSource change, reading is potentially unsafe.
     //
     // If either the source or the subscription have changed we can't can't trust the update queue.
     // Maybe the source changed in a way that the old subscription ignored but the new one depends on.
@@ -17222,23 +16605,11 @@
     // In both cases, we need to throw away pending updates (since they are no longer relevant)
     // and treat reading from the source as we do in the mount case.
 
-    // 如果要使用 useMutableSource 的任何输入发生了变化，读取就可能是不安全的。
-    // 如果源或订阅发生了变化，我们不能不能信任更新队列。也许源更改了，旧订阅忽略了，但新订阅依赖。
-    // 如果 getSnapshot 函数改变了，我们也不应该依赖更新队列。
-    // 底层源可能在触发最后一个“change”事件和处理当前呈现(使用新的getSnapshot函数)之间发生了变化。
-    // 在这两种情况下，我们都需要丢弃挂起的更新(因为它们不再相关)，并将从源读取操作视为挂载情况。
-
-
     if (!objectIs(prevGetSnapshot, getSnapshot) || !objectIs(prevSource, source) || !objectIs(prevSubscribe, subscribe)) {
       // Create a new queue and setState method,
       // So if there are interleaved updates, they get pushed to the older queue.
       // When this becomes current, the previous queue and dispatch method will be discarded,
       // including any interleaving updates that occur.
-
-      // getSnapshot、source、subscribe 发生变化，都需要丢弃原来的更新
-
-      // 创建一个新的队列和setState方法，如果有交错更新，它们会被推到旧队列。
-      // 当它变成当前值时，之前的队列和分派方法将被丢弃，包括发生的任何交叉更新。
       var newQueue = {
         pending: null,
         interleaved: null,
@@ -17257,12 +16628,6 @@
     return snapshot;
   }
 
-  /**
-   * 挂载阶段，执行 useMutableSource
-   * @param souce  mutableSouce
-   * @param getSnapshot
-   * @param subscribe
-   */
   function mountMutableSource(source, getSnapshot, subscribe) {
     var hook = mountWorkInProgressHook();
     hook.memoizedState = {
@@ -17276,12 +16641,6 @@
     return useMutableSource(hook, source, getSnapshot, subscribe);
   }
 
-  /**
-   * 更新阶段，执行 useMutableSource
-   * @param source
-   * @param getSnapshot
-   * @param subscribe
-   */
   function updateMutableSource(source, getSnapshot, subscribe) {
     var hook = updateWorkInProgressHook();
     return useMutableSource(hook, source, getSnapshot, subscribe);
@@ -17480,12 +16839,7 @@
     }
   }
 
-  /**
-   * 
-   */
   function forceStoreRerender(fiber) {
-    // 为更新安排一个调度任务，用于处理更新
-    // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
     scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
   }
 
@@ -17599,8 +16953,7 @@
 
   function mountEffect(create, deps) {
     {
-      // $FlowExpectedError - jest isn't a global, and isn't recognized outside of tests
-      if ('undefined' !== typeof jest) {
+      if (isActEnvironment(currentlyRenderingFiber$1)) {
         warnIfNotCurrentlyActingEffectsInDEV(currentlyRenderingFiber$1);
       }
     }
@@ -17614,8 +16967,7 @@
 
   function updateEffect(create, deps) {
     {
-      // $FlowExpectedError - jest isn't a global, and isn't recognized outside of tests
-      if ('undefined' !== typeof jest) {
+      if (isActEnvironment(currentlyRenderingFiber$1)) {
         warnIfNotCurrentlyActingEffectsInDEV(currentlyRenderingFiber$1);
       }
     }
@@ -17827,33 +17179,17 @@
     return prevValue;
   }
 
-  /**
-   * 开始过渡类型的更新
-   * @param setPending
-   * @param callback
-   */
   function startTransition(setPending, callback) {
-    // 之前的更新优先级
     var previousPriority = getCurrentUpdatePriority();
-    // 从 previousPriority 和 ContinuousEventPriority 中选出比较优先的优先级
-    // 并设置新的更新优先级为 xxx
     setCurrentUpdatePriority(higherEventPriority(previousPriority, ContinuousEventPriority));
-    // 设置 pengding 状态为 true
-    // useTransition 会返回一个 isPending 和 start，其中 start 为 startTransition
-    // setPending 用来更新 isPending
     setPending(true);
-    // 之前的 transition 状态
     var prevTransition = ReactCurrentBatchConfig$2.transition;
-    // 标注 transition 为 1，意味着此后发生的更新都属于 transition
     ReactCurrentBatchConfig$2.transition = 1;
 
     try {
-      // 设置 isPending 为 false
       setPending(false);
-      // 修改 state，触发 react 更新，分配的 lane 都是 transition 类型
       callback();
     } finally {
-      // 恢复原来的 transition、priority
       setCurrentUpdatePriority(previousPriority);
       ReactCurrentBatchConfig$2.transition = prevTransition;
 
@@ -17871,13 +17207,10 @@
     }
   }
 
-  /**
-   * 挂载 useTransition hook
-   */
   function mountTransition() {
     var _mountState2 = mountState(false),
-        isPending = _mountState2[0],   // state
-        setPending = _mountState2[1]; // setState The `start` method never changes.
+        isPending = _mountState2[0],
+        setPending = _mountState2[1]; // The `start` method never changes.
 
 
     var start = startTransition.bind(null, setPending);
@@ -17886,9 +17219,6 @@
     return [isPending, start];
   }
 
-  /**
-   * 更新 useTransition hook
-   */
   function updateTransition() {
     var _updateState2 = updateState(),
         isPending = _updateState2[0];
@@ -17898,9 +17228,6 @@
     return [isPending, start];
   }
 
-  /**
-   * 
-   */
   function rerenderTransition() {
     var _rerenderState2 = rerenderState(),
         isPending = _rerenderState2[0];
@@ -17995,15 +17322,7 @@
         error("State updates from the useState() and useReducer() Hooks don't support the " + 'second callback argument. To execute a side effect after ' + 'rendering, declare it in the component body with useEffect().');
       }
     }
-    /**
-      * 为此次更新分配一个 lane
-      * 分配规则:
-      * - 如果是 legency 模式，分配 SyncLane；
-      * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
-      * - 如果是 transition， 分配 transitionLane；
-      * - 根据当前事件优先级，分配对应的 lane；
-      * - 如果都不符合上述情况，返回默认事件优先级，即 16；
-    */
+
     var lane = requestUpdateLane(fiber);
     var update = {
       lane: lane,
@@ -18019,15 +17338,12 @@
       enqueueUpdate$1(fiber, queue, update);
 
       {
-        // $FlowExpectedError - jest isn't a global, and isn't recognized outside of tests
-        if ('undefined' !== typeof jest) {
+        if (isActEnvironment(fiber)) {
           warnIfNotCurrentlyActingUpdatesInDev(fiber);
         }
       }
 
       var eventTime = requestEventTime();
-      // 为更新安排一个调度任务，用于处理更新
-      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -18038,11 +17354,6 @@
     markUpdateInDevTools(fiber, lane);
   }
 
-  /**
-   * @param fiber
-   * @param queue
-   * @param action
-   */
   function dispatchSetState(fiber, queue, action) {
     {
       if (typeof arguments[3] === 'function') {
@@ -18050,15 +17361,6 @@
       }
     }
 
-    /**
-      * 为此次更新分配一个 lane
-      * 分配规则:
-      * - 如果是 legency 模式，分配 SyncLane；
-      * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
-      * - 如果是 transition， 分配 transitionLane；
-      * - 根据当前事件优先级，分配对应的 lane；
-      * - 如果都不符合上述情况，返回默认事件优先级，即 16；
-    */
     var lane = requestUpdateLane(fiber);
     var update = {
       lane: lane,
@@ -18115,15 +17417,12 @@
       }
 
       {
-        // $FlowExpectedError - jest isn't a global, and isn't recognized outside of tests
-        if ('undefined' !== typeof jest) {
+        if (isActEnvironment(fiber)) {
           warnIfNotCurrentlyActingUpdatesInDev(fiber);
         }
       }
 
       var eventTime = requestEventTime();
-      // 为更新安排一个调度任务，用于处理更新
-      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -18157,9 +17456,6 @@
     queue.pending = update;
   }
 
-  /**
-   * ??
-   */
   function enqueueUpdate$1(fiber, queue, update, lane) {
     if (isInterleavedUpdate(fiber)) {
       var interleaved = queue.interleaved;
@@ -18190,32 +17486,22 @@
       queue.pending = update;
     }
   }
-  /**
-   * 
-   * @param root
-   * @param queue
-   * @param lane
-   */
+
   function entangleTransitionUpdate(root, queue, lane) {
     if (isTransitionLane(lane)) {
-      var queueLanes = queue.lanes; 
-      
-      // If any entangled lanes are no longer pending on the root, then they
+      var queueLanes = queue.lanes; // If any entangled lanes are no longer pending on the root, then they
       // must have finished. We can remove them from the shared queue, which
       // represents a superset of the actually pending lanes. In some cases we
       // may entangle more than we need to, but that's OK. In fact it's worse if
       // we *don't* entangle when we should.
 
-      queueLanes = intersectLanes(queueLanes, root.pendingLanes); 
-      
-      // Entangle the new transition lane with the other transition lanes.
+      queueLanes = intersectLanes(queueLanes, root.pendingLanes); // Entangle the new transition lane with the other transition lanes.
 
       var newQueueLanes = mergeLanes(queueLanes, lane);
-      // 
       queue.lanes = newQueueLanes; // Even if queue.lanes already include lane, we don't know for certain if
       // the lane finished since the last time we entangled it. So we need to
       // entangle it again, just to be sure.
-      // 标记 fiber tree 中发生缠绕的更新
+
       markRootEntangled(root, newQueueLanes);
     }
   }
@@ -19341,7 +18627,6 @@
   var PossiblyWeakMap$2 = typeof WeakMap === 'function' ? WeakMap : Map;
 
   function createRootErrorUpdate(fiber, errorInfo, lane) {
-    // 为本次更新创建一个 update 对象
     var update = createUpdate(NoTimestamp, lane); // Unmount the root by rendering null.
 
     update.tag = CaptureUpdate; // Caution: React DevTools currently depends on this property
@@ -19360,11 +18645,7 @@
     return update;
   }
 
-  /**
-   *
-   */
   function createClassErrorUpdate(fiber, errorInfo, lane) {
-    // 为本次更新创建一个 update 对象
     var update = createUpdate(NoTimestamp, lane);
     update.tag = CaptureUpdate;
     var getDerivedStateFromError = fiber.type.getDerivedStateFromError;
@@ -19459,7 +18740,6 @@
       if (!threadIDs.has(lanes)) {
         // Memoize using the thread ID to prevent redundant listeners.
         threadIDs.add(lanes);
-        // concurrent 模式下 suspense 恢复畅通的处理逻辑
         var ping = pingSuspendedRoot.bind(null, root, wakeable, lanes);
 
         {
@@ -19569,10 +18849,8 @@
                 // When we try rendering again, we should not reuse the current fiber,
                 // since it's known to be in an inconsistent state. Use a force update to
                 // prevent a bail out.
-                // 为本次更新创建一个 update 对象
                 var update = createUpdate(NoTimestamp, SyncLane);
                 update.tag = ForceUpdate;
-                // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
                 enqueueUpdate(sourceFiber, update);
               }
             } // The source fiber did not complete. Mark it with Sync priority to
@@ -20169,9 +19447,11 @@
 
           {
             if (nextState !== null && nextState.dehydrated !== null) {
-              if (current === null) {
-                var _wasHydrated3 = popHydrationState(workInProgress);
+              // We might be inside a hydration state the first time we're picking up this
+              // Suspense boundary, and also after we've reentered it for further hydration.
+              var _wasHydrated3 = popHydrationState(workInProgress);
 
+              if (current === null) {
                 if (!_wasHydrated3) {
                   throw Error( 'A dehydrated suspense component was completed without a hydrated node. ' + 'This is probably a bug in React.' );
                 }
@@ -20197,9 +19477,8 @@
 
                 return null;
               } else {
-                // We should never have been in a hydration state if we didn't have a current.
-                // However, in some of those paths, we might have reentered a hydration state
-                // and then we might be inside a hydration state. In that case, we'll need to exit out of it.
+                // We might have reentered this boundary to hydrate it. If so, we need to reset the hydration
+                // state since we're now exiting out of it. popHydrationState doesn't do that for us.
                 resetHydrationState();
 
                 if ((workInProgress.flags & DidCapture) === NoFlags) {
@@ -20578,7 +19857,6 @@
             // Don't bubble properties for hidden children unless we're rendering
             // at offscreen priority.
             if (includesSomeLane(subtreeRenderLanes, OffscreenLane)) {
-              // 如果 subtreeRenderLanes 中包含 OffscreenLane
               bubbleProperties(workInProgress);
 
               {
@@ -20885,7 +20163,6 @@
         workInProgress.memoizedState = nextState;
         pushRenderLanes(workInProgress, renderLanes);
       } else if (!includesSomeLane(renderLanes, OffscreenLane)) {
-        // 如果 renderLanes 中不包含  OffscreenLane
         // We're hidden, and we're not rendering at Offscreen. We will bail out
         // and resume this tree later.
         var nextBaseLanes;
@@ -21705,23 +20982,11 @@
     return hasSuspenseContext(suspenseContext, ForceSuspenseFallback);
   }
 
-  /**
-   * 
-   * @param current
-   * @param renderLanes
-   */
   function getRemainingWorkInPrimaryTree(current, renderLanes) {
     // TODO: Should not remove render lanes that were pinged during this render
-    // 从 current.childLanes 中移除 renderLanes
     return removeLanes(current.childLanes, renderLanes);
   }
 
-  /**
-   * 更新 suspense 类型的 fiber node
-   * @param current
-   * @param workInProgress
-   * @param renderLanes
-   */
   function updateSuspenseComponent(current, workInProgress, renderLanes) {
     var nextProps = workInProgress.pendingProps; // This is used by DevTools to force a boundary to suspend.
 
@@ -22170,8 +21435,7 @@
     }
     // any context has changed, we need to treat is as if the input might have changed.
 
-    // 判断 renderLanes 和 current.childLanes 是否有共同的 lanes
-    // 如果有 ？？
+
     var hasContextChanged = includesSomeLane(renderLanes, current.childLanes);
 
     if (didReceiveUpdate || hasContextChanged) {
@@ -22189,8 +21453,6 @@
           suspenseState.retryLane = attemptHydrationAtLane; // TODO: Ideally this would inherit the event time of the current render
 
           var eventTime = NoTimestamp;
-          // 为更新安排一个调度任务，用于处理更新
-          // (会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
           scheduleUpdateOnFiber(current, attemptHydrationAtLane, eventTime);
         }
       } // If we have scheduled higher pri work above, this will probably just abort the render
@@ -22693,9 +21955,6 @@
     didReceiveUpdate = true;
   }
 
-  /**
-   * 
-   */
   function bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes) {
     if (current !== null) {
       // Reuse previous dependencies
@@ -22714,8 +21973,6 @@
       // TODO: Once we add back resuming, we should check if the children are
       // a work-in-progress set. If so, we need to transfer their effects.
       {
-        // 判断 renderLanes 和 workInProgress.childLanes 是否有共同的 lanes
-        // 如果有，意味着着有子节点需要处理; 如果没有，子节点都不需要处理
         return null;
       }
     } // This fiber doesn't have work, but its subtree does. Clone the child
@@ -22784,19 +22041,12 @@
     }
   }
 
-  /**
-   * 判断 fiber node 是否需要更新
-   * @param current
-   * @param
-   */
   function checkScheduledUpdateOrContext(current, renderLanes) {
     // Before performing an early bailout, we must check if there are pending
     // updates or context.
     var updateLanes = current.lanes;
 
     if (includesSomeLane(updateLanes, renderLanes)) {
-      // 判断 updateLanes 和 renderLanes 是否有共同的 lanes
-      // 如果有，意味着着有子节点需要处理
       return true;
     } // No pending update, but because context is propagated lazily, we need
 
@@ -22844,8 +22094,6 @@
       case Profiler:
         {
           // Profiler should only call onRender when one of its descendants actually rendered.
-          // 判断 renderLanes 和 workInProgress.childLanes 是否有共同的 lanes
-          // 如果有，以为着有子节点需要处理
           var hasChildWork = includesSomeLane(renderLanes, workInProgress.childLanes);
 
           if (hasChildWork) {
@@ -22889,8 +22137,6 @@
             var primaryChildLanes = primaryChildFragment.childLanes;
 
             if (includesSomeLane(renderLanes, primaryChildLanes)) {
-              // 判断 renderLanes 和 primaryChildLanes 是否包含相同的 lanes
-              // 如果有，以为着子节点有更新需要处理
               // The primary children have pending work. Use the normal path
               // to attempt to render the primary children again.
               return updateSuspenseComponent(current, workInProgress, renderLanes);
@@ -22924,8 +22170,6 @@
         {
           var didSuspendBefore = (current.flags & DidCapture) !== NoFlags;
 
-          // 判断 renderLanes 和 workInProgress.childLanes 中是否包含相同的 lane
-          // 如果包含，以为着 workInProgress 的子节点有更新需要处理
           var _hasChildWork = includesSomeLane(renderLanes, workInProgress.childLanes);
 
           if (didSuspendBefore) {
@@ -22988,9 +22232,6 @@
     return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
   }
 
-  /**
-   * 
-   */
   function beginWork(current, workInProgress, renderLanes) {
     {
       if (workInProgress._debugNeedsRemount && current !== null) {
@@ -25684,40 +24925,35 @@
   var ReactCurrentDispatcher$2 = ReactSharedInternals.ReactCurrentDispatcher,
       ReactCurrentOwner$2 = ReactSharedInternals.ReactCurrentOwner,
       ReactCurrentBatchConfig$3 = ReactSharedInternals.ReactCurrentBatchConfig,
-      ReactCurrentActQueue = ReactSharedInternals.ReactCurrentActQueue;
-
+      ReactCurrentActQueue$1 = ReactSharedInternals.ReactCurrentActQueue;
   var NoContext =
   /*             */
   0;
-  var BatchedContext =   // 批处理上下文
+  var BatchedContext =
   /*               */
   1;
-  var RenderContext =    // fiber tree 协调阶段
+  var RenderContext =
   /*                */
   2;
-  var CommitContext =    // commit 阶段
+  var CommitContext =
   /*                */
   4;
-  var RetryAfterError =   // ??
+  var RetryAfterError =
   /*       */
   8;
-  var RootIncomplete = 0;   // fiber tree 协调未完成
-  var RootFatalErrored = 1;  // 发生致命的错误 ？？
-  var RootErrored = 2;     // 发生错误 ？？
-  var RootSuspended = 3;   // fiber tree 被暂停
-  var RootSuspendedWithDelay = 4;  // 
-  var RootCompleted = 5; // fiber tree 协调完成 Describes where we are in the React execution stack
+  var RootIncomplete = 0;
+  var RootFatalErrored = 1;
+  var RootErrored = 2;
+  var RootSuspended = 3;
+  var RootSuspendedWithDelay = 4;
+  var RootCompleted = 5; // Describes where we are in the React execution stack
 
-  // 初始化执行上下文
   var executionContext = NoContext; // The root we're working on
 
-  // 要协调的 fiber tree
   var workInProgressRoot = null; // The fiber we're working on
 
-  // 要协调的 fiber node
   var workInProgress = null; // The lanes we're rendering
 
-  // 协调 fiber tree 时要处理的更新
   var workInProgressRootRenderLanes = NoLanes; // Stack that allows components to change the render lanes for its subtree
   // This is a superset of the lanes we started working on at the root. The only
   // case where it's different from `workInProgressRootRenderLanes` is when we
@@ -25727,12 +24963,9 @@
   // Most things in the work loop should deal with workInProgressRootRenderLanes.
   // Most things in begin/complete phases should deal with subtreeRenderLanes.
 
-  // 协调 fiber node 时要处理的更新
   var subtreeRenderLanes = NoLanes;
-
   var subtreeRenderLanesCursor = createCursor(NoLanes); // Whether to root completed, errored, suspended, etc.
 
-  // 初始化 workInProgressRootExitStatus 为 RootIncomplete，即未完成
   var workInProgressRootExitStatus = RootIncomplete; // A fatal error, if one is thrown
 
   var workInProgressRootFatalError = null; // "Included" lanes refer to lanes that were worked on during this render. It's
@@ -25740,46 +24973,34 @@
   // enter and exit an Offscreen tree. This value is the combination of all render
   // lanes for the entire render phase.
 
-  // 协调 fiber tree 的整个过程中处理的所有的更新
   var workInProgressRootIncludedLanes = NoLanes; // The work left over by components that were visited during this render. Only
   // includes unprocessed updates, not work in bailed out children.
 
-  // 协调 fiber tree 的过程中跳过的更新
   var workInProgressRootSkippedLanes = NoLanes; // Lanes that were updated (in an interleaved event) during this render.
 
-  // 协调 fiber tree 的过程中产生的新的更新
-  var workInProgressRootUpdatedLanes = NoLanes; // Lanes that were pinged (in an interleaved event) during this render.
+  var workInProgressRootInterleavedUpdatedLanes = NoLanes; // Lanes that were updated during the render phase (*not* an interleaved event).
 
-  // 协调 fiber tree 的过程中恢复畅通的更新
+  var workInProgressRootRenderPhaseUpdatedLanes = NoLanes; // Lanes that were pinged (in an interleaved event) during this render.
+
   var workInProgressRootPingedLanes = NoLanes; // The most recent time we committed a fallback. This lets us ensure a train
   // model where we don't commit new loading states in too quick succession.
 
-  // 最近一次显示 fallback 的时间。用于确保我们不会太快的连续提交 fallback
   var globalMostRecentFallbackTime = 0;
   var FALLBACK_THROTTLE_MS = 500; // The absolute time for when we should start giving up on rendering
   // more and prefer CPU suspense heuristics instead.
 
-  // fiber tree 协调的终止时间
   var workInProgressRootRenderTargetTime = Infinity; // How long a render is supposed to take before we start following CPU
   // suspense heuristics and opt out of rendering more content.
 
-  // render 超时时间 500ms, 即渲染应该花多少时间
   var RENDER_TIMEOUT_MS = 500;
 
-  /**
-   * 重置 fiber tree 终止协调的时间
-   */
   function resetRenderTimer() {
     workInProgressRootRenderTargetTime = now() + RENDER_TIMEOUT_MS;
   }
 
-  /**
-   * 获取 fiber tree 协调的终止时间
-   */
   function getRenderTargetTime() {
     return workInProgressRootRenderTargetTime;
   }
-
   var hasUncaughtError = false;
   var firstUncaughtError = null;
   var legacyErrorBoundariesThatAlreadyFailed = null; // Only used when enableProfilerNestedUpdateScheduledHook is true;
@@ -25788,7 +25009,6 @@
   var pendingPassiveEffectsLanes = NoLanes;
   var pendingPassiveProfilerEffects = []; // Use these to prevent an infinite loop of nested updates
 
-  // 允许嵌套的 update 的最大数量，50
   var NESTED_UPDATE_LIMIT = 50;
   var nestedUpdateCount = 0;
   var rootWithNestedUpdates = null;
@@ -25798,19 +25018,10 @@
   // between the first and second call.
 
   var currentEventTime = NoTimestamp;
-  // 
   var currentEventTransitionLane = NoLanes;
-
-  /**
-   * 返回当前协调的 fiber tree 的根节点
-   */
   function getWorkInProgressRoot() {
     return workInProgressRoot;
   }
-
-  /**
-   * 返回一个事件戳
-   */
   function requestEventTime() {
     if ((executionContext & (RenderContext | CommitContext)) !== NoContext) {
       // We're inside React, so it's fine to read the actual time.
@@ -25827,23 +25038,11 @@
     currentEventTime = now();
     return currentEventTime;
   }
-
-  /**
-   * 为更新分配一个新的 lane
-   * 分配规则:
-   * - 如果是 legency 模式，分配 SyncLane；
-   * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
-   * - 如果是 transition， 分配 transitionLane；
-   * - 根据当前事件优先级，分配对应的 lane；
-   * - 如果都不符合上述情况，返回默认事件优先级，即 16；
-   */
   function requestUpdateLane(fiber) {
     // Special cases
-    // fiber node 的模式，分为 legency 模式和 concurrent 模式
     var mode = fiber.mode;
 
     if ((mode & ConcurrentMode) === NoMode) {
-      // 如果是 legency 模式，直接为更新分配 SyncLane: 1
       return SyncLane;
     } else if ( (executionContext & RenderContext) !== NoContext && workInProgressRootRenderLanes !== NoLanes) {
       // This is a render phase update. These are not officially supported. The
@@ -25855,12 +25054,11 @@
       // This behavior is only a fallback. The flag only exists until we can roll
       // out the setState warning, since existing code might accidentally rely on
       // the current behavior.
-      // render 阶段发生的更新，分配当前渲染 lanes 中优先级最高的 lane ？？
       return pickArbitraryLane(workInProgressRootRenderLanes);
     }
-    // 是否处于过渡中
+
     var isTransition = requestCurrentTransition() !== NoTransition;
-    // 如果更新是处于 transition 中，分配 transition 类型的 lane
+
     if (isTransition) {
       // updates at the same priority within the same event. To do this, the
       // inputs to the algorithm must be the same.
@@ -25869,11 +25067,9 @@
       // event. Then reset the cached values once we can be sure the event is
       // over. Our heuristic for that is whenever we enter a concurrent work loop.
 
-      // 
+
       if (currentEventTransitionLane === NoLane) {
         // All transitions within the same event are assigned the same lane.
-        // 同一个事件内部的 transition 都分配相同的 lane
-        // 为啥呢 ？？
         currentEventTransitionLane = claimNextTransitionLane();
       }
 
@@ -25885,7 +25081,7 @@
     // use that directly.
     // TODO: Move this type conversion to the event priority module.
 
-    // 当前
+
     var updateLane = getCurrentUpdatePriority();
 
     if (updateLane !== NoLane) {
@@ -25902,9 +25098,6 @@
     return eventLane;
   }
 
-  /**
-   * 为更新分配 retry 类型的 lane
-   */
   function requestRetryLane(fiber) {
     // This is a fork of `requestUpdateLane` designed specifically for Suspense
     // "retries" — a special update that attempts to flip a Suspense boundary
@@ -25919,78 +25112,70 @@
     return claimNextRetryLane();
   }
 
-  /**
-   * 为更新安排一个调度任务，用于处理更新
-   * 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
-   * @param fiber
-   * @param lane
-   * @param eventTime
-   */
   function scheduleUpdateOnFiber(fiber, lane, eventTime) {
-    // 检查嵌套的 update，不能超过 50 个
     checkForNestedUpdates();
-    warnAboutRenderPhaseUpdatesInDEV(fiber);
-    // 将为更新分配的 lane 合并到 fiber node 的 lanes 以及 parent fiber node 的 childLanes 中
     var root = markUpdateLaneFromFiberToRoot(fiber, lane);
 
     if (root === null) {
       return null;
-    }
-
-    {
-      if (isDevToolsPresent) {
-        addFiberToLanesMap(root, fiber, lane);
-      }
     } // Mark that the root has a pending update.
 
-    // 标记 fiber tree 需要更新，将为更新分配的 lane 合并到 fiber root node 的 pendingLanes 中
+
     markRootUpdated(root, lane, eventTime);
 
+    if ((executionContext & RenderContext) !== NoLanes && root === workInProgressRoot) {
+      // This update was dispatched during the render phase. This is a mistake
+      // if the update originates from user space (with the exception of local
+      // hook updates, which are handled differently and don't reach this
+      // function), but there are some internal React features that use this as
+      // an implementation detail, like selective hydration
+      // and useOpaqueIdentifier.
+      warnAboutRenderPhaseUpdatesInDEV(fiber); // Track lanes that were updated during the render phase
 
-    // 如果当前 fiber tree 的协调已经开始了
-    if (root === workInProgressRoot) {
-      // Received an update to a tree that's in the middle of rendering. Mark
-      // that there was an interleaved update work on this root. Unless the
-      // `deferRenderPhaseUpdateToNextBatch` flag is off and this is a render
-      // phase update. In that case, we don't treat render phase updates as if
-      // they were interleaved, for backwards compat reasons.
-
-      /**
-       * 当 fiber tree 还在渲染过程中时(在上一个时间片段中，渲染阶段未结束)，接受到一个新的更新。
-       * 此时需要标记一下 fiber root 上有一个交错？的更新。除非 deferRenderPhaseUpdateToNextBatch 标志关闭，否则这是记一个
-       * 渲染阶段的更新。如果是这样，我们不会将渲染阶段更新向后兼容？？原因他们是交错的？？
-       */
-      if ( (executionContext & RenderContext) === NoContext) {
-        // executionContext & RenderContext) === NoContext， 意味着 fiber tree 的协调阶段结束
-        // 那这个逻辑是什么意思 ？？
-        // TODO: question ??
-        workInProgressRootUpdatedLanes = mergeLanes(workInProgressRootUpdatedLanes, lane);
+      workInProgressRootRenderPhaseUpdatedLanes = mergeLanes(workInProgressRootRenderPhaseUpdatedLanes, lane);
+    } else {
+      // This is a normal update, scheduled from outside the render phase. For
+      // example, during an input event.
+      {
+        if (isDevToolsPresent) {
+          addFiberToLanesMap(root, fiber, lane);
+        }
       }
 
-      // TODO: question ??
-      if (workInProgressRootExitStatus === RootSuspendedWithDelay) {
-        // The root already suspended with a delay, which means this render
-        // definitely won't finish. Since we have a new update, let's mark it as
-        // suspended now, right before marking the incoming update. This has the
-        // effect of interrupting the current render and switching to the update.
-        // TODO: Make sure this doesn't override pings that happen while we've
-        // already started rendering.
-        // 标记 fiber tree 中暂停的更新
-        markRootSuspended$1(root, workInProgressRootRenderLanes);
-      }
-    }
-    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
-    ensureRootIsScheduled(root, eventTime);
 
-    if (lane === SyncLane && executionContext === NoContext && (fiber.mode & ConcurrentMode) === NoMode && // Treat `act` as if it's inside `batchedUpdates`, even in legacy mode.
-    !( ReactCurrentActQueue.isBatchingLegacy)) {
-      // Flush the synchronous work now, unless we're already working or inside
-      // a batch. This is intentionally inside scheduleUpdateOnFiber instead of
-      // scheduleCallbackForFiber to preserve the ability to schedule a callback
-      // without immediately flushing it. We only do this for user-initiated
-      // updates, to preserve historical behavior of legacy mode.
-      resetRenderTimer();
-      flushSyncCallbacksOnlyInLegacyMode();
+      if (root === workInProgressRoot) {
+        // Received an update to a tree that's in the middle of rendering. Mark
+        // that there was an interleaved update work on this root. Unless the
+        // `deferRenderPhaseUpdateToNextBatch` flag is off and this is a render
+        // phase update. In that case, we don't treat render phase updates as if
+        // they were interleaved, for backwards compat reasons.
+        if ( (executionContext & RenderContext) === NoContext) {
+          workInProgressRootInterleavedUpdatedLanes = mergeLanes(workInProgressRootInterleavedUpdatedLanes, lane);
+        }
+
+        if (workInProgressRootExitStatus === RootSuspendedWithDelay) {
+          // The root already suspended with a delay, which means this render
+          // definitely won't finish. Since we have a new update, let's mark it as
+          // suspended now, right before marking the incoming update. This has the
+          // effect of interrupting the current render and switching to the update.
+          // TODO: Make sure this doesn't override pings that happen while we've
+          // already started rendering.
+          markRootSuspended$1(root, workInProgressRootRenderLanes);
+        }
+      }
+
+      ensureRootIsScheduled(root, eventTime);
+
+      if (lane === SyncLane && executionContext === NoContext && (fiber.mode & ConcurrentMode) === NoMode && // Treat `act` as if it's inside `batchedUpdates`, even in legacy mode.
+      !( ReactCurrentActQueue$1.isBatchingLegacy)) {
+        // Flush the synchronous work now, unless we're already working or inside
+        // a batch. This is intentionally inside scheduleUpdateOnFiber instead of
+        // scheduleCallbackForFiber to preserve the ability to schedule a callback
+        // without immediately flushing it. We only do this for user-initiated
+        // updates, to preserve historical behavior of legacy mode.
+        resetRenderTimer();
+        flushSyncCallbacksOnlyInLegacyMode();
+      }
     }
 
     return root;
@@ -25999,11 +25184,6 @@
   // e.g. retrying a Suspense boundary isn't an update, but it does schedule work
   // on a fiber.
 
-  /**
-   * 将为更新分配的赛道合并到 fiber node 的 lanes以及 parent fiber node 的 childLanes 中
-   * @params sourceFiber 一个 fiber node， 是一个 current fiber node 还是一个 workInProgress fiber node
-   * @params lane 为新的更新，分配的赛道
-   */
   function markUpdateLaneFromFiberToRoot(sourceFiber, lane) {
     // Update the source fiber's lanes
     sourceFiber.lanes = mergeLanes(sourceFiber.lanes, lane);
@@ -26023,8 +25203,6 @@
     var node = sourceFiber;
     var parent = sourceFiber.return;
 
-    // 将为更新分配的 lane 都合并到 parent fiber node 的 childLanes 中
-    // 一个 fiber node 的 childLanes 不为 0， 意味着 child fiber node 的更新未处理完，需要处理 child fiber node
     while (parent !== null) {
       parent.childLanes = mergeLanes(parent.childLanes, lane);
       alternate = parent.alternate;
@@ -26051,67 +25229,30 @@
     }
   }
 
-  /**
-   * 判断是否是交错的更新
-   * 满足条件：
-   * - workInProgressRoot 不为 null， 意味着已经要协调的 fiber tree 已经确定；
-   * - fiber.mode & ConcurrentMode 不是 NoMode, 意味着是 concurrent 模式；
-   * - executionContext & RenderContext) === NoContext， 意味着还没有开始协调；
-   * 
-   * TODO: question， 什么时候会出现上述情形 ？？
-   * @param fiber  fiber node
-   * @param lane 为 update 分配的 lane
-   */
   function isInterleavedUpdate(fiber, lane) {
     return (// TODO: Optimize slightly by comparing to root that fiber belongs to.
       // Requires some refactoring. Not a big deal though since it's rare for
       // concurrent apps to have more than a single root.
-      workInProgressRoot !== null && (fiber.mode & ConcurrentMode) !== NoMode && ( 
-      // If this is a render phase update (i.e. UNSAFE_componentWillReceiveProps),
+      workInProgressRoot !== null && (fiber.mode & ConcurrentMode) !== NoMode && ( // If this is a render phase update (i.e. UNSAFE_componentWillReceiveProps),
       // then don't treat this as an interleaved update. This pattern is
       // accompanied by a warning but we haven't fully deprecated it yet. We can
       // remove once the deferRenderPhaseUpdateToNextBatch flag is enabled.
        (executionContext & RenderContext) === NoContext)
     );
-  } 
-  
-  // Use this function to schedule a task for a root. There's only one task per
+  } // Use this function to schedule a task for a root. There's only one task per
   // root; if a task was already scheduled, we'll check to make sure the priority
   // of the existing task is the same as the priority of the next level that the
   // root has work on. This function is called on every update, and right before
   // exiting a task.
 
-  /**
-   * 为 fiber tree 的更新安排一个调度任务(有的时候，需要生成一个新的调度任务；有的时候复用原来的调度任务)
-   * 调度任务，是和 fiber root node 进行关联的
-   * 
-   * ensureRootIsScheduled 是用来调度任务的。每一个 fiber root 只有一个任务。
-   * 如果一个任务已经在调度，我们需要保证已存在任务的优先级，需要和已工作的root 的下一个级别的优先级一致？？
-   * 这个函数会在每次更新，并且在任务退出之前执行 ？？
-   * 
-   * 获取本次调度要处理的更新，然后根据更新的优先级，决定任务调度的策略
-   * 调度策略：
-   * - 如果更新优先级是 SyncLane, 将 callback 收集到同步队列 syncQueue 中，然后通过微任务进行任务调度；
-   *   处理过程中，如果出现了异常，会在下一个时间片内优先处理；
-   * - 如果更新优先级不是 SyncLane，则根据对应的优先级使用 Scheduler 通过宏任务进行调度；
-   * 
-   * @aram root fiber root node
-   * @param currentTime 
-   */
   function ensureRootIsScheduled(root, currentTime) {
-    // 之前的调度任务
     var existingCallbackNode = root.callbackNode; // Check if any lanes are being starved by other work. If so, mark them as
     // expired so we know to work on those next.
-    // 标注过期的更新(过期的更新怎么处理？？)
+
     markStarvedLanesAsExpired(root, currentTime); // Determine the next lanes to work on, and their priority.
-    // 获取本次调度要处理的更新，然后根据优先级，决定任务调度的策略
-    /**
-     * lane 选择的策略:
-     * - 
-     */
+
     var nextLanes = getNextLanes(root, root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes);
 
-    // 没有新的更新要处理，结束任务调度
     if (nextLanes === NoLanes) {
       // Special case: There's nothing to work on.
       if (existingCallbackNode !== null) {
@@ -26124,19 +25265,14 @@
     } // We use the highest priority lane to represent the priority of the callback.
 
 
-    // 从 nextLanes 中选出优先级最高的 lane，即最靠右的 lane
     var newCallbackPriority = getHighestPriorityLane(nextLanes); // Check if there's an existing task. We may be able to reuse it.
 
     var existingCallbackPriority = root.callbackPriority;
 
-    if (existingCallbackPriority === newCallbackPriority && 
-      // newCallbackPriority 优先级和 existingCallbackPriority 相等，优先级没有变化
-      // 不需要重新安排一个任务调度，用来的任务调度就会一并处理本次更新
-    
-    // Special case related to `act`. If the currently scheduled task is a
+    if (existingCallbackPriority === newCallbackPriority && // Special case related to `act`. If the currently scheduled task is a
     // Scheduler task, rather than an `act` task, cancel it and re-scheduled
     // on the `act` queue.
-    !( ReactCurrentActQueue.current !== null && existingCallbackNode !== fakeActCallbackNode)) {
+    !( ReactCurrentActQueue$1.current !== null && existingCallbackNode !== fakeActCallbackNode)) {
       {
         // If we're going to re-use an existing task, it needs to exist.
         // Assume that discrete update microtasks are non-cancellable and null.
@@ -26152,110 +25288,80 @@
 
     if (existingCallbackNode != null) {
       // Cancel the existing callback. We'll schedule a new one below.
-      // 结束原来的任务调度，重新开始一个新的任务调度
       cancelCallback$1(existingCallbackNode);
     } // Schedule a new callback.
 
 
     var newCallbackNode;
 
-    // 根据分配的 lanes 的最高优先级，进行任务调度
     if (newCallbackPriority === SyncLane) {
-      // 分配的 SyncLane
       // Special case: Sync React callbacks are scheduled on a special
       // internal queue
       if (root.tag === LegacyRoot) {
-        if ( ReactCurrentActQueue.isBatchingLegacy !== null) {
-          ReactCurrentActQueue.didScheduleLegacyUpdate = true;
+        if ( ReactCurrentActQueue$1.isBatchingLegacy !== null) {
+          ReactCurrentActQueue$1.didScheduleLegacyUpdate = true;
         }
-        // legency 模式下的同步任务调度，实际做的是把 callback 添加到 syncQueue 中
+
         scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null, root));
       } else {
-        // concurrent 模式下的同步任务调度
-        // 和 scheduleLegacySyncCallback 的区别是，不会设置 includesLegacySyncCallbacks 为 true
-        // 实际做的也是把 callback 添加到 syncQueue 中
         scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
       }
 
-      // 分配的 lane 是 SyncLane, 才需要使用微任务处理 ？？
       {
-        // Flush the queue in a microtask.  在微任务中刷新任务队列
-        if ( ReactCurrentActQueue.current !== null) {
+        // Flush the queue in a microtask.
+        if ( ReactCurrentActQueue$1.current !== null) {
           // Inside `act`, use our internal `act` queue so that these get flushed
           // at the end of the current scope even when using the sync version
           // of `act`.
-
-          // 在 `act` 中，使用我们内部的 `act` 队列，
-          // 这样即使在使用 `act` 的同步版本时，这些队列也会在当前范围的末尾被刷新。
-          // TODO: study ?? 测试用例会走这个分支？？
-          ReactCurrentActQueue.current.push(flushSyncCallbacks);
+          ReactCurrentActQueue$1.current.push(flushSyncCallbacks);
         } else {
-          // 使用微任务进行异步任务调度 - flushSyncCallbacks
-          // 使用 queueMicrotask、promise 等进行微任务调度 ？？
           scheduleMicrotask(flushSyncCallbacks);
         }
       }
 
       newCallbackNode = null;
     } else {
-      // 分配的 lane 不是 SyncLane，使用宏任务进行任务调度 ？？
       var schedulerPriorityLevel;
 
-      // 根据为更新分配的 lane 的优先级，确定任务调度优先级
       switch (lanesToEventPriority(nextLanes)) {
         case DiscreteEventPriority:
-          // 离散事件优先级，对应直接优先级
           schedulerPriorityLevel = ImmediatePriority;
           break;
 
         case ContinuousEventPriority:
-          // 连续事件优先级，对应用户阻塞优先级
           schedulerPriorityLevel = UserBlockingPriority;
           break;
 
         case DefaultEventPriority:
-          // 默认事件优先级， 对应普通优先级
           schedulerPriorityLevel = NormalPriority;
           break;
 
         case IdleEventPriority:
-          // 空闲事件优先级，对应空闲优先级
           schedulerPriorityLevel = IdlePriority;
           break;
 
         default:
-          // 默认情况下，选择普通优先级
           schedulerPriorityLevel = NormalPriority;
           break;
       }
-      // 根据优先级，进行任务调度
-      // 任务的 callback 为 performConcurrentWorkOnRoot
+
       newCallbackNode = scheduleCallback$1(schedulerPriorityLevel, performConcurrentWorkOnRoot.bind(null, root));
     }
-    // fiber root node 的异步调度优先级
+
     root.callbackPriority = newCallbackPriority;
-    // fiber root node 的异步调度任务
     root.callbackNode = newCallbackNode;
   } // This is the entry point for every concurrent task, i.e. anything that
   // goes through Scheduler.
 
-  /**
-   * 以 concurrent 模式进行 fiber tree 的协调
-   * @param root
-   * @param didiTimeout
-   */
+
   function performConcurrentWorkOnRoot(root, didTimeout) {
-    // debugger
     {
       resetNestedUpdateFlag();
-    } 
-    // Since we know we're in a React event, we can clear the current
+    } // Since we know we're in a React event, we can clear the current
     // event time. The next update will compute a new event time.
 
-    // 清空 currentEventTime
-    currentEventTime = NoTimestamp;
 
-    // 清空 currentEventTransitionLane
+    currentEventTime = NoTimestamp;
     currentEventTransitionLane = NoLanes;
 
     if ((executionContext & (RenderContext | CommitContext)) !== NoContext) {
@@ -26263,9 +25369,8 @@
     } // Flush any pending passive effects before deciding which lanes to work on,
     // in case they schedule additional work.
 
-    // 缓存原来的上一个调度任务
+
     var originalCallbackNode = root.callbackNode;
-    // 上一次渲染的 useEffect 可能未处理，新的渲染开始时，要优先处理
     var didFlushPassiveEffects = flushPassiveEffects();
 
     if (didFlushPassiveEffects) {
@@ -26280,29 +25385,21 @@
     } // Determine the next lanes to work on, using the fields stored
     // on the root.
 
-    // 获取本次协调需要处理的更新
+
     var lanes = getNextLanes(root, root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes);
 
     if (lanes === NoLanes) {
       // Defensive coding. This is never expected to happen.
       return null;
-    } 
-    
-    // We disable time-slicing in some cases: if the work has been CPU-bound
+    } // We disable time-slicing in some cases: if the work has been CPU-bound
     // for too long ("expired" work, to prevent starvation), or we're in
     // sync-updates-by-default mode.
     // TODO: We only check `didTimeout` defensively, to account for a Scheduler
     // bug we're still investigating. Once the bug in Scheduler is fixed,
     // we can remove this, since we track expiration ourselves.
 
-    // 在某些情况下，我们禁用时间切片，如工作受 CPU 限制的时间过长（“过期”工作，以防止饥饿），或者我们处于默认同步更新模式。
 
-    // TODO：我们只是防御性地检查 `didTimeout`，以解决我们仍在调查的调度程序错误。 一旦 Scheduler 中的错误被修复，我们就可以删除它，因为我们自己跟踪过期时间。
-
-    // 判断是否需要时间切片
-    // 如果已经有些更新过期了，或者属于用户阻塞更新，就需要走同步更新，否则走异步非阻塞更新
     var shouldTimeSlice = !includesBlockingLane(root, lanes) && !includesExpiredLane(root, lanes) && ( !didTimeout);
-    // shouldTimeSlice 为 ture， 走 concurrent 模式； false，走 Sync 模式
     var exitStatus = shouldTimeSlice ? renderRootConcurrent(root, lanes) : renderRootSync(root, lanes);
 
     if (exitStatus !== RootIncomplete) {
@@ -26321,12 +25418,8 @@
 
       if (exitStatus === RootFatalErrored) {
         var fatalError = workInProgressRootFatalError;
-        // 重置 workInProgressRoot、workInProgress、workInProgressRootExitStatus 等
-        // 如果是继续上一次中断的渲染，可以不需要重置；
         prepareFreshStack(root, NoLanes);
-        // 标记 fiber tree 中暂停的更新
         markRootSuspended$1(root, lanes);
-        // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
         ensureRootIsScheduled(root, now());
         throw fatalError;
       } // Check if this render may have yielded to a concurrent event, and if so,
@@ -26356,12 +25449,8 @@
 
         if (exitStatus === RootFatalErrored) {
           var _fatalError = workInProgressRootFatalError;
-          // 重置 workInProgressRoot、workInProgress、workInProgressRootExitStatus 等
-          // 如果是继续上一次中断的渲染，可以不需要重置；
           prepareFreshStack(root, NoLanes);
-          // 标记 fiber tree 中暂停的更新
           markRootSuspended$1(root, lanes);
-          // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
           ensureRootIsScheduled(root, now());
           throw _fatalError;
         }
@@ -26373,7 +25462,7 @@
       root.finishedLanes = lanes;
       finishConcurrentRender(root, exitStatus, lanes);
     }
-    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
+
     ensureRootIsScheduled(root, now());
 
     if (root.callbackNode === originalCallbackNode) {
@@ -26385,11 +25474,6 @@
     return null;
   }
 
-  /**
-   * 
-   * @param root
-   * @param errorRetryLanes
-   */
   function recoverFromConcurrentError(root, errorRetryLanes) {
     var prevExecutionContext = executionContext;
     executionContext |= RetryAfterError; // If an error occurred during hydration, discard server response and fall
@@ -26405,17 +25489,29 @@
       clearContainer(root.containerInfo);
     }
 
-    var exitStatus = renderRootSync(root, errorRetryLanes);
+    var exitStatus;
+    var MAX_ERROR_RETRY_ATTEMPTS = 50;
+
+    for (var i = 0; i < MAX_ERROR_RETRY_ATTEMPTS; i++) {
+      exitStatus = renderRootSync(root, errorRetryLanes);
+
+      if (exitStatus === RootErrored && workInProgressRootRenderPhaseUpdatedLanes !== NoLanes) {
+        // There was a render phase update during this render. This was likely a
+        // useOpaqueIdentifier hook upgrading itself to a client ID. Try rendering
+        // again. This time, the component will use a client ID and will proceed
+        // without throwing. If multiple IDs upgrade as a result of the same
+        // update, we will have to do multiple render passes. To protect against
+        // an inifinite loop, eventually we'll give up.
+        continue;
+      }
+
+      break;
+    }
+
     executionContext = prevExecutionContext;
     return exitStatus;
   }
 
-  /**
-   * 结束 concurrent 非阻塞渲染工作
-   * @param root  fiber root node
-   * @param exitStatus 退出状态
-   * @param lanes 本次工作的 lanes
-   */
   function finishConcurrentRender(root, exitStatus, lanes) {
     switch (exitStatus) {
       case RootIncomplete:
@@ -26437,7 +25533,6 @@
 
       case RootSuspended:
         {
-          // 标记 fiber tree 中暂停的更新
           markRootSuspended$1(root, lanes); // We have an acceptable loading state. We need to figure out if we
           // should immediately commit it or wait a bit.
 
@@ -26448,7 +25543,6 @@
             var msUntilTimeout = globalMostRecentFallbackTime + FALLBACK_THROTTLE_MS - now(); // Don't bother with a very short suspense time.
 
             if (msUntilTimeout > 10) {
-              // 获取本次协调需要处理的更新
               var nextLanes = getNextLanes(root, NoLanes);
 
               if (nextLanes !== NoLanes) {
@@ -26463,9 +25557,7 @@
                 // suspended level. Ping the last suspended level to try
                 // rendering it again.
                 // FIXME: What if the suspended lanes are Idle? Should not restart.
-                // suspendedLanes 中不包含 lanes，意味着 lanes 已经是恢复畅通 ？？
                 var eventTime = requestEventTime();
-                // 标记 fiber tree 中恢复畅通的更新
                 markRootPinged(root, suspendedLanes);
                 break;
               } // The render is suspended, it hasn't timed out, and there's no
@@ -26485,7 +25577,6 @@
 
       case RootSuspendedWithDelay:
         {
-          // 标记 fiber tree 中暂停的更新
           markRootSuspended$1(root, lanes);
 
           if (includesOnlyTransitions(lanes)) {
@@ -26599,31 +25690,19 @@
     return true;
   }
 
-  /**
-   * 标记 fiber tree 中发生暂停的更新
-   * @param root  fiber tree
-   * @param suspendedLanes 发生暂停的更新
-   */
   function markRootSuspended$1(root, suspendedLanes) {
     // When suspending, we should always exclude lanes that were pinged or (more
     // rarely, since we try to avoid it) updated during the render phase.
     // TODO: Lol maybe there's a better way to factor this besides this
     // obnoxiously named function :)
-    // 从 suspendedLanes 中移除 workInProgressRootPingedLanes 
     suspendedLanes = removeLanes(suspendedLanes, workInProgressRootPingedLanes);
-    // 从 suspendedLanes 中移除 workInProgressRootUpdatedLanes
-    suspendedLanes = removeLanes(suspendedLanes, workInProgressRootUpdatedLanes);
-    // 将 suspendedLanes 合并到 root.suspendedLanes 中
+    suspendedLanes = removeLanes(suspendedLanes, workInProgressRootInterleavedUpdatedLanes);
     markRootSuspended(root, suspendedLanes);
   } // This is the entry point for synchronous tasks that don't go
   // through Scheduler
 
 
-  /**
-   * 同步模式进行 fiber tree 的协调
-   */
   function performSyncWorkOnRoot(root) {
-    // debugger
     {
       syncNestedUpdateFlag();
     }
@@ -26631,15 +25710,12 @@
     if ((executionContext & (RenderContext | CommitContext)) !== NoContext) {
       throw Error( 'Should not already be working.' );
     }
-    // 上一次渲染的 useEffect 可能未处理，新的渲染开始时，要优先处理
+
     flushPassiveEffects();
-    // 获取本次协调需要处理的更新
     var lanes = getNextLanes(root, NoLanes);
 
     if (!includesSomeLane(lanes, SyncLane)) {
       // There's no remaining sync work left.
-      // lanes 中不包含 SyncLane，
-      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
       ensureRootIsScheduled(root, now());
       return null;
     }
@@ -26647,40 +25723,22 @@
     var exitStatus = renderRootSync(root, lanes);
 
     if (root.tag !== LegacyRoot && exitStatus === RootErrored) {
-      var prevExecutionContext = executionContext;
-      executionContext |= RetryAfterError; // If an error occurred during hydration,
-      // discard server response and fall back to client side render.
-
-      if (root.isDehydrated) {
-        root.isDehydrated = false;
-
-        {
-          errorHydratingContainer(root.containerInfo);
-        }
-
-        clearContainer(root.containerInfo);
-      } // If something threw an error, try rendering one more time. We'll render
+      // If something threw an error, try rendering one more time. We'll render
       // synchronously to block concurrent data mutations, and we'll includes
       // all pending updates are included. If it still fails after the second
       // attempt, we'll give up and commit the resulting tree.
-
-
       var errorRetryLanes = getLanesToRetrySynchronouslyOnError(root);
 
       if (errorRetryLanes !== NoLanes) {
         lanes = errorRetryLanes;
-        exitStatus = renderRootSync(root, lanes);
+        exitStatus = recoverFromConcurrentError(root, errorRetryLanes);
       }
-
-      executionContext = prevExecutionContext;
     }
 
     if (exitStatus === RootFatalErrored) {
       var fatalError = workInProgressRootFatalError;
       prepareFreshStack(root, NoLanes);
-      // 标记 fiber tree 中暂停的更新
       markRootSuspended$1(root, lanes);
-      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
       ensureRootIsScheduled(root, now());
       throw fatalError;
     } // We now have a consistent tree. Because this is a sync render, we
@@ -26692,43 +25750,25 @@
     root.finishedLanes = lanes;
     commitRoot(root); // Before exiting, make sure there's a callback scheduled for the next
     // pending level.
-    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
+
     ensureRootIsScheduled(root, now());
     return null;
   }
 
-  /**
-   * 
-   * @param root
-   * @param lanes
-   */
   function flushRoot(root, lanes) {
     if (lanes !== NoLanes) {
-      // 标记 fiber tree 中发生缠绕的更新
       markRootEntangled(root, mergeLanes(lanes, SyncLane));
-      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
       ensureRootIsScheduled(root, now());
 
       if ((executionContext & (RenderContext | CommitContext)) === NoContext) {
         resetRenderTimer();
-        // 处理同步任务队列 - syncQueue 中的收集的同步任务
         flushSyncCallbacks();
       }
     }
   }
-
-  /**
-   * 获取当前发生更新的上下文
-   */
   function getExecutionContext() {
     return executionContext;
   }
-
-  /**
-   * 批处理更新
-   * @param fn
-   * @param a
-   */
   function batchedUpdates$1(fn, a) {
     var prevExecutionContext = executionContext;
     executionContext |= BatchedContext;
@@ -26740,23 +25780,18 @@
       // most batchedUpdates-like method.
 
       if (executionContext === NoContext && // Treat `act` as if it's inside `batchedUpdates`, even in legacy mode.
-      !( ReactCurrentActQueue.isBatchingLegacy)) {
+      !( ReactCurrentActQueue$1.isBatchingLegacy)) {
         resetRenderTimer();
         flushSyncCallbacksOnlyInLegacyMode();
       }
     }
   }
-
-  /**
-   * 离散更新
-   */
   function discreteUpdates(fn, a, b, c, d) {
     var previousPriority = getCurrentUpdatePriority();
     var prevTransition = ReactCurrentBatchConfig$3.transition;
 
     try {
       ReactCurrentBatchConfig$3.transition = 0;
-      // 设置更新优先级为 DiscreteEventPriority， 为 1
       setCurrentUpdatePriority(DiscreteEventPriority);
       return fn(a, b, c, d);
     } finally {
@@ -26771,14 +25806,10 @@
   // Warning, this opts-out of checking the function body.
 
   // eslint-disable-next-line no-redeclare
-  /**
-   * 
-   */
   function flushSync(fn) {
     // In legacy mode, we flush pending passive effects at the beginning of the
     // next event, not at the end of the previous one.
     if (rootWithPendingPassiveEffects !== null && rootWithPendingPassiveEffects.tag === LegacyRoot && (executionContext & (RenderContext | CommitContext)) === NoContext) {
-      // 上一次渲染的 useEffect 可能未处理，新的渲染开始时，要优先处理
       flushPassiveEffects();
     }
 
@@ -26804,44 +25835,25 @@
       // the stack.
 
       if ((executionContext & (RenderContext | CommitContext)) === NoContext) {
-        // 处理同步任务队列 - syncQueue 中的收集的同步任务
         flushSyncCallbacks();
       }
     }
   }
-
-  /**
-   * 更新是否已经开始了
-   */
   function isAlreadyRendering() {
     // Used by the renderer to print a warning if certain APIs are called from
     // the wrong context.
     return  (executionContext & (RenderContext | CommitContext)) !== NoContext;
   }
-
-  /**
-   * 
-   */
   function pushRenderLanes(fiber, lanes) {
     push(subtreeRenderLanesCursor, subtreeRenderLanes, fiber);
     subtreeRenderLanes = mergeLanes(subtreeRenderLanes, lanes);
     workInProgressRootIncludedLanes = mergeLanes(workInProgressRootIncludedLanes, lanes);
   }
-
-  /**
-   * @parem fiber
-   */
   function popRenderLanes(fiber) {
     subtreeRenderLanes = subtreeRenderLanesCursor.current;
     pop(subtreeRenderLanesCursor, fiber);
   }
 
-  /**
-   * 重置 workInProgressRoot、workInProgress、workInProgressRootExitStatus 等
-   * 如果是继续上一次中断的渲染，可以不需要重置；
-   * @param root
-   * @param lanes
-   */
   function prepareFreshStack(root, lanes) {
     root.finishedWork = null;
     root.finishedLanes = NoLanes;
@@ -26864,21 +25876,14 @@
       }
     }
 
-    // 重置 workInProgressRoot
     workInProgressRoot = root;
-    // 重置 workInProgress
     workInProgress = createWorkInProgress(root.current, null);
-    // 重置 workInProgressRootRenderLanes、subtreeRenderLanes、workInProgressRootIncludedLanes
     workInProgressRootRenderLanes = subtreeRenderLanes = workInProgressRootIncludedLanes = lanes;
-    // 重置 workInProgressRootExitStatus
     workInProgressRootExitStatus = RootIncomplete;
-    // 
     workInProgressRootFatalError = null;
-    // 重置 workInProgressRootSkippedLanes
     workInProgressRootSkippedLanes = NoLanes;
-    // 重置 workInProgressRootUpdatedLanes
-    workInProgressRootUpdatedLanes = NoLanes;
-    // 重置 workInProgressRootPingedLanes
+    workInProgressRootInterleavedUpdatedLanes = NoLanes;
+    workInProgressRootRenderPhaseUpdatedLanes = NoLanes;
     workInProgressRootPingedLanes = NoLanes;
     enqueueInterleavedUpdates();
 
@@ -26994,7 +25999,7 @@
     // this render.
 
 
-    if (workInProgressRoot !== null && (includesNonIdleWork(workInProgressRootSkippedLanes) || includesNonIdleWork(workInProgressRootUpdatedLanes))) {
+    if (workInProgressRoot !== null && (includesNonIdleWork(workInProgressRootSkippedLanes) || includesNonIdleWork(workInProgressRootInterleavedUpdatedLanes))) {
       // Mark the current render as suspended so that we switch to working on
       // the updates that were skipped. Usually we only suspend at the end of
       // the render phase.
@@ -27002,7 +26007,6 @@
       // (inside this function), since by suspending at the end of the render
       // phase introduces a potential mistake where we suspend lanes that were
       // pinged or updated while we were rendering.
-      // // 标记 fiber tree 中暂停的更新
       markRootSuspended$1(workInProgressRoot, workInProgressRootRenderLanes);
     }
   }
@@ -27019,16 +26023,8 @@
     return workInProgressRootExitStatus === RootIncomplete;
   }
 
-  /**
-   * 以 sync 模式协调 fiber tree
-   * @param root
-   * @param lanes
-   */
   function renderRootSync(root, lanes) {
-    debugger
-    console.log('legeacy 模式');
     var prevExecutionContext = executionContext;
-    // 开始协调
     executionContext |= RenderContext;
     var prevDispatcher = pushDispatcher(); // If the root or lanes have changed, throw out the existing stack
     // and prepare a fresh one. Otherwise we'll continue where we left off.
@@ -27041,9 +26037,7 @@
           if (memoizedUpdaters.size > 0) {
             restorePendingUpdaters(root, workInProgressRootRenderLanes);
             memoizedUpdaters.clear();
-          } 
-          
-          // At this point, move Fibers that scheduled the upcoming work from the Map to the Set.
+          } // At this point, move Fibers that scheduled the upcoming work from the Map to the Set.
           // If we bailout on this work, we'll move them back (like above).
           // It's important to move them now in case the work spawns more work at the same priority with different updaters.
           // That way we can keep the current update and future updates separate.
@@ -27062,7 +26056,6 @@
 
     do {
       try {
-        // sync 模式下 fiber tree 的协调实现
         workLoopSync();
         break;
       } catch (thrownValue) {
@@ -27092,9 +26085,6 @@
   /** @noinline */
 
 
-  /**
-   * sync 模式下 fiber tree 的协调实现
-   */
   function workLoopSync() {
     // Already timed out, so perform work without checking if we need to yield.
     while (workInProgress !== null) {
@@ -27102,16 +26092,8 @@
     }
   }
 
-  /**
-   * concurrent 模式下 fiber tree 的协调
-   * @param root
-   * @param lanes
-   */
   function renderRootConcurrent(root, lanes) {
-    debugger
-    console.log('concurrent 模式');
     var prevExecutionContext = executionContext;
-    // 开始协调
     executionContext |= RenderContext;
     var prevDispatcher = pushDispatcher(); // If the root or lanes have changed, throw out the existing stack
     // and prepare a fresh one. Otherwise we'll continue where we left off.
@@ -27135,8 +26117,6 @@
       }
 
       resetRenderTimer();
-      // 重置 workInProgressRoot、workInProgress、workInProgressRootExitStatus 等
-      // 如果是继续上一次中断的渲染，可以不需要重置；
       prepareFreshStack(root, lanes);
     }
 
@@ -27146,7 +26126,6 @@
 
     do {
       try {
-        // concurrent 模式下 fiber tree 的协调实现
         workLoopConcurrent();
         break;
       } catch (thrownValue) {
@@ -27182,9 +26161,6 @@
   /** @noinline */
 
 
-  /**
-   * concurrent 模式下 fiber tree 的协调过程
-   */
   function workLoopConcurrent() {
     // Perform work until Scheduler asks us to yield
     while (workInProgress !== null && !shouldYield()) {
@@ -27192,10 +26168,6 @@
     }
   }
 
-  /**
-   * 开始协调 fiber tree 的每一个 node
-   * @param unitOfWork
-   */
   function performUnitOfWork(unitOfWork) {
     // The current, flushed, state of this fiber is the alternate. Ideally
     // nothing should rely on this, but relying on it here means that we don't
@@ -27225,9 +26197,6 @@
     ReactCurrentOwner$2.current = null;
   }
 
-  /**
-   * 完成 fiber tree 每一个 fiber node 的协调
-   */
   function completeUnitOfWork(unitOfWork) {
     // Attempt to complete the current unit of work, then move to the next
     // sibling. If there are no more siblings, return to the parent fiber.
@@ -27320,9 +26289,6 @@
     }
   }
 
-  /**
-   * commit 阶段的实现
-   */
   function commitRoot(root) {
     // TODO: This no longer makes any sense. We already wrap the mutation and
     // layout phases. Should be able to remove.
@@ -27341,13 +26307,7 @@
     return null;
   }
 
-  /**
-   * 
-   * @param root
-   * @param renderPriorityLevel
-   */
   function commitRootImpl(root, renderPriorityLevel) {
-    console.log('commit');
     do {
       // `flushPassiveEffects` will call `flushSyncUpdateQueue` at the end, which
       // means `flushPassiveEffects` will sometimes result in additional
@@ -27355,8 +26315,6 @@
       // no more pending effects.
       // TODO: Might be better if `flushPassiveEffects` did not automatically
       // flush synchronous work at the end, to avoid factoring hazards like this.
-
-      // 上一次渲染的 useEffect 可能未处理，新的渲染开始时，要优先处理
       flushPassiveEffects();
     } while (rootWithPendingPassiveEffects !== null);
 
@@ -27402,7 +26360,6 @@
     // pending time is whatever is left on the root fiber.
 
     var remainingLanes = mergeLanes(finishedWork.lanes, finishedWork.childLanes);
-    // 标记 fiber tree 的协调过程已结束
     markRootFinished(root, remainingLanes);
 
     if (root === workInProgressRoot) {
@@ -27420,9 +26377,7 @@
     if ((finishedWork.subtreeFlags & PassiveMask) !== NoFlags || (finishedWork.flags & PassiveMask) !== NoFlags) {
       if (!rootDoesHavePassiveEffects) {
         rootDoesHavePassiveEffects = true;
-        // 根据任务优先级，调度任务
         scheduleCallback$1(NormalPriority, function () {
-          // 上一次渲染的 useEffect 可能未处理，新的渲染开始时，要优先处理
           flushPassiveEffects();
           return null;
         });
@@ -27542,11 +26497,10 @@
 
     {
       onCommitRoot$1();
-    } 
-    // Always call this before exiting `commitRoot`, to ensure that any
+    } // Always call this before exiting `commitRoot`, to ensure that any
     // additional work on this root is scheduled.
 
-    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
+
     ensureRootIsScheduled(root, now());
 
     if (hasUncaughtError) {
@@ -27554,9 +26508,7 @@
       var error$1 = firstUncaughtError;
       firstUncaughtError = null;
       throw error$1;
-    } 
-    
-    // If the passive effects are the result of a discrete render, flush them
+    } // If the passive effects are the result of a discrete render, flush them
     // synchronously at the end of the current task so that the result is
     // immediately observable. Otherwise, we assume that they are not
     // order-dependent and do not need to be observed by external systems, so we
@@ -27567,18 +26519,13 @@
 
 
     if (includesSomeLane(pendingPassiveEffectsLanes, SyncLane) && root.tag !== LegacyRoot) {
-      // 如果 pendingPassiveEffectsLanes 中包含 SyncLane，且是 concurrent 模式
-      // 上一次渲染的 useEffect 可能未处理，新的渲染开始时，要优先处理
       flushPassiveEffects();
-    } 
-    
-    // Read this again, since a passive effect might have updated it
+    } // Read this again, since a passive effect might have updated it
 
 
     remainingLanes = root.pendingLanes;
 
     if (includesSomeLane(remainingLanes, SyncLane)) {
-      // 如果 remainingLanes 中包含 SyncLane
       {
         markNestedUpdateScheduled();
       } // Count the number of times the root synchronously re-renders without
@@ -27595,7 +26542,7 @@
       nestedUpdateCount = 0;
     } // If layout work was scheduled, flush it now.
 
-    // 处理同步任务队列 - syncQueue 中的收集的同步任务
+
     flushSyncCallbacks();
 
     {
@@ -27605,9 +26552,6 @@
     return null;
   }
 
-  /**
-   * 处理 useEffect 副作用
-   */
   function flushPassiveEffects() {
     // Returns whether passive effects were flushed.
     // TODO: Combine this check with the one in flushPassiveEFfectsImpl. We should
@@ -27616,18 +26560,13 @@
     // `Scheduler.runWithPriority`, which accepts a function. But now we track the
     // priority within React itself, so we can mutate the variable directly.
     if (rootWithPendingPassiveEffects !== null) {
-      // 确认 pendingPassiveEffectsLanes 对应的优先级
       var renderPriority = lanesToEventPriority(pendingPassiveEffectsLanes);
-      // 从 DefaultEventPriority 和 renderPriority 中选出低优先的
       var priority = lowerEventPriority(DefaultEventPriority, renderPriority);
-      // 
       var prevTransition = ReactCurrentBatchConfig$3.transition;
-      // 
       var previousPriority = getCurrentUpdatePriority();
 
       try {
         ReactCurrentBatchConfig$3.transition = 0;
-        // 设置 currentUpdatePriotity 为 
         setCurrentUpdatePriority(priority);
         return flushPassiveEffectsImpl();
       } finally {
@@ -27638,17 +26577,12 @@
 
     return false;
   }
-
-  /**
-   * 
-   */
   function enqueuePendingPassiveProfilerEffect(fiber) {
     {
       pendingPassiveProfilerEffects.push(fiber);
 
       if (!rootDoesHavePassiveEffects) {
         rootDoesHavePassiveEffects = true;
-        // 根据任务优先级，调度任务
         scheduleCallback$1(NormalPriority, function () {
           flushPassiveEffects();
           return null;
@@ -27657,9 +26591,6 @@
     }
   }
 
-  /**
-   * 
-   */
   function flushPassiveEffectsImpl() {
     if (rootWithPendingPassiveEffects === null) {
       return false;
@@ -27682,13 +26613,8 @@
     }
 
     var prevExecutionContext = executionContext;
-
     executionContext |= CommitContext;
-
-    // 
     commitPassiveUnmountEffects(root.current);
-
-    // 
     commitPassiveMountEffects(root, root.current); // TODO: Move to commitPassiveMountEffects
 
     {
@@ -27710,7 +26636,6 @@
     }
 
     executionContext = prevExecutionContext;
-    // 处理同步任务队列 - syncQueue 中的收集的同步任务
     flushSyncCallbacks(); // If additional passive effects were scheduled, increment a counter. If this
     // exceeds the limit, we'll fire a warning.
 
@@ -27730,10 +26655,6 @@
   function isAlreadyFailedLegacyErrorBoundary(instance) {
     return legacyErrorBoundariesThatAlreadyFailed !== null && legacyErrorBoundariesThatAlreadyFailed.has(instance);
   }
-
-  /**
-   * @param instance
-   */
   function markLegacyErrorBoundaryAsFailed(instance) {
     if (legacyErrorBoundariesThatAlreadyFailed === null) {
       legacyErrorBoundariesThatAlreadyFailed = new Set([instance]);
@@ -27742,9 +26663,6 @@
     }
   }
 
-  /**
-   * 
-   */
   function prepareToThrowUncaughtError(error) {
     if (!hasUncaughtError) {
       hasUncaughtError = true;
@@ -27754,26 +26672,15 @@
 
   var onUncaughtError = prepareToThrowUncaughtError;
 
-  /**
-   * 
-   * @param rootFiber
-   * @param sourceFiber
-   * @param error
-   */
   function captureCommitPhaseErrorOnRoot(rootFiber, sourceFiber, error) {
     var errorInfo = createCapturedValue(error, sourceFiber);
-    // 创建一个 update 对象
     var update = createRootErrorUpdate(rootFiber, errorInfo, SyncLane);
-    // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
     enqueueUpdate(rootFiber, update);
     var eventTime = requestEventTime();
-    // 将为更新分配的 SyncLane 合并到 fiber node 的 lanes 以及 parent fiber node 的 childLanes 中
     var root = markUpdateLaneFromFiberToRoot(rootFiber, SyncLane);
 
     if (root !== null) {
-      // 标记 fiber tree 需要更新，将分配的 SyncLane 合并到 fiber root node 的 pendingLanes 中
       markRootUpdated(root, SyncLane, eventTime);
-      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
       ensureRootIsScheduled(root, eventTime);
     }
   }
@@ -27803,16 +26710,12 @@
         if (typeof ctor.getDerivedStateFromError === 'function' || typeof instance.componentDidCatch === 'function' && !isAlreadyFailedLegacyErrorBoundary(instance)) {
           var errorInfo = createCapturedValue(error$1, sourceFiber);
           var update = createClassErrorUpdate(fiber, errorInfo, SyncLane);
-          // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
           enqueueUpdate(fiber, update);
           var eventTime = requestEventTime();
-          // 将为更新分配的 SyncLane 合并到 fiber node 的 lanes 以及 parent fiber node 的 childLanes 中
           var root = markUpdateLaneFromFiberToRoot(fiber, SyncLane);
 
           if (root !== null) {
-            // 标记 fiber tree 需要更新，将为更新分配的 SyncLane 合并到 fiber root node 的 pendingLanes 中
             markRootUpdated(root, SyncLane, eventTime);
-            // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
             ensureRootIsScheduled(root, eventTime);
           }
 
@@ -27832,16 +26735,6 @@
       error('Internal React error: Attempted to capture a commit phase error ' + 'inside a detached tree. This indicates a bug in React. Likely ' + 'causes include deleting the same fiber more than once, committing an ' + 'already-finished tree, or an inconsistent return pointer.\n\n' + 'Error message:\n\n%s', error$1);
     }
   }
-
-  /**
-   * concurrent 模式下处理 Suspense 的更新
-   * 在构建 workInProgress tree 的过程中，如果遇到之前暂停的 lanes 变为 pinged，要分两种情况处理
-   * 1. 重置当前 workInProgress tree，在本次渲染过程中一并处理 pinged 的更新()
-   * 2. 继续当前 workInProgress tree 的构建，pinged 的 lanes 在下一次 workInProgress tree 的过程中处理
-   * @param root  fiber root node
-   * @param wakeable 类 promise 对象
-   * @param pingedLanes 已经畅通的更新(异步请求的数据/组件已经获取到，对应的 promise 对象的状态为 resolved)
-   */
   function pingSuspendedRoot(root, wakeable, pingedLanes) {
     var pingCache = root.pingCache;
 
@@ -27852,7 +26745,6 @@
     }
 
     var eventTime = requestEventTime();
-    // 标记 fiber tree 中恢复畅通的更新
     markRootPinged(root, pingedLanes);
 
     if (workInProgressRoot === root && isSubsetOfLanes(workInProgressRootRenderLanes, pingedLanes)) {
@@ -27863,11 +26755,8 @@
       // we should probably never restart.
       // If we're suspended with delay, or if it's a retry, we'll always suspend
       // so we can always restart.
-      // workInProgressRootRenderLanes 中包含 pingedLanes， 意味着 ？？
       if (workInProgressRootExitStatus === RootSuspendedWithDelay || workInProgressRootExitStatus === RootSuspended && includesOnlyRetries(workInProgressRootRenderLanes) && now() - globalMostRecentFallbackTime < FALLBACK_THROTTLE_MS) {
         // Restart from the root.
-        // 重置 workInProgressRoot、workInProgress、workInProgressRootExitStatus 等
-        // 如果是继续上一次中断的渲染，可以不需要重置；
         prepareFreshStack(root, NoLanes);
       } else {
         // Even though we can't restart right now, we might get an
@@ -27875,15 +26764,10 @@
         workInProgressRootPingedLanes = mergeLanes(workInProgressRootPingedLanes, pingedLanes);
       }
     }
-    // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
+
     ensureRootIsScheduled(root, eventTime);
   }
 
-  /**
-   * 
-   * @param boundaryFiber 
-   * @param retryLane
-   */
   function retryTimedOutBoundary(boundaryFiber, retryLane) {
     // The boundary fiber (a Suspense component or SuspenseList component)
     // previously was rendered in its fallback state. One of the promises that
@@ -27897,22 +26781,14 @@
 
 
     var eventTime = requestEventTime();
-    // 将为更新分配的 retryLane 合并到 fiber node 的 lanes 以及 parent fiber node 的 childLanes 中
     var root = markUpdateLaneFromFiberToRoot(boundaryFiber, retryLane);
 
     if (root !== null) {
-      // 标记 fiber tree 需要更新，将为更新分配的 retryLane 合并到 fiber root node 的 pendingLanes 中
       markRootUpdated(root, retryLane, eventTime);
-      // 为 fiber tree 的更新安排一个调度任务(会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理)
       ensureRootIsScheduled(root, eventTime);
     }
   }
 
-  /**
-   * 
-   * @param boundaryFiber
-   * 
-   */
   function retryDehydratedSuspenseBoundary(boundaryFiber) {
     var suspenseState = boundaryFiber.memoizedState;
     var retryLane = NoLane;
@@ -28160,7 +27036,7 @@
 
   function warnAboutRenderPhaseUpdatesInDEV(fiber) {
     {
-      if (isRendering && (executionContext & RenderContext) !== NoContext && !getIsUpdatingOpaqueValueInRenderPhaseInDEV()) {
+      if (isRendering && !getIsUpdatingOpaqueValueInRenderPhaseInDEV()) {
         switch (fiber.tag) {
           case FunctionComponent:
           case ForwardRef:
@@ -28209,36 +27085,25 @@
   }
   var fakeActCallbackNode = {};
 
-  /**
-   * 根据指定优先级，进行任务调度
-   * @param priorityLevel   任务优先级
-   * @param callback  任务回调方法
-   */
   function scheduleCallback$1(priorityLevel, callback) {
     {
       // If we're currently inside an `act` scope, bypass Scheduler and push to
       // the `act` queue instead.
-      // 如果当前我们在一个 act 作用域内，绕过调度器并推送到 act 队列中
-      var actQueue = ReactCurrentActQueue.current;
-      // 测试用例会走这个分支？
+      var actQueue = ReactCurrentActQueue$1.current;
+
       if (actQueue !== null) {
         actQueue.push(callback);
         return fakeActCallbackNode;
       } else {
-        // 使用调度器，根据任务优先级，进行任务调度
         return scheduleCallback(priorityLevel, callback);
       }
     }
   }
 
-  /**
-   * 
-   */
   function cancelCallback$1(callbackNode) {
     if ( callbackNode === fakeActCallbackNode) {
       return;
-    } 
-    // In production, always call Scheduler. This function will be stripped out.
+    } // In production, always call Scheduler. This function will be stripped out.
 
 
     return cancelCallback(callbackNode);
@@ -28246,17 +27111,12 @@
 
   function shouldForceFlushFallbacksInDEV() {
     // Never force flush in production. This function should get stripped out.
-    return  ReactCurrentActQueue.current !== null;
+    return  ReactCurrentActQueue$1.current !== null;
   }
 
   function warnIfNotCurrentlyActingEffectsInDEV(fiber) {
     {
-      if ( (fiber.mode & StrictLegacyMode) !== NoMode && ReactCurrentActQueue.current === null && // Our internal tests use a custom implementation of `act` that works by
-      // mocking the Scheduler package. Disable the `act` warning.
-      // TODO: Maybe the warning should be disabled by default, and then turned
-      // on at the testing frameworks layer? Instead of what we do now, which
-      // is check if a `jest` global is defined.
-      ReactCurrentActQueue.disableActWarning === false) {
+      if ((fiber.mode & StrictLegacyMode) !== NoMode && ReactCurrentActQueue$1.current === null) {
         error('An update to %s ran an effect, but was not wrapped in act(...).\n\n' + 'When testing, code that causes React state updates should be ' + 'wrapped into act(...):\n\n' + 'act(() => {\n' + '  /* fire events that update state */\n' + '});\n' + '/* assert on the output */\n\n' + "This ensures that you're testing the behavior the user would see " + 'in the browser.' + ' Learn more at https://reactjs.org/link/wrap-tests-with-act', getComponentNameFromFiber(fiber));
       }
     }
@@ -28264,12 +27124,7 @@
 
   function warnIfNotCurrentlyActingUpdatesInDEV(fiber) {
     {
-      if ( executionContext === NoContext && ReactCurrentActQueue.current === null && // Our internal tests use a custom implementation of `act` that works by
-      // mocking the Scheduler package. Disable the `act` warning.
-      // TODO: Maybe the warning should be disabled by default, and then turned
-      // on at the testing frameworks layer? Instead of what we do now, which
-      // is check if a `jest` global is defined.
-      ReactCurrentActQueue.disableActWarning === false) {
+      if (executionContext === NoContext && ReactCurrentActQueue$1.current === null) {
         var previousFiber = current;
 
         try {
@@ -28485,7 +27340,6 @@
 
       flushPassiveEffects();
       flushSync(function () {
-        // 更新容器节点
         updateContainer(element, root, null, null);
       });
     }
@@ -28546,8 +27400,6 @@
       }
 
       if (needsRemount || needsRender) {
-        // 为更新安排一个调度任务，用于处理更新
-        // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
 
@@ -28817,9 +27669,6 @@
     return IndeterminateComponent;
   } // This is used to create an alternate fiber to do work on.
 
-  /**
-   * 
-   */
   function createWorkInProgress(current, pendingProps) {
     var workInProgress = current.alternate;
 
@@ -29329,9 +28178,6 @@
     }
   }
 
-  /**
-   * 创建 fiber root node
-   */
   function createFiberRoot(containerInfo, tag, hydrate, hydrationCallbacks, isStrictMode, concurrentUpdatesByDefaultOverride) {
     var root = new FiberRootNode(containerInfo, tag, hydrate);
     // stateNode is any.
@@ -29352,9 +28198,6 @@
     return root;
   }
 
-  /**
-   * 
-   */
   function createPortal(children, containerInfo, // TODO: figure out the API for cross-renderer implementation.
   implementation) {
     var key = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
@@ -29450,39 +28293,16 @@
     }
   }
 
-  /**
-   * 基于容器节点，创建一个 fiber root node
-   * @param containerInfo
-   * @param tag  legency 或者 concurrent
-   * @param hydrate
-   * @param hydrationCallbacks
-   * @param isStrictMode
-   * @param concurrentUpdatesByDefaultOverride
-   */
   function createContainer(containerInfo, tag, hydrate, hydrationCallbacks, isStrictMode, concurrentUpdatesByDefaultOverride) {
-    // 创建一个 fiber root node
     return createFiberRoot(containerInfo, tag, hydrate, hydrationCallbacks, isStrictMode);
   }
-
-  /**
-   * 更新容器节点
-   */
   function updateContainer(element, container, parentComponent, callback) {
     {
       onScheduleRoot(container, element);
     }
-    // current fiber node
+
     var current$1 = container.current;
     var eventTime = requestEventTime();
-    /**
-      * 为此次更新分配一个 lane
-      * 分配规则:
-      * - 如果是 legency 模式，分配 SyncLane；
-      * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
-      * - 如果是 transition， 分配 transitionLane；
-      * - 根据当前事件优先级，分配对应的 lane；
-      * - 如果都不符合上述情况，返回默认事件优先级，即 16；
-     */
     var lane = requestUpdateLane(current$1);
 
     {
@@ -29504,7 +28324,7 @@
         error('Render methods should be a pure function of props and state; ' + 'triggering nested component updates from render is not allowed. ' + 'If necessary, trigger nested updates in componentDidUpdate.\n\n' + 'Check the render method of %s.', getComponentNameFromFiber(current) || 'Unknown');
       }
     }
-    // 为本次更新创建一个 update 对象
+
     var update = createUpdate(eventTime, lane); // Caution: React DevTools currently depends on this property
     // being called "element".
 
@@ -29522,23 +28342,16 @@
 
       update.callback = callback;
     }
-    // 将为更新创建的 update 对象添加到 fiber node 的 updateQueue 队列中
+
     enqueueUpdate(current$1, update);
-    // 为更新安排一个调度任务，用于处理更新
-    // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
     var root = scheduleUpdateOnFiber(current$1, lane, eventTime);
 
     if (root !== null) {
-      // 将所有未处理的 transition 类型的 lane 合并到一起，一并处理(如果有过期的，要优先处理)
       entangleTransitions(root, current$1, lane);
     }
 
     return lane;
   }
-
-  /**
-   * @param container 
-   */
   function getPublicRootInstance(container) {
     var containerFiber = container.current;
 
@@ -29570,8 +28383,6 @@
       case SuspenseComponent:
         var eventTime = requestEventTime();
         flushSync(function () {
-          // 为更新安排一个调度任务，用于处理更新
-          // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
           return scheduleUpdateOnFiber(fiber, SyncLane, eventTime);
         }); // If we're still blocked after this, we need to increase
         // the priority of any promises resolving within this
@@ -29612,8 +28423,6 @@
 
     var eventTime = requestEventTime();
     var lane = SyncLane;
-    // 为更新安排一个调度任务，用于处理更新
-    // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
@@ -29628,14 +28437,9 @@
 
     var eventTime = requestEventTime();
     var lane = SelectiveHydrationLane;
-    // 为更新安排一个调度任务，用于处理更新
-    // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
-  /**
-   * 
-   */
   function attemptHydrationAtCurrentPriority$1(fiber) {
     if (fiber.tag !== SuspenseComponent) {
       // We ignore HostRoots here because we can't increase
@@ -29644,18 +28448,7 @@
     }
 
     var eventTime = requestEventTime();
-    /**
-      * 为此次更新分配一个 lane
-      * 分配规则:
-      * - 如果是 legency 模式，分配 SyncLane；
-      * - 如果更新发生在协调过程中，分配 workInProgressRootRenderLanes 中优先级最高的 lane；
-      * - 如果是 transition， 分配 transitionLane；
-      * - 根据当前事件优先级，分配对应的 lane；
-      * - 如果都不符合上述情况，返回默认事件优先级，即 16；
-    */
     var lane = requestUpdateLane(fiber);
-    // 为更新安排一个调度任务，用于处理更新
-    // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
     scheduleUpdateOnFiber(fiber, lane, eventTime);
     markRetryLaneIfNotHydrated(fiber, lane);
   }
@@ -29802,8 +28595,6 @@
         // Shallow cloning props works as a workaround for now to bypass the bailout check.
 
         fiber.memoizedProps = _assign({}, fiber.memoizedProps);
-        // 为更新安排一个调度任务，用于处理更新
-        // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
     };
@@ -29821,8 +28612,6 @@
         // Shallow cloning props works as a workaround for now to bypass the bailout check.
 
         fiber.memoizedProps = _assign({}, fiber.memoizedProps);
-        // 为更新安排一个调度任务，用于处理更新
-        // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
     };
@@ -29840,8 +28629,6 @@
         // Shallow cloning props works as a workaround for now to bypass the bailout check.
 
         fiber.memoizedProps = _assign({}, fiber.memoizedProps);
-        // 为更新安排一个调度任务，用于处理更新
-        // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
         scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
       }
     }; // Support DevTools props for function components, forwardRef, memo, host components, etc.
@@ -29853,8 +28640,7 @@
       if (fiber.alternate) {
         fiber.alternate.pendingProps = fiber.pendingProps;
       }
-      // 为更新安排一个调度任务，用于处理更新
-      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
+
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
@@ -29864,7 +28650,7 @@
       if (fiber.alternate) {
         fiber.alternate.pendingProps = fiber.pendingProps;
       }
-      // 为更新安排一个调度任务，用于处理更新
+
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
@@ -29874,16 +28660,11 @@
       if (fiber.alternate) {
         fiber.alternate.pendingProps = fiber.pendingProps;
       }
-      // 为更新安排一个调度任务，用于处理更新
-      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
+
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
-    /**
-     * 为更新安排一个调度任务，用于处理更新
-     */
+
     scheduleUpdate = function (fiber) {
-      // 为更新安排一个调度任务，用于处理更新
-      // 会依据更新的优先级，syncLane 会通过微任务在当前时间片内处理，其他优先级的更新会在下一个时间片内处理
       scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
     };
 
@@ -29947,16 +28728,10 @@
     });
   }
 
-  /**
-   * 构造函数，创建一个 fiber root node
-   */
   function ReactDOMRoot(internalRoot) {
     this._internalRoot = internalRoot;
   }
 
-  /**
-   * render 方法，开始渲染 fiber tree
-   */
   ReactDOMRoot.prototype.render = function (children) {
     var root = this._internalRoot;
 
@@ -29981,7 +28756,7 @@
         }
       }
     }
-    // 更新容器节点
+
     updateContainer(children, root, null, null);
   };
 
@@ -30005,33 +28780,26 @@
       }
 
       flushSync(function () {
-        // 更新容器节点
         updateContainer(null, root, null, null);
       });
       unmarkContainerAsRoot(container);
     }
   };
 
-  /**
-   * 基于容器节点，创建一颗 fiber tree
-   * @param container  容器 dom 节点
-   * @param options
-   */
   function createRoot(container, options) {
     if (!isValidContainerLegacy(container)) {
       throw Error( 'createRoot(...): Target container is not a DOM element.' );
     }
 
     warnIfReactDOMContainerInDEV(container); // TODO: Delete these options
-    // 是否开启 hydrate 模式
+
     var hydrate = options != null && options.hydrate === true;
     var hydrationCallbacks = options != null && options.hydrationOptions || null;
     var mutableSources = options != null && options.hydrationOptions != null && options.hydrationOptions.mutableSources || null; // END TODO
-    // 是否开启严格模式
+
     var isStrictMode = options != null && options.unstable_strictMode === true;
-    // 创建 fiber root node
+
     var root = createContainer(container, ConcurrentRoot, hydrate, hydrationCallbacks, isStrictMode);
-    // 
     markContainerAsRoot(root.current, container);
     var rootContainerElement = container.nodeType === COMMENT_NODE ? container.parentNode : container;
     listenToAllSupportedEvents(rootContainerElement); // TODO: Delete this path
@@ -30046,13 +28814,6 @@
 
     return new ReactDOMRoot(root);
   }
-
-  /**
-   * 
-   * @param container
-   * @param initialChildren
-   * @param options
-   */
   function hydrateRoot(container, initialChildren, options) {
     if (!isValidContainer(container)) {
       throw Error( 'hydrateRoot(...): Target container is not a DOM element.' );
@@ -30064,7 +28825,7 @@
     var hydrationCallbacks = options != null ? options : null;
     var mutableSources = options != null && options.hydratedSources || null;
     var isStrictMode = options != null && options.unstable_strictMode === true;
-    // 
+
     var root = createContainer(container, ConcurrentRoot, true, // hydrate
     hydrationCallbacks, isStrictMode);
     markContainerAsRoot(root.current, container); // This can't be a comment node since hydration doesn't work on comment nodes anyway.
@@ -30078,7 +28839,7 @@
       }
     } // Render the initial children
 
-    // 更新容器节点
+
     updateContainer(initialChildren, root, null, null);
     return new ReactDOMRoot(root);
   }
@@ -30148,11 +28909,6 @@
     }
   }
 
-  /**
-   * 
-   * @param container
-   * @param forceHydrate
-   */
   function legacyCreateRootFromDOMContainer(container, forceHydrate) {
     // First clear any existing content.
     if (!forceHydrate) {
@@ -30204,7 +28960,6 @@
 
 
       flushSync(function () {
-        // 更新容器节点
         updateContainer(children, fiberRoot, parentComponent, callback);
       });
     } else {
@@ -30220,7 +28975,7 @@
         };
       } // Update
 
-      // 更新容器节点
+
       updateContainer(children, fiberRoot, parentComponent, callback);
     }
 

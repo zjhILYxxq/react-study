@@ -40,9 +40,13 @@
             const [isPending, startTransition] = React.useTransition();
 
             const handleVisible = () => {
-                startTransition(() => {
+                // startTransition(() => {
+                //     setVisible(true);
+                // });
+
+                setTimeout(() => {
                     setVisible(true);
-                });
+                }, 1000)
             }
     
 
@@ -56,9 +60,9 @@
             </div>
         }
 
-        ReactDOM.render(<App />, document.getElementById('app'));
+        // ReactDOM.render(<App />, document.getElementById('app'));
 
-        // ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+        ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
     
     </script>
 </body>
