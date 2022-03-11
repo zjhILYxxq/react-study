@@ -12,7 +12,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 	typeof define === 'function' && define.amd ? define(factory) :
-	(global.React = factory());
+	(global.React16 = factory());
 }(this, (function () { 'use strict';
 
 // TODO: this is special because it gets imported during build.
@@ -3191,7 +3191,7 @@ function handleTimeout(currentTime) {
  * @param {*} initialTime 
  */
 function flushWork(hasTimeRemaining, initialTime) {
-  debugger
+  // debugger
   if (enableProfiling) {
     markSchedulerUnsuspended(initialTime);
   } // We'll need a host callback the next time work is scheduled.
@@ -3406,7 +3406,7 @@ function timeoutForPriorityLevel(priorityLevel) {
  * @param {*} options 
  */
 function unstable_scheduleCallback(priorityLevel, callback, options) {
-  debugger
+  // debugger
   // 获取当前时间
   var currentTime = getCurrentTime();
   // 开始时间
@@ -3580,7 +3580,7 @@ var Scheduler = Object.freeze({
 // And it can be bad for performance in production.
 // This feature flag can be used to control the behavior:
 
- // To preserve the "Pause on caught exceptions" behavior of the debugger, we
+ // To preserve the "Pause on caught exceptions" behavior of the // debugger, we
 // replay the begin phase of a failed component inside invokeGuardedCallback.
 
  // Warn about deprecated, async-unsafe lifecycles; relates to RFC #6:

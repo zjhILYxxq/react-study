@@ -16112,6 +16112,7 @@
   }
 
   function mountWorkInProgressHook() {
+    debugger
     var hook = {
       memoizedState: null,
       baseState: null,
@@ -16132,6 +16133,7 @@
   }
 
   function updateWorkInProgressHook() {
+    debugger
     // This function is used both for updates and for re-renders triggered by a
     // render phase update. It assumes there is either a current hook we can
     // clone, or a work-in-progress hook from a previous render pass that we can

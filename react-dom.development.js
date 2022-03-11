@@ -9,7 +9,7 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('react')) :
   typeof define === 'function' && define.amd ? define(['exports', 'react'], factory) :
-  (global = global || self, factory(global.ReactDOM = {}, global.React));
+  (global = global || self, factory(global.ReactDOM17 = {}, global.React17));
 }(this, (function (exports, React) { 'use strict';
 
   // react 提供的供 react-dom 使用的一些内部配置
@@ -6850,6 +6850,10 @@
    * @param eventSystemFlags 事件标记
    */
   function createEventListenerWrapperWithPriority(targetContainer, domEventName, eventSystemFlags) {
+    if (domEventName !== 'click') {
+      return;
+    }
+    debugger
     // 获取原生事件优先级
     var eventPriority = getEventPriorityForPluginSystem(domEventName);
     var listenerWrapper;
@@ -6912,6 +6916,12 @@
    */
   function dispatchEvent(domEventName, eventSystemFlags, targetContainer, nativeEvent) {
     // 
+
+    if (domEventName !== 'click') {
+      return;
+    }
+    debugger
+    console.log('domEventName', domEventName);
     if (!_enabled) {
       return;
     }
@@ -6983,6 +6993,9 @@
    * @param nativeEvent 事件对象
    */
   function attemptToDispatchEvent(domEventName, eventSystemFlags, targetContainer, nativeEvent) {
+    console.log(domEventName);
+    // if (domEventName !== 'click') return
+    debugger
     // TODO: Warn if _enabled is false.
     // 触发事件的原始 dom 节点
     var nativeEventTarget = getEventTarget(nativeEvent);
@@ -9571,6 +9584,7 @@
    * @param targetContainer 绑定事件的容器
    */
   function dispatchEventsForPlugins(domEventName, eventSystemFlags, nativeEvent, targetInst, targetContainer) {
+    debugger
     // 获取触发事件的 dom 节点
     var nativeEventTarget = getEventTarget(nativeEvent);
     // 构建一个事件派发队列
@@ -18444,7 +18458,9 @@
           // 根据当前更新的优先级，为更新分配一个 lane
           var lane = requestUpdateLane(fiber);
           markRootMutableRead(root, lane);
-        } // If the source mutated between render and now,
+        } 
+        
+        // If the source mutated between render and now,
         // there may be state updates already scheduled from the old source.
         // Entangle the updates so that they render in the same batch.
 
@@ -27414,9 +27430,6 @@
    */
   function renderRootConcurrent(root, lanes) {
     console.log('concurrent render', lanes);
-    if (lanes === 1024) {
-      debugger
-    }
     // 先缓存当前执行上下文
     var prevExecutionContext = executionContext;
     // 当前执行上下文为 RenderContext，渲染上下文
@@ -31339,7 +31352,6 @@
    * @param options 配置项 { hydrate: boolean, }
    */
   function createRootImpl(container, tag, options) {
-    // debugger
     // Tag is either LegacyRoot or Concurrent Root
     // 是否开启 hydrate 功能
     var hydrate = options != null && options.hydrate === true;

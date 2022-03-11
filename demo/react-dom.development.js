@@ -12,7 +12,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('react')) :
 	typeof define === 'function' && define.amd ? define(['react'], factory) :
-	(global.ReactDOM = factory(global.React));
+	(global.ReactDOM16 = factory(global.React16));
 }(this, (function (React) { 'use strict';
 
 // Do not require this module directly! Use normal `invariant` calls with
@@ -273,7 +273,7 @@ function injectEventPluginsByName(injectedNamesToPlugins) {
 }
 
 var invokeGuardedCallbackImpl = function (name, func, context, a, b, c, d, e, f) {
-  debugger
+  // debugger
   var funcArgs = Array.prototype.slice.call(arguments, 3);
 
   try {
@@ -458,7 +458,7 @@ var reporter = {
  */
 
 function invokeGuardedCallback(name, func, context, a, b, c, d, e, f) {
-  debugger
+  // debugger
   hasError = false;
   caughtError = null;
   // 执行守卫callback
@@ -763,6 +763,9 @@ var executeDispatchesAndReleaseTopLevel = function (e) {
   return executeDispatchesAndRelease(e);
 };
 
+/**
+ * 
+ */
 function runEventsInBatch(events) {
   if (events !== null) {
     eventQueue = accumulateInto(eventQueue, events);
@@ -920,6 +923,9 @@ function extractPluginEvents(topLevelType, targetInst, nativeEvent, nativeEventT
   return events;
 }
 
+/**
+ * 
+ */
 function runExtractedPluginEventsInBatch(topLevelType, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags) {
   var events = extractPluginEvents(topLevelType, targetInst, nativeEvent, nativeEventTarget, eventSystemFlags);
   runEventsInBatch(events);
@@ -1378,7 +1384,7 @@ var debugRenderPhaseSideEffects = false; // In some cases, StrictMode should als
 // And it can be bad for performance in production.
 // This feature flag can be used to control the behavior:
 
-var debugRenderPhaseSideEffectsForStrictMode = true; // To preserve the "Pause on caught exceptions" behavior of the debugger, we
+var debugRenderPhaseSideEffectsForStrictMode = true; // To preserve the "Pause on caught exceptions" behavior of the // debugger, we
 // replay the begin phase of a failed component inside invokeGuardedCallback.
 
 var replayFailedUnitOfWorkWithInvokeGuardedCallback = true; // Warn about deprecated, async-unsafe lifecycles; relates to RFC #6:
@@ -6043,6 +6049,7 @@ function releaseTopLevelCallbackBookKeeping(instance) {
 }
 
 function handleTopLevel(bookKeeping) {
+  debugger
   var targetInst = bookKeeping.targetInst; // Loop through the hierarchy, in case there's any nested components.
   // It's important that we build the array of ancestors before calling any
   // event handlers, because event handlers can modify the DOM, leading to
@@ -6189,6 +6196,7 @@ function dispatchUserBlockingUpdate(topLevelType, eventSystemFlags, nativeEvent)
 }
 
 function dispatchEventForPluginEventSystem(topLevelType, eventSystemFlags, nativeEvent, targetInst) {
+  debugger
   var bookKeeping = getTopLevelCallbackBookKeeping(topLevelType, nativeEvent, targetInst, eventSystemFlags);
 
   try {
@@ -6201,6 +6209,7 @@ function dispatchEventForPluginEventSystem(topLevelType, eventSystemFlags, nativ
 }
 
 function dispatchEvent(topLevelType, eventSystemFlags, nativeEvent) {
+  debugger
   if (!_enabled) {
     return;
   }
@@ -6249,7 +6258,9 @@ function dispatchEvent(topLevelType, eventSystemFlags, nativeEvent) {
   } else {
     dispatchEventForPluginEventSystem(topLevelType, eventSystemFlags, nativeEvent, null);
   }
-} // Attempt dispatching an event. Returns a SuspenseInstance or Container if it's blocked.
+} 
+
+// Attempt dispatching an event. Returns a SuspenseInstance or Container if it's blocked.
 /**
  * 事件冒泡？？
  * @param {*} topLevelType 
@@ -7984,6 +7995,7 @@ var normalizeHTML;
 }
 
 function ensureListeningTo(rootContainerElement, registrationName) {
+  debugger
   var isDocumentOrFragment = rootContainerElement.nodeType === DOCUMENT_NODE || rootContainerElement.nodeType === DOCUMENT_FRAGMENT_NODE;
   var doc = isDocumentOrFragment ? rootContainerElement : rootContainerElement.ownerDocument;
   listenTo(registrationName, doc);
@@ -9921,7 +9933,7 @@ function commitMount(domElement, type, newProps, internalInstanceHandle) {
  * @param {*} internalInstanceHandle 
  */
 function commitUpdate(domElement, updatePayload, type, oldProps, newProps, internalInstanceHandle) {
-  debugger
+  // debugger
   // Update the props handle so that we know which props are the ones with
   // with current event handlers.
   // 更新 fiber node 的 props
@@ -12631,7 +12643,7 @@ function scheduleCallback(reactPriorityLevel, callback, options) {
  * @param {*} callback 
  */
 function scheduleSyncCallback(callback) {
-  debugger
+  // debugger
   // Push this callback into an internal queue. We'll flush these either in
   // the next tick, or earlier if something calls `flushSyncCallbackQueue`.
   if (syncQueue === null) {
@@ -14255,7 +14267,7 @@ function getStateFromUpdate(workInProgress, queue, update, prevState, nextProps,
  * @param {*} renderExpirationTime 
  */
 function processUpdateQueue(workInProgress, queue, props, instance, renderExpirationTime) {
-  debugger
+  // debugger
   hasForceUpdate = false;
   queue = ensureWorkInProgressQueueIsAClone(workInProgress, queue);
 
@@ -15947,7 +15959,7 @@ function ChildReconciler(shouldTrackSideEffects) {
    * @param {*} expirationTime 更新过期时间
    */
   function reconcileChildrenArray(returnFiber, currentFirstChild, newChildren, expirationTime) {
-    debugger
+    // debugger
     // This algorithm can't optimize by searching from both ends since we
     // don't have backpointers on fibers. I'm trying to see how far we can get
     // with that model. If it ends up not being worth the tradeoffs, we can
@@ -17104,7 +17116,7 @@ function areHookInputsEqual(nextDeps, prevDeps) {
  * @param {*} nextRenderExpirationTime 
  */
 function renderWithHooks(current, workInProgress, Component, props, refOrContext, nextRenderExpirationTime) {
-  debugger
+  // debugger
   renderExpirationTime$1 = nextRenderExpirationTime;
   // 当前 fiber node， 函数组件标签对应的 fiber node
   currentlyRenderingFiber$1 = workInProgress;
@@ -17646,7 +17658,7 @@ function updateRef(initialValue) {
  * @param {*} deps 
  */
 function mountEffectImpl(fiberEffectTag, hookEffectTag, create, deps) {
-  debugger
+  // debugger
   // 构建一个 hook 对象
   var hook = mountWorkInProgressHook();
   // 使用 useEffect 时提供的 deps
@@ -17689,7 +17701,7 @@ function updateEffectImpl(fiberEffectTag, hookEffectTag, create, deps) {
  * @param {*} deps 
  */
 function mountEffect(create, deps) {
-  debugger
+  // debugger
   {
     // $FlowExpectedError - jest isn't a global, and isn't recognized outside of tests
     if ('undefined' !== typeof jest) {
@@ -17880,7 +17892,7 @@ function updateMemo(nextCreate, deps) {
  * @param {*} action 执行 setState 方法时传入的值
  */
 function dispatchAction(fiber, queue, action) {
-  debugger
+  // debugger
   (function () {
     if (!(numberOfReRenders < RE_RENDER_LIMIT)) {
       {
@@ -18088,7 +18100,7 @@ var InvalidNestedHooksDispatcherOnUpdateInDEV = null;
      * @param {*} deps effect 触发的条件
      */
     useEffect: function (create, deps) {
-      debugger
+      // debugger
       currentHookNameInDev = 'useEffect';
       mountHookTypesDev();
       checkDepsAreArrayDev(deps);
@@ -19404,7 +19416,7 @@ function updateFunctionComponent(current$$1, workInProgress, Component, nextProp
  * @param {*} renderExpirationTime 渲染过期时间
  */
 function updateClassComponent(current$$1, workInProgress, Component, nextProps, renderExpirationTime) {
-  debugger
+  // debugger
   {
     if (workInProgress.type !== workInProgress.elementType) {
       // Lazy component props can't be validated in createElement
@@ -19657,7 +19669,7 @@ function updateHostRoot(current$$1, workInProgress, renderExpirationTime) {
  * @param {*} renderExpirationTime 渲染过期时间
  */
 function updateHostComponent(current$$1, workInProgress, renderExpirationTime) {
-  debugger
+  // debugger
   pushHostContext(workInProgress);
 
   if (current$$1 === null) {
@@ -19900,7 +19912,7 @@ function mountIndeterminateComponent(_current, workInProgress, Component, render
 
     ReactCurrentOwner$3.current = workInProgress;
     // 执行函数组件
-    debugger
+    // debugger
     value = renderWithHooks(null, workInProgress, Component, props, context, renderExpirationTime);
   } // React DevTools reads this flag.
 
@@ -22130,7 +22142,7 @@ function completeWork(current, workInProgress, renderExpirationTime) {
 
     case HostComponent: // 虚拟树节点
       {
-        debugger
+        // debugger
         popHostContext(workInProgress);
         var rootContainerInstance = getRootHostContainer();
         var type = workInProgress.type;
@@ -23084,7 +23096,7 @@ function safelyCallDestroy(current$$1, destroy) {
  * @param {*} finishedWork 
  */
 function commitBeforeMutationLifeCycles(current$$1, finishedWork) {
-  debugger
+  // debugger
   switch (finishedWork.tag) {
     case FunctionComponent:  // 函数式组件
     case ForwardRef:
@@ -23210,7 +23222,7 @@ function commitHookEffectList(unmountTag, mountTag, finishedWork) {
  * @param {*} finishedWork 
  */
 function commitPassiveHookEffects(finishedWork) {
-  debugger
+  // debugger
   // 判断 fiber node 是否有 react hook
   if ((finishedWork.effectTag & Passive) !== NoEffect) {
     switch (finishedWork.tag) {
@@ -23238,7 +23250,7 @@ function commitPassiveHookEffects(finishedWork) {
  * @param {*} committedExpirationTime 
  */
 function commitLifeCycles(finishedRoot, current$$1, finishedWork, committedExpirationTime) {
-  debugger
+  // debugger
   switch (finishedWork.tag) {
     case FunctionComponent: // 函数式组件
     case ForwardRef:
@@ -23837,7 +23849,7 @@ function getHostSibling(fiber) {
  * @param {*} finishedWork 
  */
 function commitPlacement(finishedWork) {
-  debugger
+  // debugger
   if (!supportsMutation) {
     return;
   } // Recursively insert all host nodes into the parent.
@@ -24108,7 +24120,7 @@ function commitDeletion(finishedRoot, current$$1, renderPriorityLevel) {
  * @param {*} finishedWork 
  */
 function commitWork(current$$1, finishedWork) {
-  debugger
+  // debugger
   if (!supportsMutation) {
     switch (finishedWork.tag) {
       case FunctionComponent:  // 函数是组件
@@ -24976,7 +24988,7 @@ function computeUniqueAsyncExpiration() {
  * @param {*} expirationTime  过期时间
  */
 function scheduleUpdateOnFiber(fiber, expirationTime) {
-  debugger
+  // debugger
   // 检查嵌套的update数量。 超过限制， 抛出异常
   checkForNestedUpdates();
   warnAboutInvalidUpdatesOnClassComponentsInDEV(fiber);
@@ -25008,7 +25020,7 @@ function scheduleUpdateOnFiber(fiber, expirationTime) {
       // root inside of batchedUpdates should be synchronous, but layout updates
       // should be deferred until the end of the batch.
       // 
-      debugger
+      // debugger
       // 执行同步任务， 以容器节点对应的fiber node 为起点， 做更新操作
       performSyncWorkOnRoot(root);
     } else {
@@ -25169,7 +25181,7 @@ function getNextRootExpirationTimeToWorkOn(root) {
  * @param {*} root 
  */
 function ensureRootIsScheduled(root) {
-  debugger
+  // debugger
   var lastExpiredTime = root.lastExpiredTime;
 
   if (lastExpiredTime !== NoWork) {
@@ -25598,7 +25610,7 @@ function finishConcurrentRender(root, finishedWork, exitStatus, expirationTime) 
  * @param {*} root fiber root node
  */
 function performSyncWorkOnRoot(root) {
-  debugger
+  // debugger
   // Check if there's expired work on this root. Otherwise, render at Sync.
   // 最后的过期时间
   var lastExpiredTime = root.lastExpiredTime;
@@ -25694,7 +25706,7 @@ function performSyncWorkOnRoot(root) {
         // 将 fiber root node 的 finishedExpirationTime 置为 sync， 表示 react 阶段结束， 要进入 commit 阶段
         root.finishedExpirationTime = expirationTime;
         resolveLocksOnRoot(root, expirationTime);
-        debugger
+        // debugger
         // react 渲染阶段结束， 进入 react commit 阶段 
         finishSyncRender(root, workInProgressRootExitStatus, expirationTime);
       } // Before exiting, make sure there's a callback scheduled for the next
@@ -25714,7 +25726,7 @@ function performSyncWorkOnRoot(root) {
  * @param {*} expirationTime 终止时间
  */
 function finishSyncRender(root, exitStatus, expirationTime) {
-  debugger
+  // debugger
   if (exitStatus === RootLocked) {
     // This root has a lock that prevents it from committing. Exit. If we
     // begin work on the root again, without any intervening updates, it
@@ -25889,7 +25901,7 @@ function unbatchedUpdates(fn, a) {
   try {
     return fn(a);
   } finally {
-    debugger
+    // debugger
     executionContext = prevExecutionContext;
 
     if (executionContext === NoContext) {
@@ -26152,7 +26164,7 @@ function inferTimeFromExpirationTimeWithSuspenseConfig(expirationTime, suspenseC
  * 在转化过程中， 会先建react元素树转化为 fiber 树
  */
 function workLoopSync() {
-  debugger
+  // debugger
   // Already timed out, so perform work without checking if we need to yield.
   while (workInProgress !== null) {
     // 处理每一个fiber node， 返回下一个要处理的 fiber node
@@ -26181,7 +26193,7 @@ function workLoopConcurrent() {
  * @param {*} unitOfWork 当前要处理的 fiber node；
  */
 function performUnitOfWork(unitOfWork) {
-  debugger
+  // debugger
   // The current, flushed, state of this fiber is the alternate. Ideally
   // nothing should rely on this, but relying on it here means that we don't
   // need an additional field on the work in progress.
@@ -26230,7 +26242,7 @@ function performUnitOfWork(unitOfWork) {
  * @param {*} unitOfWork 
  */
 function completeUnitOfWork(unitOfWork) {
-  debugger
+  // debugger
   // Attempt to complete the current unit of work, then move to the next
   // sibling. If there are no more siblings, return to the parent fiber.
   workInProgress = unitOfWork;
@@ -26447,7 +26459,7 @@ function resetChildExpirationTime(completedWork) {
  * @param {*} root 
  */
 function commitRoot(root) {
-  debugger
+  // debugger
   // 获取render优先级
   // 99 为立即优先级； 98 为用户阻塞级优先级； 97 为普通优先级； 96 为低优先级； 95 为空闲优先级
   // 默认情况下为 97， 即 提交任务的优先级为 普通优先级
@@ -26462,7 +26474,7 @@ function commitRoot(root) {
  * @param {*} renderPriorityLevel 
  */
 function commitRootImpl(root, renderPriorityLevel) {
-  debugger
+  // debugger
   flushPassiveEffects();
   flushRenderPhaseStrictModeWarningsInDEV();
 
@@ -26555,7 +26567,7 @@ function commitRootImpl(root, renderPriorityLevel) {
 
     do {
       {
-        debugger
+        // debugger
         // 触发实际 dom 操作之前的 effect
         invokeGuardedCallback(null, commitBeforeMutationEffects, null);
         // react commit 阶段发生异常
@@ -26615,7 +26627,7 @@ function commitRootImpl(root, renderPriorityLevel) {
     // the mutation phase, so that the previous tree is still current during
     // componentWillUnmount, but before the layout phase, so that the finished
     // work is current during componentDidMount/Update.
-    debugger
+    // debugger
     root.current = finishedWork; // The next phase is the layout phase, where we call effects that read
     // the host tree after it's been mutated. The idiomatic use case for this is
     // layout, but class component lifecycles also fire here for legacy reasons.
@@ -26806,7 +26818,7 @@ function commitBeforeMutationEffects() {
  */
 function commitMutationEffects(root, renderPriorityLevel) {
   // TODO: Should probably move the bulk of this function to commitWork.
-  debugger
+  // debugger
   while (nextEffect !== null) {
     setCurrentFiber(nextEffect);
     var effectTag = nextEffect.effectTag;
@@ -26934,7 +26946,7 @@ function flushPassiveEffects() {
  * 
  */
 function flushPassiveEffectsImpl() {
-  debugger
+  // debugger
   if (rootWithPendingPassiveEffects === null) {
     return false;
   }
@@ -27042,7 +27054,7 @@ function captureCommitPhaseErrorOnRoot(rootFiber, sourceFiber, error) {
  * @param {*} error 异常信息
  */
 function captureCommitPhaseError(sourceFiber, error) {
-  debugger
+  // debugger
   if (sourceFiber.tag === HostRoot) {
     // Error was thrown at the root. There is no parent, so the root
     // itself should capture it.
@@ -27347,7 +27359,7 @@ if (true && replayFailedUnitOfWorkWithInvokeGuardedCallback) {
   // beginWork的工作为，对比新旧fiber node， 更新dom节点， 返回下一个需要处理的 fiber node
   beginWork$$1 = function (current$$1, unitOfWork, expirationTime) {
     // If a component throws an error, we replay it again in a synchronously
-    // dispatched event, so that the debugger will treat it as an uncaught
+    // dispatched event, so that the // debugger will treat it as an uncaught
     // error See ReactErrorUtils for more information.
     // Before entering the begin phase, copy the work-in-progress onto a dummy
     // fiber. If beginWork throws, we'll use this to reset the state.
@@ -28700,7 +28712,7 @@ function scheduleRootUpdate(current$$1, element, expirationTime, suspenseConfig,
       warningWithoutStack$1(false, 'Render methods should be a pure function of props and state; ' + 'triggering nested component updates from render is not allowed. ' + 'If necessary, trigger nested updates in componentDidUpdate.\n\n' + 'Check the render method of %s.', getComponentName(current.type) || 'Unknown');
     }
   }
-  debugger
+  // debugger
   // 创建一个 update对象， update对象的优先级为 3
   // update对象 可对比 vue 中的 watcher？？
   var update = createUpdate(expirationTime, suspenseConfig); // Caution: React DevTools currently depends on this property
@@ -28733,7 +28745,7 @@ function scheduleRootUpdate(current$$1, element, expirationTime, suspenseConfig,
  */
 function updateContainerAtExpirationTime(element, container, parentComponent, expirationTime, suspenseConfig, callback) {
   // TODO: If this is a nested container, this won't be the root.
-  debugger
+  // debugger
   // 容器 对应的 fiber node
   var current$$1 = container.current;
   //
@@ -28859,7 +28871,7 @@ function createContainer(containerInfo, tag, hydrate, hydrationCallbacks) {
  * @param {*} callback 
  */
 function updateContainer(element, container, parentComponent, callback) {
-  debugger
+  // debugger
   // 容器 fiber root node 对应的 fiber node
   var current$$1 = container.current;
   // 当前时间？？
@@ -29484,7 +29496,7 @@ function legacyCreateRootFromDOMContainer(container, forceHydrate) {
  * @param {*} callback 
  */
 function legacyRenderSubtreeIntoContainer(parentComponent, children, container, forceHydrate, callback) {
-  debugger
+  // // debugger
   {
     topLevelUpdateWarnings(container);
     warnOnInvalidCallback(callback === undefined ? null : callback, 'render');
@@ -29513,7 +29525,7 @@ function legacyRenderSubtreeIntoContainer(parentComponent, children, container, 
       };
     } // Initial mount should not be batched.
 
-    debugger
+    // debugger
     // 处理非批处理更新: 更新运行上下文为 LegacyUnbatchedContext, 然后进行更新
     unbatchedUpdates(function () {
       // 更新
@@ -29612,7 +29624,7 @@ var ReactDOM = {
    * @param {*} callback 执行完render以后的回调方法
    */
   render: function (element, container, callback) {
-    debugger
+    // debugger
     // 需要先判断提供的container是否能作为一个容器使用
     (function () {
       if (!isValidContainer(container)) {

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.1020.js"></script>
+    <script src="../../react-dom.development.1020.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+
+        let element = document.getElementById('app');
+        // let shadow = element.attachShadow({ mode: 'open' });
+
+        function App() {
+            debugger
+            const [count, setCount] = React.useState(0);
+
+            let value = 0, setValue;
+
+            // const handleClick = React.useCallback(() => {
+            //     setCount(count + 1);
+            // }, [])
+
+            const handleClick = () => {
+                setCount(count + 1);
+            }
+
+            const handleNextClick = () => {
+                if (setValue) {
+                    setValue(value + 1);
+                }
+            }
+
+            // debugger
+            if (count % 2 === 0) {
+                debugger
+                [value, setValue] = React.useState(0);
+            }
+
+
+
+            return (
+                <div>
+                    <button onClick={handleClick}>{count}</button>
+                </div>
+            )
+        }
+
+        ReactDOM.createRoot(element).render(<App />);
+        
+    
+    </script>
+</body>

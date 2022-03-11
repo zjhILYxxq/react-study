@@ -2956,10 +2956,11 @@
     if (timeElapsed < frameInterval) {
       // The main thread has only been blocked for a really short amount of time;
       // smaller than a single frame. Don't yield yet.
+      console.log('shouldYieldToHost', false);
       return false;
     } // The main thread has been blocked for a non-negligible amount of time. We
 
-
+    console.log('shouldYieldToHost', true);
     return true;
   }
 

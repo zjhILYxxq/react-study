@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.js"></script>
+    <script src="../../react-dom.development.js"></script>
+    <script src="../react-dom-server.browser.development.js"></script>
+    <script src="../../sentry.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+
+        console.log(Sentry);
+
+        Sentry.init({
+            // dsn: "https://62187b367e474822bb9cb733c8a89814@sentry.byai.com/56",
+            dsn: "https://525053cc037e42bcb981670e97a0a821@sentry.byai.com/52",
+            // enabled: bridge!.store!.global!.feConfig!.API_ENV === 'prod',
+            enabled: true,
+            release: 'by-aicc'
+        });
+
+        class ErrorBoundary extends React.Component {
+            componentDidCatch(error, info) {
+                debugger
+                console.log('捕获到异常', error);
+            }
+            render() {
+                return this.props.children;
+            }
+        }
+
+        function App() {
+
+            const handleError= () => {
+                throw new Error('error' + Math.random());
+            }
+    
+
+            return <div>
+                <button onClick={handleError}>抛出异常</button>
+            </div>
+        }
+
+        function Root() {
+            return <ErrorBoundary><App/></ErrorBoundary>
+        }
+
+        ReactDOM.render(<Root />, document.getElementById('app'));
+
+        // ReactDOM.createRoot(document.getElementById('app')).render(<ErrorBoundary><App/></ErrorBoundary>);
+
+
+    
+    </script>
+</body>

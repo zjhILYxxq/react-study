@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="app" style="margin-top: 100px;"></div>
+    <script type="text/javascript">
+        debugger
+        let element = document.getElementById('app');
+        let shadow = element.attachShadow({ mode: 'open' });
+        shadow.innerHTML = '<button id="my-button">点击</button>';
+        setTimeout(() => {
+            let btn = element.getElementById('my-button');
+            console.log(btn);
+        }, 1000)
+    </script>
+</body>

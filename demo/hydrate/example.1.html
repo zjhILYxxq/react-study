@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="bf3f60d0.css">
     <script src="../../react.development.js"></script>
     <script src="../../react-dom.development.js"></script>
     <script src="../../react-dom-server.browser.development.js"></script>
+    <script src="app.3df6ca41.1642949772211.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
     <title>Document</title>
     <style>
@@ -156,12 +158,12 @@
         //     </React.Fragment>,
         //     document.getElementById('app')
         // );
-        
-        var b = ReactDOMServer.renderToString(Child4());
+        const WrapperAgentGroup = window['my-ssr'].WrapperAgentGroup;
+        var b = ReactDOMServer.renderToString(WrapperAgentGroup());
         document.getElementById('app').innerHTML = b;
-        console.log(b);
-        debugger
-        let c = ReactDOM.hydrate( <Child4 name="zjh" />, document.getElementById('app'));
+        // console.log(b);
+        // debugger
+        let c = ReactDOM.render( <WrapperAgentGroup/>, document.getElementById('app'));
         // var c = ReactDOMServer.renderToStaticMarkup(Child4());
         // console.log(c);
         
