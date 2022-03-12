@@ -9,7 +9,7 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('react')) :
   typeof define === 'function' && define.amd ? define(['exports', 'react'], factory) :
-  (global = global || self, factory(global.ReactDOM17 = {}, global.React17));
+  (global = global || self, factory(global.ReactDOM = {}, global.React));
 }(this, (function (exports, React) { 'use strict';
 
   // react 提供的供 react-dom 使用的一些内部配置

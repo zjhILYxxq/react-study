@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="../../react.development.js"></script>
-    <script src="../../react-dom.development.js"></script>
+    <script src="../react.development.js"></script>
+    <script src="../react-dom.development.js"></script>
     <script src="../../react-dom-server.browser.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
     <title>Document</title>
@@ -25,17 +25,22 @@
 
         function Child() {
             const ref = React.useRef(null);
-            React.useEffect(() => {
-                debugger
-                ReactDOM.render(<NextParent />, ref.current);
-            }, []);
+            const [count, setCount] = React.useState(0);
+            // React.useEffect(() => {
+            //     debugger
+            //     ReactDOM.render(<NextParent />, ref.current);
+            // }, []);
             return <div>
                 <div onClick={(e) => {
                     alert('Child');
-                    // e.stopPropagation();
+                    console.log(e.target);
+                    e.persist();
+                    setTimeout(() => {
+                        console.log(e.target);
+                    }, 0)
                 }}>
                     Child
-                    <div ref={ref}></div>
+                    <div ref={ref}>{count}</div>
                 </div>
                  
             </div>
@@ -63,6 +68,39 @@
             </div>
         }
 
+        class Component extends React.Component {
+            constructor(props) {
+                super(props)
+                this.state = {
+                    count: 0
+                }
+            }
+
+            render() {
+                return (
+                    <div onClick={() => {
+                        setTimeout(() => {
+                            this.setState({
+                                count: 1
+                            });
+                            console.log(this.state.count);
+                            this.setState({
+                                count: 2
+                            });
+                            console.log(this.state.count);
+                            this.setState({
+                                count: 3
+                            });
+                            console.log(this.state.count);
+                        }, 0)
+                    }}>{this.state.count}</div>
+                )
+                
+            }
+        }
+
         ReactDOM.render(<Parent />, document.getElementById('app'));
+
+        // new ReactDOM.createRoot(document.getElementById('app')).render(<Component />);
     </script>
 </body>

@@ -12,7 +12,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('react')) :
 	typeof define === 'function' && define.amd ? define(['react'], factory) :
-	(global.ReactDOM16 = factory(global.React16));
+	(global.ReactDOM = factory(global.React));
 }(this, (function (React) { 'use strict';
 
 // Do not require this module directly! Use normal `invariant` calls with
