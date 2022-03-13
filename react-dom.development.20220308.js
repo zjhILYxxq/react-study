@@ -16136,6 +16136,9 @@
     return true;
   }
 
+  /**
+   * 函数组件执行 hook
+   */
   function renderWithHooks(current, workInProgress, Component, props, secondArg, nextRenderLanes) {
     renderLanes = nextRenderLanes;
     currentlyRenderingFiber$1 = workInProgress;
@@ -16163,6 +16166,7 @@
 
     {
       if (current !== null && current.memoizedState !== null) {
+        // 更新阶段处理 hook
         ReactCurrentDispatcher$1.current = HooksDispatcherOnUpdateInDEV;
       } else if (hookTypesDev !== null) {
         // This dispatcher handles an edge case where a component is updating,
@@ -16172,6 +16176,7 @@
         // This dispatcher does that.
         ReactCurrentDispatcher$1.current = HooksDispatcherOnMountWithHookTypesInDEV;
       } else {
+        // 挂载阶段处理 hook
         ReactCurrentDispatcher$1.current = HooksDispatcherOnMountInDEV;
       }
     }
@@ -16322,6 +16327,10 @@
     localIdCounter = 0;
   }
 
+  /**
+   * 挂载阶段执行 useState、useReducer、useEffect 等 hooks 时，给 fiber node 添加一个 hook 对象
+   * 可以在更新阶段读取 state、effect 等。
+   */
   function mountWorkInProgressHook() {
     var hook = {
       memoizedState: null,
@@ -16333,12 +16342,14 @@
 
     if (workInProgressHook === null) {
       // This is the first hook in the list
+      // wokrInProgressHook 指向函数组件内部的第一个 hook
       currentlyRenderingFiber$1.memoizedState = workInProgressHook = hook;
     } else {
       // Append to the end of the list
       workInProgressHook = workInProgressHook.next = hook;
     }
 
+    // 函数组件的 hook 是一个链表结构。
     return workInProgressHook;
   }
 
@@ -16848,7 +16859,11 @@
     scheduleUpdateOnFiber(fiber, SyncLane, NoTimestamp);
   }
 
+  /**
+   * 挂载阶段，给函数组件添加 state
+   */
   function mountState(initialState) {
+    // 给函数组件对应的 fiber node 添加一个 state 对应的 hook 对象
     var hook = mountWorkInProgressHook();
 
     if (typeof initialState === 'function') {
@@ -16857,6 +16872,7 @@
     }
 
     hook.memoizedState = hook.baseState = initialState;
+    // 每一个 hook 对象都有一个 queue 列表，用于收集 setState 生成的 update 对象
     var queue = {
       pending: null,
       interleaved: null,
@@ -16866,10 +16882,14 @@
       lastRenderedState: initialState
     };
     hook.queue = queue;
+    // queue.dispatch 方法，就是供开发人员使用的 setState
     var dispatch = queue.dispatch = dispatchSetState.bind(null, currentlyRenderingFiber$1, queue);
     return [hook.memoizedState, dispatch];
   }
 
+  /**
+   * 更新阶段，更新 state
+   */
   function updateState(initialState) {
     return updateReducer(basicStateReducer);
   }
@@ -17314,14 +17334,18 @@
     markUpdateInDevTools(fiber, lane);
   }
 
+  /**
+   * 供开发人员使用的 setState
+   */
   function dispatchSetState(fiber, queue, action) {
     {
       if (typeof arguments[3] === 'function') {
         error("State updates from the useState() and useReducer() Hooks don't support the " + 'second callback argument. To execute a side effect after ' + 'rendering, declare it in the component body with useEffect().');
       }
     }
-
+    // 为本次更新分配的 lane
     var lane = requestUpdateLane(fiber);
+    // 创建一个 update 对象
     var update = {
       lane: lane,
       action: action,
@@ -17331,8 +17355,10 @@
     };
 
     if (isRenderPhaseUpdate(fiber)) {
+      // render 阶段的更新
       enqueueRenderPhaseUpdate(queue, update);
     } else {
+      // 将 update 对象添加收集到 hook 对象的 queue 列表中
       enqueueUpdate$1(fiber, queue, update);
       var alternate = fiber.alternate;
 
@@ -17377,6 +17403,7 @@
       }
 
       var eventTime = requestEventTime();
+      // 安排一个 react 异步调度任务
       var root = scheduleUpdateOnFiber(fiber, lane, eventTime);
 
       if (root !== null) {
@@ -17505,7 +17532,9 @@
       error('Do not call Hooks inside useEffect(...), useMemo(...), or other built-in Hooks. ' + 'You can only call Hooks at the top level of your React function. ' + 'For more information, see ' + 'https://reactjs.org/link/rules-of-hooks');
     };
 
+    // 挂载阶段， 各个 hook 的执行过程
     HooksDispatcherOnMountInDEV = {
+      // 
       readContext: function (context) {
         return readContext(context);
       },
@@ -17574,6 +17603,7 @@
         mountHookTypesDev();
         return mountRef(initialValue);
       },
+      // 挂载阶段， 执行 useState， 生成一个 hook
       useState: function (initialState) {
         currentHookNameInDev = 'useState';
         mountHookTypesDev();
@@ -17726,7 +17756,7 @@
       },
       unstable_isNewReconciler: enableNewReconciler
     };
-
+    // 更新阶段， 各个 hook 的执行过程
     HooksDispatcherOnUpdateInDEV = {
       readContext: function (context) {
         return readContext(context);
