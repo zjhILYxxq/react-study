@@ -36,8 +36,12 @@
     <div id="app"></div>
     <script type="text/babel">
         function App() {
-            const [visible, setVisible] = React.useState(false);
+            const [visible, setVisible] = React.useState(true);
             const [isPending, startTransition] = React.useTransition();
+            debugger
+            if (visible) {
+                const [value, setValue] = React.useState(false);
+            }
 
             const handleVisible = () => {
                 // startTransition(() => {

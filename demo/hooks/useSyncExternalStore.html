@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.18.stable.js"></script>
+    <script src="../../react-dom.development.118.stable.js"></script>
+    <script src="../../redux.js"></script>
+    <script src="../../react-redux-8.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+        const { useEffect, useLayoutEffect, useInsertionEffect, useState, startTransition, useRef } = React;
+        const { useSelector, useDispatch, Provider } = ReactRedux;
+        const { createStore } = Redux;
+        const store = createStore((state = '', action) => {
+            return action.value;
+        });
+
+        function App() {
+            const dispatch = useDispatch();
+
+
+            const handleValueChange = (e) => {
+                startTransition(() => {
+                    dispatch({
+                        type: 'change',
+                        value: e.target.value
+                    });
+                });
+            }
+
+            return <div>
+                <input onChange={handleValueChange} />
+                { Array(20).fill('a').map((item, index) => <ChildComponent key={index} index={index} /> )}
+            </div>
+        }
+
+        const ChildComponent = ({ index }) => {
+            const value = useSelector(state => state);
+            const start = performance.now();
+            while(performance.now() - start < 30)  {}
+            // console.log(index, performance.now(), value, <div>{value}</div>);
+            return <div>{value}</div>
+        }
+
+        ReactDOM.createRoot(document.getElementById('app')).render(<Provider store={store}><App/></Provider>);
+    </script>
+</body>

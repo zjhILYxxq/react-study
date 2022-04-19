@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.20220308.js"></script>
+    <script src="../../react-dom.development.20220308.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+        const { useEffect, useLayoutEffect, useInsertionEffect, useState } = React;
+        function App() {
+            const [count, setCount] = useState(0);
+
+            useEffect(() => {
+                console.log('useEffect');
+            });
+
+            useLayoutEffect(() => {
+                console.log('useLayoutEffect');
+            });
+
+            useInsertionEffect(() => {
+                debugger
+                console.log('useInsertionEffect');
+            });
+
+            return <div>
+                <button onClick={() => { setCount(count + 1)}}>{count}</button>    
+            </div>
+        }
+
+        ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+    </script>
+</body>

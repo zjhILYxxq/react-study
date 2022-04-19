@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.18.stable.js"></script>
+    <script src="../../react-dom.development.118.stable.js"></script>
+    <script src="../../redux.js"></script>
+    <script src="../../react-redux.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+        const {useState, useEffect, useCallback, startTransition, useRef } = React;
+
+        const useMouseX = () => {
+            const ref = useRef(0);
+            useEffect(() => {
+                const callback = (e) => {
+                    ref.current = e.clientX;
+                }
+                window.addEventListener("mousemove", callback);
+                return () => window.removeEventListener('mousemove', callback);
+            }, []);
+            return ref.current;
+        }
+
+        const MousePositionX = () => {
+            const x = useMouseX();
+            const start = performance.now();
+            while(performance.now() - start < 20) {}
+            return <div>Mouse X: {x}</div>
+        }
+
+        
+
+        const App = () => {
+            const [count, setCount] = useState(0);
+            const add = () => {
+                startTransition(() => {
+                    setCount(count => count + 1);
+                })
+            }
+            return <div>
+                <div>{count}<button onClick={add}>click</button></div>
+                {Array(20).fill('a').map((item, index) => (
+                    <MousePositionX key={index} />
+                ))}
+            </div>
+        }
+        ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+    </script>
+</body>

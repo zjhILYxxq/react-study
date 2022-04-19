@@ -14,20 +14,38 @@
     <div id="app"></div>
     <script type="text/babel">
 
-        console.log(Sentry);
+        // console.log(Sentry);
 
-        Sentry.init({
-            // dsn: "https://62187b367e474822bb9cb733c8a89814@sentry.byai.com/56",
-            dsn: "https://525053cc037e42bcb981670e97a0a821@sentry.byai.com/52",
-            // enabled: bridge!.store!.global!.feConfig!.API_ENV === 'prod',
-            enabled: true,
-            release: 'by-aicc'
+        // Sentry.init({
+        //     // dsn: "https://62187b367e474822bb9cb733c8a89814@sentry.byai.com/56",
+        //     dsn: "https://525053cc037e42bcb981670e97a0a821@sentry.byai.com/52",
+        //     // enabled: bridge!.store!.global!.feConfig!.API_ENV === 'prod',
+        //     enabled: true,
+        //     release: 'by-aicc'
+        // });
+
+        let originError = window.onerror;
+
+
+
+        window.onerror = function(error) {
+            console.log('捕获到异常');
+            return false;
+        }
+
+        window.addEventListener('unhandledrejection', (error) => {
+            console.log('捕获到 promise 异常');
+            return false;
+        })
+
+        Promise.reject(new Error('error' + Math.random())).catch(error => {
+            console.log(error);
         });
 
         class ErrorBoundary extends React.Component {
             componentDidCatch(error, info) {
-                debugger
-                console.log('捕获到异常', error);
+                // debugger
+                // console.log('捕获到异常', error);
             }
             render() {
                 return this.props.children;

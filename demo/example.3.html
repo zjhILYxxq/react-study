@@ -66,17 +66,34 @@
             }, 0)
         }
 
-        // moveBoxBySetTimeout(document.getElementById('box1'));
+        moveBoxBySetTimeout(document.getElementById('box1'));
 
         function moveBoxByRequestAnimationFrame(dom) {
             move(dom);
             window.requestAnimationFrame(() => {
                 moveBoxByRequestAnimationFrame(dom);
+                window.requestIdleCallback((IdleDeadline) => {
+                    console.log('remainTime', IdleDeadline.timeRemaining());
+                });
             })
         }
 
+        // function task() {
+        //     let i = 50000000;
+        //     while(i > 0) { i-- }
+        //     setTimeout(() => {
+
+        //         task();
+        //     }, 5);
+        // }
+        // task();
+
         beginTime = Date.now();
-        moveBoxByRequestAnimationFrame(document.getElementById('box2'));
+        // moveBoxByRequestAnimationFrame(document.getElementById('box2'));
+
+        window.requestIdleCallback((IdleDeadline) => {
+            console.log('remainTime', IdleDeadline.timeRemaining());
+        });
 
         
 
@@ -123,7 +140,7 @@
 
 
 
-        ReactDOM.render(<ReactBox color="yellow"/>, document.getElementById('app1'));
+        // ReactDOM.render(<ReactBox color="yellow"/>, document.getElementById('app1'));
 
         // new ReactDOM.createRoot(document.getElementById('app')).render(<ReactBox color="grey"/>);
 

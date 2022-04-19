@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../react.development.18.stable.js"></script>
+    <script src="../../react-dom.development.118.stable.js"></script>
+    <script src="../../redux.js"></script>
+    <script src="../../react-redux.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, startTransition, useRef, useSyncExternalStore } = React;
+
+        const createStore = (initialState) => {
+            let state = initialState;
+            const getState = () => state;
+            const listeners = new Set();
+            const setState = (fn) => {
+                state = fn(state);
+                listeners.forEach(l => l());
+            };
+            const setState_1 = (fn) => {
+                state = fn(state);
+            }
+            const subscribe = (listener) => {
+                listeners.add(listener);
+                return () => {
+                    listeners.delete(listener)
+                };
+            }
+            return { getState, setState, subscribe, setState_1  }
+        }
+
+        const useStore = (store, selector) => {
+            const [state, setState] = useState(() => selector(store.getState()));
+            useEffect(() => {
+                const callback = () => setState(selector(store.getState()));
+                const unsubscribe = store.subscribe(callback);
+                return unsubscribe;
+            }, [store, selector]);
+            return selector(store.getState());
+            
+        }
+
+        const useStoreByUseSyncExternalStore = (store, selector) => {
+            return useSyncExternalStore(store.subscribe, useCallback(() => selector(store.getState()), [store, selector]));
+        }
+
+        const store = createStore({ count: 0, text: '' });
+
+
+
+        const ShowText = () => {
+            const text = useStore(store, useCallback((state) => state.text));
+            console.log(text);
+            const start = performance.now();
+            while(performance.now() - start < 100)  {}
+            return <div>{text}</div>
+        }
+
+        const ShowText_1 = () => {
+            const text = useStoreByUseSyncExternalStore(store, useCallback((state) => state.text));
+            console.log(text);
+            const start = performance.now();
+            while(performance.now() - start < 100)  {}
+            return <div>{text}</div>
+        }
+
+        const TextBox = () => {
+            const setText = (event) => {
+                startTransition(() => {
+                    console.log(event.target.value);
+                    store.setState((prev => ({ ...prev, text: event.target.value})));
+                });
+            }
+            return <div>
+                <input onChange={setText} />
+            </div>
+        }
+
+        const TextBox_1 = () => {
+            const [value, setValue] = useState('');
+            const setText = (event) => {
+                startTransition(() => {
+                    setValue(event.target.value);
+                    store.setState_1((prev => ({ ...prev, text: event.target.value})));
+                });
+            }
+            return <div>
+                <input onChange={setText} />
+                <div>{value}</div>
+                {Array(5).fill('a').map(item => (
+                    <ShowText_1 />
+                ))}
+            </div>
+        }
+
+        const App = () => {
+            return <div>
+                <TextBox_1 />
+            </div>
+        }
+        ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+    </script>
+</body>
