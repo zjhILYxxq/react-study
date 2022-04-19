@@ -11946,6 +11946,7 @@
   var syncQueue = null;
   var includesLegacySyncCallbacks = false;
   var isFlushingSyncQueue = false;
+  // 微任务队列去渲染
   function scheduleSyncCallback(callback) {
     // Push this callback into an internal queue. We'll flush these either in
     // the next tick, or earlier if something calls `flushSyncCallbackQueue`.
@@ -25661,9 +25662,11 @@
         var renderWasConcurrent = !includesBlockingLane(root, lanes);
         var finishedWork = root.current.alternate;
 
+        // externalStore 一致性检查
         if (renderWasConcurrent && !isRenderConsistentWithExternalStores(finishedWork)) {
           // A store was mutated in an interleaved event. Render again,
           // synchronously, to block further mutations.
+          console.log('一致性检查为 false, 需要同步渲染');
           exitStatus = renderRootSync(root, lanes); // We need to check again if something threw
 
           if (exitStatus === RootErrored) {

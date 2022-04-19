@@ -58,16 +58,23 @@
             const text = useStore(store, useCallback((state) => state.text));
             console.log(text);
             const start = performance.now();
-            while(performance.now() - start < 100)  {}
-            return <div>{text}</div>
+            while(performance.now() - start < 20)  {}
+            return <div>
+                {text}
+                {Array(5).fill('a').map(item => (
+                    <ShowText_1 />
+                ))}
+            </div>
         }
 
         const ShowText_1 = () => {
             const text = useStoreByUseSyncExternalStore(store, useCallback((state) => state.text));
             console.log(text);
             const start = performance.now();
-            while(performance.now() - start < 100)  {}
-            return <div>{text}</div>
+            while(performance.now() - start < 20)  {}
+            return <div>
+                {text}
+            </div>
         }
 
         const TextBox = () => {
@@ -79,6 +86,9 @@
             }
             return <div>
                 <input onChange={setText} />
+                {Array(5).fill('a').map(item => (
+                    <ShowText_1 />
+                ))}
             </div>
         }
 
@@ -94,7 +104,7 @@
                 <input onChange={setText} />
                 <div>{value}</div>
                 {Array(5).fill('a').map(item => (
-                    <ShowText_1 />
+                    <ShowText />
                 ))}
             </div>
         }
