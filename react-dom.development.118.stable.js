@@ -16798,9 +16798,11 @@
   }
 
   function updateStoreInstance(fiber, inst, nextSnapshot, getSnapshot) {
+    console.log('updateStoreInstance');
     // These are updated in the passive phase
     inst.value = nextSnapshot;
-    inst.getSnapshot = getSnapshot; // Something may have been mutated in between render and commit. This could
+    inst.getSnapshot = getSnapshot; 
+    // Something may have been mutated in between render and commit. This could
     // have been in an event that fired before the passive effects, or it could
     // have been in a layout effect. In that case, we would have used the old
     // snapsho and getSnapshot values to bail out. We need to check one more time.
@@ -16820,6 +16822,7 @@
       // read from the store.
       if (checkIfSnapshotChanged(inst)) {
         // Force a re-render.
+        console.log('subscribeToStore', 'checkIfSnapshotChanged')
         forceStoreRerender(fiber);
       }
     }; // Subscribe to the store and return a clean-up function.
@@ -16837,6 +16840,7 @@
 
     try {
       var nextValue = latestGetSnapshot();
+      console.log('prevValue', prevValue, 'nextValue', nextValue);
       return !objectIs(prevValue, nextValue);
     } catch (error) {
       return true;

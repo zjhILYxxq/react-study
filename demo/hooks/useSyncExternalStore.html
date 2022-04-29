@@ -35,7 +35,7 @@
 
             return <div>
                 <input onChange={handleValueChange} />
-                { Array(20).fill('a').map((item, index) => <ChildComponent key={index} index={index} /> )}
+                { Array(10).fill('a').map((item, index) => <ChildComponent key={index} index={index} /> )}
             </div>
         }
 

@@ -85,7 +85,7 @@ var Sentry = (function (exports) {
     }
 
     /** Console logging verbosity for the SDK. */
-    var LogLevel;
+    var LogLevel;  // 日志级别
     (function (LogLevel) {
         /** No logs will be generated. */
         LogLevel[LogLevel["None"] = 0] = "None";
@@ -100,7 +100,7 @@ var Sentry = (function (exports) {
     /**
      * Session Status
      */
-    var SessionStatus;
+    var SessionStatus;  // 会话状态
     (function (SessionStatus) {
         /** JSDoc */
         SessionStatus["Ok"] = "ok";
@@ -111,7 +111,8 @@ var Sentry = (function (exports) {
         /** JSDoc */
         SessionStatus["Abnormal"] = "abnormal";
     })(SessionStatus || (SessionStatus = {}));
-    var RequestSessionStatus;
+
+    var RequestSessionStatus;  // 请求会话状态
     (function (RequestSessionStatus) {
         /** JSDoc */
         RequestSessionStatus["Ok"] = "ok";
@@ -169,14 +170,14 @@ var Sentry = (function (exports) {
         Severity.fromString = fromString;
     })(exports.Severity || (exports.Severity = {}));
 
-    /** The status of an event. */
+    /** The status of an event. */ // 异常事件的状态
     (function (Status) {
         /** The status could not be determined. */
-        Status["Unknown"] = "unknown";
+        Status["Unknown"] = "unknown";  // 未知
         /** The event was skipped due to configuration or callbacks. */
-        Status["Skipped"] = "skipped";
+        Status["Skipped"] = "skipped";  // 忽略
         /** The event was sent to Sentry successfully. */
-        Status["Success"] = "success";
+        Status["Success"] = "success";  // 异常事件发送成功
         /** The client is currently rate limited and will try again later. */
         Status["RateLimit"] = "rate_limit";
         /** The event could not be processed. */
@@ -194,16 +195,16 @@ var Sentry = (function (exports) {
          */
         function fromHttpCode(code) {
             if (code >= 200 && code < 300) {
-                return Status.Success;
+                return Status.Success;  // 状态码为 2xx, 成功
             }
             if (code === 429) {
-                return Status.RateLimit;
+                return Status.RateLimit;  // 状态码 429？
             }
             if (code >= 400 && code < 500) {
-                return Status.Invalid;
+                return Status.Invalid;  // 状态码为 4xx, 为不合法
             }
             if (code >= 500) {
-                return Status.Failed;
+                return Status.Failed;  // 状态码为 5xx, 失败
             }
             return Status.Unknown;
         }
@@ -247,7 +248,7 @@ var Sentry = (function (exports) {
      */
     /**
      * Checks whether we're in the Node.js or Browser environment
-     *
+     * 判断是否是 node 环境
      * @returns Answer to given question
      */
     function isNodeEnv() {
@@ -255,7 +256,7 @@ var Sentry = (function (exports) {
     }
     /**
      * Requires a module which is protected against bundler minification.
-     *
+     * 动态请求 ？？
      * @param request The module path to resolve
      */
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-explicit-any
@@ -271,7 +272,7 @@ var Sentry = (function (exports) {
     var fallbackGlobalObject = {};
     /**
      * Safely get global scope object
-     *
+     * 返回全局的 object， node 环境放回 global， 浏览器环境返回 window、self
      * @returns Global scope object
      */
     function getGlobalObject() {
@@ -289,26 +290,26 @@ var Sentry = (function (exports) {
     /**
      * Checks whether given value's type is one of a few Error or Error-like
      * {@link isError}.
-     *
+     * 判断一个对象是否是异常
      * @param wat A value to be checked.
      * @returns A boolean representing the result.
      */
     function isError(wat) {
         switch (Object.prototype.toString.call(wat)) {
-            case '[object Error]':
+            case '[object Error]':  // ??
                 return true;
-            case '[object Exception]':
+            case '[object Exception]':  // ??
                 return true;
-            case '[object DOMException]':
+            case '[object DOMException]':  // ??
                 return true;
             default:
-                return isInstanceOf(wat, Error);
+                return isInstanceOf(wat, Error); // ??
         }
     }
     /**
      * Checks whether given value's type is ErrorEvent
      * {@link isErrorEvent}.
-     *
+     * ErrorEvent ??
      * @param wat A value to be checked.
      * @returns A boolean representing the result.
      */
@@ -318,7 +319,7 @@ var Sentry = (function (exports) {
     /**
      * Checks whether given value's type is DOMError
      * {@link isDOMError}.
-     *
+     * DOMError
      * @param wat A value to be checked.
      * @returns A boolean representing the result.
      */
@@ -328,7 +329,7 @@ var Sentry = (function (exports) {
     /**
      * Checks whether given value's type is DOMException
      * {@link isDOMException}.
-     *
+     * DOMException
      * @param wat A value to be checked.
      * @returns A boolean representing the result.
      */
@@ -348,7 +349,7 @@ var Sentry = (function (exports) {
     /**
      * Checks whether given value's is a primitive (undefined, null, number, boolean, string, bigint, symbol)
      * {@link isPrimitive}.
-     *
+     * 是否是基础数据
      * @param wat A value to be checked.
      * @returns A boolean representing the result.
      */
@@ -358,7 +359,7 @@ var Sentry = (function (exports) {
     /**
      * Checks whether given value's type is an object literal
      * {@link isPlainObject}.
-     *
+     * 是否是一个普通对象
      * @param wat A value to be checked.
      * @returns A boolean representing the result.
      */
@@ -368,7 +369,7 @@ var Sentry = (function (exports) {
     /**
      * Checks whether given value's type is an Event instance
      * {@link isEvent}.
-     *
+     * 是否是一个 Event 对象
      * @param wat A value to be checked.
      * @returns A boolean representing the result.
      */
@@ -378,7 +379,7 @@ var Sentry = (function (exports) {
     /**
      * Checks whether given value's type is an Element instance
      * {@link isElement}.
-     *
+     * 是否是一个 Event 对象
      * @param wat A value to be checked.
      * @returns A boolean representing the result.
      */
@@ -388,7 +389,7 @@ var Sentry = (function (exports) {
     /**
      * Checks whether given value's type is an regexp
      * {@link isRegExp}.
-     *
+     * 是否是一个正则表达式
      * @param wat A value to be checked.
      * @returns A boolean representing the result.
      */
@@ -397,6 +398,7 @@ var Sentry = (function (exports) {
     }
     /**
      * Checks whether given value has a then function.
+     * 判断 wat 是否是一个 thenable 对象
      * @param wat A value to be checked.
      */
     function isThenable(wat) {
@@ -406,7 +408,7 @@ var Sentry = (function (exports) {
     /**
      * Checks whether given value's type is a SyntheticEvent
      * {@link isSyntheticEvent}.
-     *
+     * 判断 wat 是否是一个合成事件对象
      * @param wat A value to be checked.
      * @returns A boolean representing the result.
      */
@@ -416,7 +418,7 @@ var Sentry = (function (exports) {
     /**
      * Checks whether given value's type is an instance of provided constructor.
      * {@link isInstanceOf}.
-     *
+     * 
      * @param wat A value to be checked.
      * @param base A constructor to be used in a check.
      * @returns A boolean representing the result.
@@ -433,6 +435,7 @@ var Sentry = (function (exports) {
     /**
      * Given a child DOM element, returns a query-selector statement describing that
      * and its ancestors
+     * 使用一个选择语法字符串描述一个 dom 元素
      * e.g. [HTMLElement] => body > div > input#foo.btn[name=baz]
      * @returns generated DOM path
      */
@@ -522,6 +525,7 @@ var Sentry = (function (exports) {
     }
     /**
      * A safe form of location.href
+     * 获取当前的 href
      */
     function getLocationHref() {
         var global = getGlobalObject();
@@ -533,6 +537,7 @@ var Sentry = (function (exports) {
         }
     }
 
+    // setPrototypeOf 方法
     var setPrototypeOf = Object.setPrototypeOf || ({ __proto__: [] } instanceof Array ? setProtoOf : mixinProperties);
     /**
      * setPrototypeOf polyfill using __proto__
@@ -558,6 +563,7 @@ var Sentry = (function (exports) {
     }
 
     /** An error emitted by Sentry SDKs and related utilities. */
+    // SentryError 构造方法，继承自 Error 类
     var SentryError = /** @class */ (function (_super) {
         __extends(SentryError, _super);
         function SentryError(message) {
@@ -572,10 +578,13 @@ var Sentry = (function (exports) {
     }(Error));
 
     /** Regular expression used to parse a Dsn. */
+    // 正则表达式，用于解析 DSN
     var DSN_REGEX = /^(?:(\w+):)\/\/(?:(\w+)(?::(\w+))?@)([\w.-]+)(?::(\d+))?\/(.+)/;
     /** Error message */
+    // 异常信息
     var ERROR_MESSAGE = 'Invalid Dsn';
     /** The Sentry Dsn, identifying a Sentry instance and project. */
+    // Dsn 类，用于创建一个 Dsn 实例
     var Dsn = /** @class */ (function () {
         /** Creates a new Dsn component */
         function Dsn(from) {
@@ -640,6 +649,7 @@ var Sentry = (function (exports) {
             this.projectId = components.projectId;
         };
         /** Validates this Dsn and throws on error. */
+        // dsn 校验
         Dsn.prototype._validate = function () {
             var _this = this;
             ['protocol', 'publicKey', 'host', 'projectId'].forEach(function (component) {
@@ -661,13 +671,14 @@ var Sentry = (function (exports) {
     }());
 
     // TODO: Implement different loggers for different environments
+    // 获取全局上下文
     var global$1 = getGlobalObject();
     /** Prefix for logging strings */
     var PREFIX = 'Sentry Logger ';
     /**
      * Temporarily unwrap `console.log` and friends in order to perform the given callback using the original methods.
      * Restores wrapping after the callback completes.
-     *
+     * ？？
      * @param callback The function to run against the original `console` messages
      * @returns The results of the callback
      */
@@ -678,6 +689,7 @@ var Sentry = (function (exports) {
             return callback();
         }
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        // 原生的 console 实例
         var originalConsole = global.console;
         var wrappedLevels = {};
         // Restore all wrapped console methods
@@ -753,6 +765,7 @@ var Sentry = (function (exports) {
     }());
     // Ensure we only have a single logger instance, even if multiple versions of @sentry/utils are being used
     global$1.__SENTRY__ = global$1.__SENTRY__ || {};
+
     var logger = global$1.__SENTRY__.logger || (global$1.__SENTRY__.logger = new Logger());
 
     /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -808,9 +821,11 @@ var Sentry = (function (exports) {
         return Memo;
     }());
 
+    // 默认的函数名称为无名的
     var defaultFunctionName = '<anonymous>';
     /**
      * Safely extract function name from itself
+     * 获取函数名称，如果没有，返回 <anonymous>
      */
     function getFunctionName(fn) {
         try {
@@ -1216,7 +1231,7 @@ var Sentry = (function (exports) {
     /**
      * Tells whether current environment supports Fetch API
      * {@link supportsFetch}.
-     *
+     * 判断是否支持 fetch
      * @returns Answer to the given question.
      */
     function supportsFetch() {
@@ -1237,11 +1252,13 @@ var Sentry = (function (exports) {
      * isNativeFetch checks if the given function is a native implementation of fetch()
      */
     // eslint-disable-next-line @typescript-eslint/ban-types
+    // 是否是原生的 fetch 方法，如果是的话，window.fetch.toString() 方法会返回 'function () { [native code] }'
     function isNativeFetch(func) {
         return func && /^function fetch\(\)\s+\{\s+\[native code\]\s+\}$/.test(func.toString());
     }
     /**
      * Tells whether current environment supports Fetch API natively
+     * 判断当前环境是否支持原生的 fetch
      * {@link supportsNativeFetch}.
      *
      * @returns true if `window.fetch` is natively implemented, false otherwise
@@ -1258,6 +1275,7 @@ var Sentry = (function (exports) {
         }
         // window.fetch is implemented, but is polyfilled or already wrapped (e.g: by a chrome extension)
         // so create a "pure" iframe to see if that has native fetch
+        // 如果原生的 fetch 方法被包装，可以通过手动创建一个 iframe，然后判断 iframe 的 contentWindow 是否支持 fetch
         var result = false;
         var doc = global.document;
         // eslint-disable-next-line deprecation/deprecation
@@ -1281,7 +1299,7 @@ var Sentry = (function (exports) {
     /**
      * Tells whether current environment supports Referrer Policy API
      * {@link supportsReferrerPolicy}.
-     *
+     * 判断当前环境是否支持 Referrer ？？
      * @returns Answer to the given question.
      */
     function supportsReferrerPolicy() {
@@ -1305,7 +1323,7 @@ var Sentry = (function (exports) {
     /**
      * Tells whether current environment supports History API
      * {@link supportsHistory}.
-     *
+     * 判读当前环境是否支持 history api
      * @returns Answer to the given question.
      */
     function supportsHistory() {
@@ -1381,6 +1399,9 @@ var Sentry = (function (exports) {
         instrument(handler.type);
     }
     /** JSDoc */
+    /**
+     * 
+     */
     function triggerHandlers(type, data) {
         var e_1, _a;
         if (!type || !handlers[type]) {
@@ -5540,6 +5561,7 @@ var Sentry = (function (exports) {
          * @param originalPayload Original payload used to create SentryRequest
          */
         FetchTransport.prototype._sendRequest = function (sentryRequest, originalPayload) {
+            debugger
             var _this = this;
             if (this._isRateLimited(sentryRequest.type)) {
                 this.recordLostEvent(Outcome.RateLimitBackoff, sentryRequest.type);
@@ -5712,10 +5734,7 @@ var Sentry = (function (exports) {
                 return new this._options.transport(transportOptions);
             }
             if (supportsFetch()) {
-                return new FetchTransport(transportOptions, (url, options) => {
-                    console.log(url, JSON.parse(options.body));
-                    return window.fetch(url, options);
-                });
+                return new FetchTransport(transportOptions, this._options.fetchImpl);
             }
             return new XHRTransport(transportOptions);
         };
@@ -6897,6 +6916,7 @@ var Sentry = (function (exports) {
          * @inheritDoc
          */
         BrowserClient.prototype._sendEvent = function (event) {
+            debugger
             var integration = this.getIntegration(Breadcrumbs);
             if (integration) {
                 integration.addSentryBreadcrumb(event);

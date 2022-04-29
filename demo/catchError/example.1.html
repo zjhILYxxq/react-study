@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="../../react.development.js"></script>
-    <script src="../../react-dom.development.js"></script>
+    <script src="../../react.development.18.stable.js"></script>
+    <script src="../../react-dom.development.118.stable.js"></script>
     <script src="../react-dom-server.browser.development.js"></script>
     <script src="../../sentry.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
@@ -16,36 +16,40 @@
 
         // console.log(Sentry);
 
-        // Sentry.init({
-        //     // dsn: "https://62187b367e474822bb9cb733c8a89814@sentry.byai.com/56",
-        //     dsn: "https://525053cc037e42bcb981670e97a0a821@sentry.byai.com/52",
-        //     // enabled: bridge!.store!.global!.feConfig!.API_ENV === 'prod',
-        //     enabled: true,
-        //     release: 'by-aicc'
-        // });
+        Sentry.init({
+            // dsn: "https://62187b367e474822bb9cb733c8a89814@sentry.byai.com/56",
+            dsn: "https://525053cc037e42bcb981670e97a0a821@sentry.byai.com/52",
+            // enabled: bridge!.store!.global!.feConfig!.API_ENV === 'prod',
+            enabled: true,
+            release: 'by-aicc',
+            fetchImpl: (url, options) => {
+                console.log('自定义异常处理', url, JSON.parse(options.body));
+                window.fetch(url, options);
+            }
+        });
 
         let originError = window.onerror;
 
 
 
-        window.onerror = function(error) {
-            console.log('捕获到异常');
-            return false;
-        }
+        // window.onerror = function(error) {
+        //     console.log('捕获到异常');
+        //     return false;
+        // }
 
-        window.addEventListener('unhandledrejection', (error) => {
-            console.log('捕获到 promise 异常');
-            return false;
-        })
+        // window.addEventListener('unhandledrejection', (error) => {
+        //     console.log('捕获到 promise 异常');
+        //     return false;
+        // })
 
-        Promise.reject(new Error('error' + Math.random())).catch(error => {
-            console.log(error);
-        });
+        // Promise.reject(new Error('error' + Math.random())).catch(error => {
+        //     console.log(error);
+        // });
 
         class ErrorBoundary extends React.Component {
             componentDidCatch(error, info) {
                 // debugger
-                // console.log('捕获到异常', error);
+                console.log('捕获到异常', error);
             }
             render() {
                 return this.props.children;
@@ -55,7 +59,10 @@
         function App() {
 
             const handleError= () => {
-                throw new Error('error' + Math.random());
+                // throw new Error('error' + Math.random());
+                // console.error('error' + Math.random());
+                debugger
+                Sentry.captureException(new Error('error' + Math.random()));
             }
     
 
@@ -65,7 +72,7 @@
         }
 
         function Root() {
-            return <ErrorBoundary><App/></ErrorBoundary>
+            return <App/>
         }
 
         ReactDOM.render(<Root />, document.getElementById('app'));

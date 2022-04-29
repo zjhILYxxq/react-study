@@ -19,20 +19,26 @@
             let state = initialState;
             const getState = () => state;
             const listeners = new Set();
-            const setState = (fn) => {
-                state = fn(state);
-                listeners.forEach(l => l());
+            // 通过 useDispatch 返回的 dispatch 修改 state 时，会触发 react 更新
+            const useDispatch = () => {
+                return (newState) => {
+                    state = { ...state, ...newState }
+                    listeners.forEach(l => l());
+                }
             };
-            const setState_1 = (fn) => {
-                state = fn(state);
-            }
+            // 通过 useDispatch_1 返回的 dispatch 修改 state 时，不会触发 react 更新
+            const useDispatch_1 = () => {
+                return (newState) => {
+                    state = { ...state, ...newState }
+                }
+            };
             const subscribe = (listener) => {
                 listeners.add(listener);
                 return () => {
                     listeners.delete(listener)
                 };
             }
-            return { getState, setState, subscribe, setState_1  }
+            return { getState, useDispatch, subscribe, useDispatch_1 }
         }
 
         const useStore = (store, selector) => {
@@ -58,12 +64,9 @@
             const text = useStore(store, useCallback((state) => state.text));
             console.log(text);
             const start = performance.now();
-            while(performance.now() - start < 20)  {}
+            while(performance.now() - start < 100)  {}
             return <div>
                 {text}
-                {Array(5).fill('a').map(item => (
-                    <ShowText_1 />
-                ))}
             </div>
         }
 
@@ -78,10 +81,12 @@
         }
 
         const TextBox = () => {
+            const dispatch = store.useDispatch();
             const setText = (event) => {
                 startTransition(() => {
                     console.log(event.target.value);
-                    store.setState((prev => ({ ...prev, text: event.target.value})));
+                    debugger
+                    dispatch({ text: event.target.value});
                 });
             }
             return <div>
@@ -111,7 +116,7 @@
 
         const App = () => {
             return <div>
-                <TextBox_1 />
+                <TextBox />
             </div>
         }
         ReactDOM.createRoot(document.getElementById('app')).render(<App/>);

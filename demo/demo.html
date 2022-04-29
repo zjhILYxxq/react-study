@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+    var movingCount = function(m, n, k) {
+        debugger
+        let cache = Array(m).fill(0);
+        cache = cache.map(item => Array(n).fill(0));
+        
+        function dfs(i, j) {
+            if (i < 0 || i >= m || j < 0 || j >= n || cache[i][j]) return 0; // 边界问题
+            if (sum[i] + sum[j] > k) return 0;
+            cache[i][j] = 1;
+            return 1 + dfs(i - 1, j) + dfs(i + 1, j) + dfs(i, j + 1) + dfs(i, j - 1);
+        }
+        return dfs(0, 0);
+
+    };
+
+    function sum(number) {
+        let total = 0;
+        while(number) {
+            total += number % 10;
+            number = parseInt(number / 10);
+        }
+        return total;
+    }
+    </script>
+    
+</body>
+</html>
