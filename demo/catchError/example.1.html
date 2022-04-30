@@ -11,40 +11,67 @@
     <title>Document</title>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app">
+        <button id="button"  >按钮</button>
+    </div>
     <script type="text/babel">
 
         // console.log(Sentry);
 
-        Sentry.init({
-            // dsn: "https://62187b367e474822bb9cb733c8a89814@sentry.byai.com/56",
-            dsn: "https://525053cc037e42bcb981670e97a0a821@sentry.byai.com/52",
-            // enabled: bridge!.store!.global!.feConfig!.API_ENV === 'prod',
-            enabled: true,
-            release: 'by-aicc',
-            fetchImpl: (url, options) => {
-                console.log('自定义异常处理', url, JSON.parse(options.body));
-                window.fetch(url, options);
-            }
-        });
+        // Sentry.init({
+        //     // dsn: "https://62187b367e474822bb9cb733c8a89814@sentry.byai.com/56",
+        //     dsn: "https://525053cc037e42bcb981670e97a0a821@sentry.byai.com/52",
+        //     // enabled: bridge!.store!.global!.feConfig!.API_ENV === 'prod',
+        //     enabled: true,
+        //     release: 'by-aicc',
+        //     fetchImpl: (url, options) => {
+        //         console.log('自定义异常处理', url, JSON.parse(options.body));
+        //         window.fetch(url, options);
+        //     }
+        // });
+
+        function clickHandle() {
+            debugger
+            console.log(store.name);
+        }
 
         let originError = window.onerror;
+        window.onerror = function(error) {
+            debugger
+            console.log('捕获到异常');
+            return false;
+        }
+        document.getElementById('button').addEventListener('click', clickHandle);
+
+        window.addEventListener('unhandledrejection', (error) => {
+            console.log('捕获到 promise 异常');
+            return false;
+        });
+
+        function reqListener () {
+            console.log(this.responseText);
+        }
+        function transferFailed(evt) {
+            console.log(store.name);
+        }
+
+        var oReq = new XMLHttpRequest();
+        oReq.addEventListener("load", reqListener);
+        oReq.addEventListener("error", transferFailed  );
+        oReq.open("GET", "http://example.com/movies.json");
+        oReq.send();
+
+        // fetch('http://example.com/movies.json');
+        // debugger
+        // console.log(store.name);
 
 
 
-        // window.onerror = function(error) {
-        //     console.log('捕获到异常');
-        //     return false;
-        // }
+ 
 
-        // window.addEventListener('unhandledrejection', (error) => {
-        //     console.log('捕获到 promise 异常');
-        //     return false;
-        // })
 
-        // Promise.reject(new Error('error' + Math.random())).catch(error => {
-        //     console.log(error);
-        // });
+
+        // Promise.reject(new Error('error' + Math.random()));
 
         class ErrorBoundary extends React.Component {
             componentDidCatch(error, info) {
@@ -59,10 +86,12 @@
         function App() {
 
             const handleError= () => {
-                // throw new Error('error' + Math.random());
-                // console.error('error' + Math.random());
                 debugger
-                Sentry.captureException(new Error('error' + Math.random()));
+                throw new Error('error' + Math.random());
+                // console.error('error' + Math.random());
+                
+                // Sentry.captureException(new Error('error' + Math.random()));
+                // console.error('异常信息');
             }
     
 
@@ -75,7 +104,7 @@
             return <App/>
         }
 
-        ReactDOM.render(<Root />, document.getElementById('app'));
+        // ReactDOM.render(<Root />, document.getElementById('app'));
 
         // ReactDOM.createRoot(document.getElementById('app')).render(<ErrorBoundary><App/></ErrorBoundary>);
 
