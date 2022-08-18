@@ -27455,6 +27455,7 @@
   var resolveFamily = null; // $FlowFixMe Flow gets confused by a WeakSet feature check below.
 
   var failedBoundaries = null;
+  // resolveFamily 由外部提供，在 vite 中由 @react/refresh 提供
   var setRefreshHandler = function (handler) {
     {
       resolveFamily = handler;
@@ -27477,10 +27478,16 @@
       return family.current;
     }
   }
+  /**
+   * 
+   */
   function resolveClassForHotReloading(type) {
     // No implementation differences.
     return resolveFunctionForHotReloading(type);
   }
+  /**
+   * 
+   */
   function resolveForwardRefForHotReloading(type) {
     {
       if (resolveFamily === null) {
@@ -27621,6 +27628,11 @@
       failedBoundaries.add(fiber);
     }
   }
+  /**
+   * 热更新的时候使用
+   * @param root  根节点
+   * @param update
+   */
   var scheduleRefresh = function (root, update) {
     {
       if (resolveFamily === null) {
@@ -27628,10 +27640,11 @@
         return;
       }
 
-      var staleFamilies = update.staleFamilies,
-          updatedFamilies = update.updatedFamilies;
+      var staleFamilies = update.staleFamilies,   // 不新鲜的组件
+          updatedFamilies = update.updatedFamilies;  // 需要更新的组件
       flushPassiveEffects();
       flushSync(function () {
+        // 递归调度
         scheduleFibersWithFamiliesRecursively(root.current, updatedFamilies, staleFamilies);
       });
     }
@@ -27652,6 +27665,14 @@
     }
   };
 
+  /**
+   * 递归调度
+   * updateFamilies、staleFamilies 是一个 Set 对象，元素 family 的格式为 { current: Component }
+   * 其中 Component 为组件函数，可以是函数组件，也可以是类组件，也可以是简单的 memo 函数组件；
+   * @param fiber
+   * @param updatedFamilies   
+   * @param staleFamilites
+   */
   function scheduleFibersWithFamiliesRecursively(fiber, updatedFamilies, staleFamilies) {
     {
       var alternate = fiber.alternate,
@@ -27659,7 +27680,7 @@
           sibling = fiber.sibling,
           tag = fiber.tag,
           type = fiber.type;
-      var candidateType = null;
+      var candidateType = null; // 候选人
 
       switch (tag) {
         case FunctionComponent:
@@ -27677,8 +27698,8 @@
         throw new Error('Expected resolveFamily to be set during hot reload.');
       }
 
-      var needsRender = false;
-      var needsRemount = false;
+      var needsRender = false;  // 需要重新 render
+      var needsRemount = false; // 需要从新 mount
 
       if (candidateType !== null) {
         var family = resolveFamily(candidateType);

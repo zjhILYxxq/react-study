@@ -6182,6 +6182,7 @@ var Sentry = (function (exports) {
          * and provide better metadata.
          */
         TryCatch.prototype.setupOnce = function () {
+            debugger
             var global = getGlobalObject();
             if (this._options.setTimeout) {
                 fill(global, 'setTimeout', this._wrapTimeFunction.bind(this));
