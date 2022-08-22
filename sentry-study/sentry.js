@@ -1114,24 +1114,31 @@ var Sentry = (function (exports) {
         instrumented[type] = true;
         switch (type) {
             case 'console':
+                // 覆写 console 的各个 api，执行时收集 console 相关的信息
                 instrumentConsole();
                 break;
             case 'dom':
+                // 覆写 click、keypress 类型事件的 callback，用于收集发生 click、keypress 事件的 dom tree 信息；
                 instrumentDOM();
                 break;
             case 'xhr':
+                // 
                 instrumentXHR();
                 break;
             case 'fetch':
+                // 
                 instrumentFetch();
                 break;
             case 'history':
+                // 
                 instrumentHistory();
                 break;
             case 'error':
+                // 
                 instrumentError();
                 break;
             case 'unhandledrejection':
+                // 
                 instrumentUnhandledRejection();
                 break;
             default:
@@ -1185,13 +1192,14 @@ var Sentry = (function (exports) {
             if (!(level in global$5.console)) {
                 return;
             }
+            // 
             fill(global$5.console, level, function (originalConsoleMethod) {
                 return function () {
                     var args = [];
                     for (var _i = 0; _i < arguments.length; _i++) {
                         args[_i] = arguments[_i];
                     }
-                    // 触发 console 事件？？
+                    // 触发 console 的 handler，如添加 console 类型的面包屑信息
                     triggerHandlers('console', { args: args, level: level });
                     // this fails for some browsers. :(
                     if (originalConsoleMethod) {
@@ -1221,7 +1229,7 @@ var Sentry = (function (exports) {
                     },
                     startTimestamp: Date.now(),
                 };
-                // 触发 fetch 类型的 handler
+                // 触发 fetch 类型的 handler，如添加 fetch 类型的面包屑信息
                 triggerHandlers('fetch', __assign({}, handlerData));
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 return originalFetch.apply(global$5, args).then(function (response) {
@@ -5925,6 +5933,7 @@ var Sentry = (function (exports) {
         });
     }
     /**
+     * 
      * Instruments the given function and sends an event to Sentry every time the
      * function throws an exception.
      *
@@ -6253,24 +6262,25 @@ var Sentry = (function (exports) {
         return [hub, attachStacktrace];
     }
 
+    // 继承关系 EventTarget <-- Node <-- Element <-- HTMLElement <-- HTMLDivElement(document 等)
     var DEFAULT_EVENT_TARGET = [
-        'EventTarget',
-        'Window',
-        'Node',
+        'EventTarget', 
+        'Window',  // EventTarget <-- Window
+        'Node',   // EventTarget <-- Node
         'ApplicationCache',
-        'AudioTrackList',
-        'ChannelMergerNode',
-        'CryptoOperation',
-        'EventSource',
-        'FileReader',
-        'HTMLUnknownElement',
-        'IDBDatabase',
-        'IDBRequest',
-        'IDBTransaction',
-        'KeyOperation',
-        'MediaController',
-        'MessagePort',
-        'ModalWindow',
+        'AudioTrackList', // EventTarget <-- AudioTrackList
+        'ChannelMergerNode', // EventTarget <-- AudioNode <-- ChannelMergerNode
+        'CryptoOperation', // ??
+        'EventSource',  // EventTarget <-- EventSource
+        'FileReader', // EventTarget <-- FileReader
+        'HTMLUnknownElement', // EventTarget <-- Node <-- Element <-- HTMLElement <-- HTMLUnknownElement
+        'IDBDatabase', // EventTarget <-- IDBDatabase
+        'IDBRequest',  // EventTarget <-- IDBRequest
+        'IDBTransaction', // EventTarget <-- IDBTransaction
+        'KeyOperation', // ??
+        'MediaController', // 
+        'MessagePort', // EventTarget <-- MessagePort
+        'ModalWindow', // ??
         'Notification',
         'SVGElementInstance',
         'Screen',
@@ -6280,8 +6290,8 @@ var Sentry = (function (exports) {
         'WebSocket',
         'WebSocketWorker',
         'Worker',
-        'XMLHttpRequest',
-        'XMLHttpRequestEventTarget',
+        'XMLHttpRequest',  // EventTarget <-- XMLHttpRequestEventTarget <-- XMLHttpRequest
+        'XMLHttpRequestEventTarget', // EventTarget <-- XMLHttpRequestEventTarget
         'XMLHttpRequestUpload',
     ];
 
@@ -6304,20 +6314,26 @@ var Sentry = (function (exports) {
         TryCatch.prototype.setupOnce = function () {
             var global = getGlobalObject();
             if (this._options.setTimeout) {
+                // 重写 setTimeout 
                 fill(global, 'setTimeout', _wrapTimeFunction);
             }
             if (this._options.setInterval) {
+                // 重写 setInterval
                 fill(global, 'setInterval', _wrapTimeFunction);
             }
             if (this._options.requestAnimationFrame) {
+                // 从写 requestAnimationFrame
                 fill(global, 'requestAnimationFrame', _wrapRAF);
             }
             if (this._options.XMLHttpRequest && 'XMLHttpRequest' in global) {
+                // 重写 xhr 实例的 send 方法
                 fill(XMLHttpRequest.prototype, 'send', _wrapXHR);
             }
+            // 重写继承自 DEFAULT_EVENT_TARGET 的 prototype 上的 addEventListener 和 removeEventListener 方法
             var eventTargetOption = this._options.eventTarget;
             if (eventTargetOption) {
                 var eventTarget = Array.isArray(eventTargetOption) ? eventTargetOption : DEFAULT_EVENT_TARGET;
+                
                 eventTarget.forEach(_wrapEventTarget);
             }
         };
@@ -6329,6 +6345,8 @@ var Sentry = (function (exports) {
     }());
 
     /** JSDoc */
+    // 重写原来的 setTimeout，新的 setTimeout 执行时，会对传入的 callback 进行包装为一个 sentryWrapped
+    // sentryWrapped 内部会有一个 try...catch...，当 callback 中的代码出现异常时，会被捕获，然后触发 captureException 来上报异常 
     function _wrapTimeFunction(original) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return function () {
@@ -6337,6 +6355,7 @@ var Sentry = (function (exports) {
                 args[_i] = arguments[_i];
             }
             var originalCallback = args[0];
+            // 对 setTimeout 的入参 callback 进行包装
             args[0] = wrap$1(originalCallback, {
                 mechanism: {
                     data: { function: getFunctionName(original) },
@@ -6350,6 +6369,8 @@ var Sentry = (function (exports) {
 
     /** JSDoc */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // 重写覆写 requestAnimationFrame。新的 requestAnimationFrame。新的 执行时，会对传入的 callback 进行包装为一个 sentryWrapped。
+    // sentryWrapped 内部会有一个 try...catch...，当 callback 中的代码出现异常时，会被捕获，然后触发 captureException 来上报异常 
     function _wrapRAF(original) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return function (callback) {
@@ -6370,6 +6391,9 @@ var Sentry = (function (exports) {
     }
 
     /** JSDoc */
+    // 重新覆写 XMLHttpRequest 的 prototype 上的 send 方法
+    // 当每一个 xhr 实例的 send 方法执行时，重写覆写实例的 onload、onerror、onprogress、onreadystatechange 方法
+    // 覆写的方法内部会有 try...catch
     function _wrapXHR(originalSend) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return function () {
@@ -6409,6 +6433,7 @@ var Sentry = (function (exports) {
     }
 
     /** JSDoc */
+    //
     function _wrapEventTarget(target) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         var global = getGlobalObject();
@@ -6418,6 +6443,7 @@ var Sentry = (function (exports) {
         if (!proto || !proto.hasOwnProperty || !proto.hasOwnProperty('addEventListener')) {
             return;
         }
+        // 重写 addEventListener 方法
         fill(proto, 'addEventListener', function (original) {
             
             return function (eventName, fn, options) {
@@ -6458,6 +6484,7 @@ var Sentry = (function (exports) {
                 ]);
             };
         });
+        // 重写 removeEventListener 方法
         fill(proto, 'removeEventListener', function (originalRemoveEventListener) {
             return function (eventName, fn, options) {
                 /**
@@ -6533,6 +6560,7 @@ var Sentry = (function (exports) {
          */
         Breadcrumbs.prototype.setupOnce = function () {
             if (this._options.console) {
+                // 
                 addInstrumentationHandler('console', _consoleBreadcrumb);
             }
             if (this._options.dom) {
@@ -7052,7 +7080,7 @@ var Sentry = (function (exports) {
     var defaultIntegrations = [
         new InboundFilters(),   // 过滤功能实例对象
         new FunctionToString(), // ??
-        new TryCatch(),  // 异常捕获功能，集成时，会覆写原生的 setTimeout、console、requestAnimationFrame、XMLHttpRequst 实例方法 等；
+        new TryCatch(),  // 异常捕获功能，集成时，会覆写原生的 setTimeout、console、requestAnimationFrame、XMLHttpRequst 实例方法等，使用 try...catch 重新包裹 callback；
         new Breadcrumbs(), // 面包屑功能, 集成时，会覆写原生的 fetch、xmlhttpRequest 实例 open send 、history、console 等方法
         new GlobalHandlers(), // 集成时，覆写原生的 onerror、unhandledrejection 方法
         new LinkedErrors(), // ？？
