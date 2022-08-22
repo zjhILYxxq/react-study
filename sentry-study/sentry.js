@@ -313,6 +313,7 @@ var Sentry = (function (exports) {
 
     /**
      * Given a child DOM element, returns a query-selector statement describing that
+     * 给定一个 dom 元素，返回一个语句描述对象
      * and its ancestors
      * e.g. [HTMLElement] => body > div > input#foo.btn[name=baz]
      * @returns generated DOM path
@@ -403,6 +404,7 @@ var Sentry = (function (exports) {
     }
     /**
      * A safe form of location.href
+     * 返回当前的 href
      */
     function getLocationHref() {
         var global = getGlobalObject();
@@ -414,11 +416,13 @@ var Sentry = (function (exports) {
         }
     }
 
+    // 添加属性
     var setPrototypeOf = Object.setPrototypeOf || ({ __proto__: [] } instanceof Array ? setProtoOf : mixinProperties);
     /**
      * setPrototypeOf polyfill using __proto__
      */
     // eslint-disable-next-line @typescript-eslint/ban-types
+    // 添加 __proto__ 属性
     function setProtoOf(obj, proto) {
         // @ts-ignore __proto__ does not exist on obj
         obj.__proto__ = proto;
@@ -439,6 +443,7 @@ var Sentry = (function (exports) {
     }
 
     /** An error emitted by Sentry SDKs and related utilities. */
+    // SentryError 继承自原生的 Error
     var SentryError = /** @class */ (function (_super) {
         __extends(SentryError, _super);
         function SentryError(message) {
@@ -469,13 +474,16 @@ var Sentry = (function (exports) {
     var IS_DEBUG_BUILD$3 = true;
 
     /** Regular expression used to parse a Dsn. */
+    // 正则表达式，用于去解析一个 DSN
     var DSN_REGEX = /^(?:(\w+):)\/\/(?:(\w+)(?::(\w+))?@)([\w.-]+)(?::(\d+))?\/(.+)/;
+
+    // 判断协议是否是合法的， http, https
     function isValidProtocol(protocol) {
         return protocol === 'http' || protocol === 'https';
     }
     /**
      * Renders the string representation of this Dsn.
-     *
+     * 将 dsn 对象转化为字符串
      * By default, this will render the public representation without the password
      * component. To get the deprecated private representation, set `withPassword`
      * to true.
@@ -488,6 +496,8 @@ var Sentry = (function (exports) {
         return (protocol + "://" + publicKey + (withPassword && pass ? ":" + pass : '') +
             ("@" + host + (port ? ":" + port : '') + "/" + (path ? path + "/" : path) + projectId));
     }
+
+    // 将 dsn 字符串转化为一个 dsn 对象
     function dsnFromString(str) {
         var match = DSN_REGEX.exec(str);
         if (!match) {
@@ -509,6 +519,8 @@ var Sentry = (function (exports) {
         }
         return dsnFromComponents({ host: host, pass: pass, path: path, projectId: projectId, port: port, protocol: protocol, publicKey: publicKey });
     }
+
+    // ??
     function dsnFromComponents(components) {
         // TODO this is for backwards compatibility, and can be removed in a future version
         if ('user' in components && !('publicKey' in components)) {
@@ -525,6 +537,8 @@ var Sentry = (function (exports) {
             projectId: components.projectId,
         };
     }
+
+    // 校验 dsn 是否是合法的 dsn
     function validateDsn(dsn) {
         var port = dsn.port, projectId = dsn.projectId, protocol = dsn.protocol;
         var requiredComponents = ['protocol', 'publicKey', 'host', 'projectId'];
@@ -545,18 +559,20 @@ var Sentry = (function (exports) {
         return true;
     }
     /** The Sentry Dsn, identifying a Sentry instance and project. */
+    // 构建一个 DSN 对象
     function makeDsn(from) {
         var components = typeof from === 'string' ? dsnFromString(from) : dsnFromComponents(from);
         validateDsn(components);
         return components;
     }
-
+    // 严重级别 - 致命、错误、警告、日志、信息、调试、关键
     var SeverityLevels = ['fatal', 'error', 'warning', 'log', 'info', 'debug', 'critical'];
 
     // TODO: Implement different loggers for different environments
     var global$6 = getGlobalObject();
     /** Prefix for logging strings */
     var PREFIX = 'Sentry Logger ';
+    // 打印级别 - 调试、信息、警告、错误、日志、断言？
     var CONSOLE_LEVELS = ['debug', 'info', 'warn', 'error', 'log', 'assert'];
     /**
      * Temporarily disable sentry console instrumentations.
@@ -590,6 +606,8 @@ var Sentry = (function (exports) {
             });
         }
     }
+
+    // 
     function makeLogger() {
         var enabled = false;
         var logger = {
@@ -624,6 +642,7 @@ var Sentry = (function (exports) {
         }
         return logger;
     }
+
     // Ensure we only have a single logger instance, even if multiple versions of @sentry/utils are being used
     var logger;
     if (IS_DEBUG_BUILD$3) {
@@ -635,7 +654,7 @@ var Sentry = (function (exports) {
 
     /**
      * Truncates given string to the maximum characters count
-     *
+     * 截取字符串
      * @param str An object that contains serializable values
      * @param max Maximum number of characters in truncated string (0 = unlimited)
      * @returns string Encoded
@@ -649,6 +668,7 @@ var Sentry = (function (exports) {
     }
     /**
      * Join values in array
+     * 将 input 数组中的元素，添加 delimiter，转化为字符串
      * @param input array of values to be joined together
      * @param delimiter string to be placed in-between values
      * @returns Joined values
@@ -673,6 +693,7 @@ var Sentry = (function (exports) {
     }
     /**
      * Checks if the value matches a regex or includes the string
+     * 检查给定的值是否匹配某个正则表达式或者包含某个字符串
      * @param value The string value to be checked against
      * @param pattern Either a regex or a string that must be contained in value
      */
@@ -691,7 +712,7 @@ var Sentry = (function (exports) {
 
     /**
      * Replace a method in an object with a wrapped version of itself.
-     *
+     * 通过一个包装方法，替换原生对象的某个方法
      * @param source An object that contains a method to be wrapped.
      * @param name The name of the method to be wrapped.
      * @param replacementFactory A higher-order function that takes the original version of the given method and returns a
@@ -721,7 +742,7 @@ var Sentry = (function (exports) {
     }
     /**
      * Defines a non-enumerable property on the given object.
-     *
+     *  给某个对象定义一个不可枚举的属性
      * @param obj The object on which to set the property
      * @param name The name of the property to be set
      * @param value The value to which to set the property
@@ -737,7 +758,7 @@ var Sentry = (function (exports) {
     /**
      * Remembers the original function on the wrapped function and
      * patches up the prototype.
-     *
+     * 将包装函数和原生函数关联起来，通过包装函数可以访问原生函数
      * @param wrapped the wrapper function
      * @param original the original function that gets wrapped
      */
@@ -749,7 +770,7 @@ var Sentry = (function (exports) {
     /**
      * This extracts the original function if available.  See
      * `markFunctionWrapped` for more information.
-     *
+     *  返回包装函数对应的原生函数
      * @param func the function to unwrap
      * @returns the unwrapped version of the function if available.
      */
@@ -758,7 +779,7 @@ var Sentry = (function (exports) {
     }
     /**
      * Encodes given object into url-friendly format
-     *
+     * 按照 url 的形式格式化给定某个对象
      * @param object An object that contains serializable values
      * @returns string Encoded
      */
@@ -770,6 +791,8 @@ var Sentry = (function (exports) {
     /**
      * Transforms any object into an object literal with all its attributes
      * attached to it.
+     * 将 value 转化为一个普通对象
+     *  
      *
      * @param value Initial source that we have to transform in order for it to be usable by the serializer
      */
@@ -788,6 +811,7 @@ var Sentry = (function (exports) {
         return newObj;
     }
     /** Creates a string representation of the target of an `Event` object */
+    // 返回一个对象的描述字符串
     function serializeEventTarget(target) {
         try {
             return isElement(target) ? htmlTreeAsString(target) : Object.prototype.toString.call(target);
@@ -797,6 +821,7 @@ var Sentry = (function (exports) {
         }
     }
     /** Filters out all but an object's own properties */
+    // 返回 obj 自己的属性
     function getOwnProperties(obj) {
         var extractedProps = {};
         for (var property in obj) {
@@ -868,7 +893,7 @@ var Sentry = (function (exports) {
     var STACKTRACE_LIMIT = 50;
     /**
      * Creates a stack parser with the supplied line parsers
-     *
+     * 创建一个追踪栈解析器
      * StackFrames are returned in the correct order for Sentry Exception
      * frames and with Sentry SDK internal frames removed from the top and bottom
      *
@@ -916,6 +941,7 @@ var Sentry = (function (exports) {
         };
     }
     /**
+     * ？？
      * @hidden
      */
     function stripSentryFramesAndReverse(stack) {
@@ -960,7 +986,7 @@ var Sentry = (function (exports) {
     /**
      * Tells whether current environment supports Fetch API
      * {@link supportsFetch}.
-     *
+     * 判断是否支持 fetch
      * @returns Answer to the given question.
      */
     function supportsFetch() {
@@ -981,13 +1007,14 @@ var Sentry = (function (exports) {
      * isNativeFetch checks if the given function is a native implementation of fetch()
      */
     // eslint-disable-next-line @typescript-eslint/ban-types
+    // 判断是否是原生的 fetch 方法是否是原生的，即没有包装过
     function isNativeFetch(func) {
         return func && /^function fetch\(\)\s+\{\s+\[native code\]\s+\}$/.test(func.toString());
     }
     /**
      * Tells whether current environment supports Fetch API natively
      * {@link supportsNativeFetch}.
-     *
+     *  判断当前环境是否支持原生的 fetch
      * @returns true if `window.fetch` is natively implemented, false otherwise
      */
     function supportsNativeFetch() {
@@ -1049,7 +1076,7 @@ var Sentry = (function (exports) {
     /**
      * Tells whether current environment supports History API
      * {@link supportsHistory}.
-     *
+     *  当前环境是否支持 history
      * @returns Answer to the given question.
      */
     function supportsHistory() {
@@ -1123,6 +1150,7 @@ var Sentry = (function (exports) {
         instrument(type);
     }
     /** JSDoc */
+    // ？？
     function triggerHandlers(type, data) {
         var e_1, _a;
         if (!type || !handlers[type]) {
@@ -1148,6 +1176,7 @@ var Sentry = (function (exports) {
         }
     }
     /** JSDoc */
+    // 覆写原生的 console
     function instrumentConsole() {
         if (!('console' in global$5)) {
             return;
@@ -1162,6 +1191,7 @@ var Sentry = (function (exports) {
                     for (var _i = 0; _i < arguments.length; _i++) {
                         args[_i] = arguments[_i];
                     }
+                    // 触发 console 事件？？
                     triggerHandlers('console', { args: args, level: level });
                     // this fails for some browsers. :(
                     if (originalConsoleMethod) {
@@ -1178,6 +1208,7 @@ var Sentry = (function (exports) {
         }
         fill(global$5, 'fetch', function (originalFetch) {
             return function () {
+                
                 var args = [];
                 for (var _i = 0; _i < arguments.length; _i++) {
                     args[_i] = arguments[_i];
@@ -1190,6 +1221,7 @@ var Sentry = (function (exports) {
                     },
                     startTimestamp: Date.now(),
                 };
+                // 触发 fetch 类型的 handler
                 triggerHandlers('fetch', __assign({}, handlerData));
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 return originalFetch.apply(global$5, args).then(function (response) {
@@ -1230,6 +1262,7 @@ var Sentry = (function (exports) {
     }
     /* eslint-enable @typescript-eslint/no-unsafe-member-access */
     /** JSDoc */
+    // 覆写 XHRHttpRequest 的 open、send 方法
     function instrumentXHR() {
         if (!('XMLHttpRequest' in global$5)) {
             return;
@@ -1310,6 +1343,7 @@ var Sentry = (function (exports) {
     }
     var lastHref;
     /** JSDoc */
+    // 覆写 history 的 onpopstate、pushState、replaceState 方法
     function instrumentHistory() {
         if (!supportsHistory()) {
             return;
@@ -1400,6 +1434,7 @@ var Sentry = (function (exports) {
     }
     /**
      * Decide whether an event should be captured.
+     * 决定事件什么时候被捕获 ？？
      * @param event event to be captured
      */
     function shouldSkipDOMEvent(event) {
@@ -1434,6 +1469,7 @@ var Sentry = (function (exports) {
     function makeDOMEventHandler(handler, globalListener) {
         if (globalListener === void 0) { globalListener = false; }
         return function (event) {
+            
             // It's possible this handler might trigger multiple times for the same
             // event (e.g. event propagation through node ancestors).
             // Ignore if we've already captured that event.
@@ -1472,6 +1508,7 @@ var Sentry = (function (exports) {
         };
     }
     /** JSDoc */
+    // 覆写
     function instrumentDOM() {
         if (!('document' in global$5)) {
             return;
@@ -1496,7 +1533,9 @@ var Sentry = (function (exports) {
                 return;
             }
             fill(proto, 'addEventListener', function (originalAddEventListener) {
+                
                 return function (type, listener, options) {
+                    
                     if (type === 'click' || type == 'keypress') {
                         try {
                             var el = this;
@@ -1550,9 +1589,11 @@ var Sentry = (function (exports) {
     }
     var _oldOnErrorHandler = null;
     /** JSDoc */
+    // 覆写原生的 onerror 方法
     function instrumentError() {
         _oldOnErrorHandler = global$5.onerror;
         global$5.onerror = function (msg, url, line, column, error) {
+            debugger
             triggerHandlers('error', {
                 column: column,
                 error: error,
@@ -1569,6 +1610,7 @@ var Sentry = (function (exports) {
     }
     var _oldOnUnhandledRejectionHandler = null;
     /** JSDoc */
+    // 覆写原生的 unhandledrejection 方法
     function instrumentUnhandledRejection() {
         _oldOnUnhandledRejectionHandler = global$5.onunhandledrejection;
         global$5.onunhandledrejection = function (e) {
@@ -1585,6 +1627,7 @@ var Sentry = (function (exports) {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     /**
      * Helper to decycle json objects
+     * ??
      */
     function memoBuilder() {
         var hasWeakSet = typeof WeakSet === 'function';
@@ -1625,7 +1668,7 @@ var Sentry = (function (exports) {
 
     /**
      * UUID4 generator
-     *
+     * 构建一个 uuid4 码
      * @returns string Generated UUID4.
      */
     function uuid4() {
@@ -1661,6 +1704,7 @@ var Sentry = (function (exports) {
     }
     /**
      * Parses string form of URL into an object
+     * 将 url 解析为一个对象
      * // borrowed from https://tools.ietf.org/html/rfc3986#appendix-B
      * // intentionally using regex and not <a/> href parsing trick because React Native and other
      * // environments where DOM might not be available
@@ -1684,11 +1728,14 @@ var Sentry = (function (exports) {
             relative: match[5] + query + fragment,
         };
     }
+
+    // 获取异常描述？？
     function getFirstException(event) {
         return event.exception && event.exception.values ? event.exception.values[0] : undefined;
     }
     /**
      * Extracts either message or type+value from an event that can be used for user-facing logs
+     * 获取异常描述
      * @returns event's description
      */
     function getEventDescription(event) {
@@ -1810,6 +1857,7 @@ var Sentry = (function (exports) {
             return { ERROR: "**non-serializable** (" + err + ")" };
         }
     }
+
     /** JSDoc */
     function normalizeToSize(object, 
     // Default Node.js REPL depth
@@ -2942,6 +2990,7 @@ var Sentry = (function (exports) {
      * Returns the global event processors.
      */
     function getGlobalEventProcessors() {
+        // 在 window.__SENTRY__ 中获取 globalEventProcessors 对象，默认是一个空数组
         return getGlobalSingleton('globalEventProcessors', function () { return []; });
     }
     /**
@@ -2949,6 +2998,7 @@ var Sentry = (function (exports) {
      * @param callback EventProcessor to add
      */
     function addGlobalEventProcessor(callback) {
+        // window.__SENTRY__.globalEventProcessors 中添加 callback
         getGlobalEventProcessors().push(callback);
     }
 
@@ -3096,6 +3146,7 @@ var Sentry = (function (exports) {
     var DEFAULT_BREADCRUMBS = 100;
     /**
      * @inheritDoc
+     * hub，中心的意思
      */
     var Hub = /** @class */ (function () {
         /**
@@ -3111,7 +3162,10 @@ var Sentry = (function (exports) {
             if (_version === void 0) { _version = API_VERSION; }
             this._version = _version;
             /** Is a {@link Layer}[] containing the client and scope */
+            // 用于保存 client 实例和 scope， 默认只有一个元素，且是一个空对象
+            // 这个 _stack 应该只存一个吧
             this._stack = [{}];
+            // 
             this.getStackTop().scope = scope;
             if (client) {
                 this.bindClient(client);
@@ -3124,11 +3178,14 @@ var Sentry = (function (exports) {
             return this._version < version;
         };
         /**
+         * 将 hub 实例和 client 实例绑定起来
          * @inheritDoc
          */
         Hub.prototype.bindClient = function (client) {
+            // 一般情况下， top 是一个空对象
             var top = this.getStackTop();
             top.client = client;
+            // 给 BrowserClient 集成功能
             if (client && client.setupIntegrations) {
                 client.setupIntegrations();
             }
@@ -3166,6 +3223,7 @@ var Sentry = (function (exports) {
             }
         };
         /**
+         * 返回 hub 实例对应的 client 实例
          * @inheritDoc
          */
         Hub.prototype.getClient = function () {
@@ -3184,11 +3242,15 @@ var Sentry = (function (exports) {
             return this._stack[this._stack.length - 1];
         };
         /**
+         * 所有的异常上报，都是通过 hub 实例的 captureException 方法进行的
          * @inheritDoc
          */
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
         Hub.prototype.captureException = function (exception, hint) {
+            
+            // 初始化一个 eventId
             var eventId = (this._lastEventId = hint && hint.event_id ? hint.event_id : uuid4());
+
             var finalHint = hint;
             // If there's no explicit hint provided, mimic the same thing that would happen
             // in the minimal itself to create a consistent behavior.
@@ -3254,6 +3316,7 @@ var Sentry = (function (exports) {
             return this._lastEventId;
         };
         /**
+         * 添加面包屑
          * @inheritDoc
          */
         Hub.prototype.addBreadcrumb = function (breadcrumb, hint) {
@@ -3481,7 +3544,7 @@ var Sentry = (function (exports) {
     }());
     /**
      * Returns the global shim registry.
-     *
+     * 返回全局对象 window、self 等，通过 window.__SENTRY__  获取 sentry 的相关信息
      * FIXME: This function is problematic, because despite always returning a valid Carrier,
      * it has an optional `__SENTRY__` property, which then in turn requires us to always perform an unnecessary check
      * at the call-site. We always access the carrier through this function, so we can guarantee that `__SENTRY__` is there.
@@ -3496,7 +3559,7 @@ var Sentry = (function (exports) {
     }
     /**
      * Replaces the current main hub with the passed one on the global object
-     *
+     * 使用传入的 hub 替换当前的 hub
      * @returns The old replaced hub
      */
     function makeMain(hub) {
@@ -3507,13 +3570,14 @@ var Sentry = (function (exports) {
     }
     /**
      * Returns the default hub instance.
-     *
+     * 返回当前的 hub。如果没有，就新建一个
      * If a hub is already registered in the global carrier but this module
      * contains a more recent version, it replaces the registered version.
      * Otherwise, the currently registered hub will be returned.
      */
     function getCurrentHub() {
         // Get main carrier (global for every environment)
+        // 获取 Sentry 容器
         var registry = getMainCarrier();
         // If there's no hub, or its an old API, assign a new one
         if (!hasHubOnCarrier(registry) || getHubFromCarrier(registry).isOlderThan(API_VERSION)) {
@@ -3530,6 +3594,7 @@ var Sentry = (function (exports) {
         return !!(carrier && carrier.__SENTRY__ && carrier.__SENTRY__.hub);
     }
     /**
+     * 从 Sentry 容器里面获取 hub 实例，如果没有，就新建一个
      * This will create a new {@link Hub} and add to the passed object on
      * __SENTRY__.hub.
      * @param carrier object
@@ -3572,13 +3637,16 @@ var Sentry = (function (exports) {
     }
     /**
      * Captures an exception event and sends it to Sentry.
-     *
+     * 通过 captureException api 主动上报异常给 Sentry 后台
      * @param exception An exception-like object.
      * @returns The generated eventId.
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
     function captureException(exception, captureContext) {
+        
         var syntheticException = new Error('Sentry syntheticException');
+
+        // 通过 hub 实例的 captureException 方法上报异常
         return callOnHub('captureException', exception, {
             captureContext: captureContext,
             originalException: exception,
@@ -3587,7 +3655,7 @@ var Sentry = (function (exports) {
     }
     /**
      * Captures a message event and sends it to Sentry.
-     *
+     * 捕获一个 message event，然后发送给 Sentry 后台
      * @param message The message to send to Sentry.
      * @param Severity Define the level of the message.
      * @returns The generated eventId.
@@ -3602,7 +3670,7 @@ var Sentry = (function (exports) {
     }
     /**
      * Captures a manually created event and sends it to Sentry.
-     *
+     *  捕获一个自定义事件，发送给 Sentry
      * @param event The event to send to Sentry.
      * @returns The generated eventId.
      */
@@ -3715,6 +3783,7 @@ var Sentry = (function (exports) {
     }
 
     var SENTRY_API_VERSION = '7';
+    // 初始化 api 信息
     /** Initializes API Details */
     function initAPIDetails(dsn, metadata, tunnel) {
         return {
@@ -3725,6 +3794,7 @@ var Sentry = (function (exports) {
         };
     }
     /** Returns the prefix to construct Sentry ingestion API endpoints. */
+    // 上报异常的接口 url 
     function getBaseApiEndpoint(dsn) {
         var protocol = dsn.protocol ? dsn.protocol + ":" : '';
         var port = dsn.port ? ":" + dsn.port : '';
@@ -3823,8 +3893,11 @@ var Sentry = (function (exports) {
         }, []);
     }
     /** Gets integration to install */
+    // 获取要集成的功能
     function getIntegrationsToSetup(options) {
+        // 默认集成功能
         var defaultIntegrations = (options.defaultIntegrations && __spread(options.defaultIntegrations)) || [];
+        // 用户自定义集成功能
         var userIntegrations = options.integrations;
         var integrations = __spread(filterDuplicates(defaultIntegrations));
         if (Array.isArray(userIntegrations)) {
@@ -3843,13 +3916,17 @@ var Sentry = (function (exports) {
         if (integrationsNames.indexOf(alwaysLastToRun) !== -1) {
             integrations.push.apply(integrations, __spread(integrations.splice(integrationsNames.indexOf(alwaysLastToRun), 1)));
         }
+        // 返回要集成的功能
         return integrations;
     }
     /** Setup given integration */
+    // 集成外部实例，外部实例需要提供 setupOnce 方法 ？？
     function setupIntegration(integration) {
         if (installedIntegrations.indexOf(integration.name) !== -1) {
             return;
         }
+        // 每个要集成的功能，都会有一个 setupOnce 方法
+        // 
         integration.setupOnce(addGlobalEventProcessor, getCurrentHub);
         installedIntegrations.push(integration.name);
         logger.log("Integration installed: " + integration.name);
@@ -3857,13 +3934,17 @@ var Sentry = (function (exports) {
     /**
      * Given a list of integration instances this installs them all. When `withDefaults` is set to `true` then all default
      * integrations are added unless they were already provided before.
+     * 给 BrowserClient 安装要集成的功能
      * @param integrations array of integration instances
      * @param withDefault should enable default integrations
      */
     function setupIntegrations(options) {
+        
         var integrations = {};
+        // 
         getIntegrationsToSetup(options).forEach(function (integration) {
             integrations[integration.name] = integration;
+            // 添加实际要集成的功能
             setupIntegration(integration);
         });
         // set the `initialized` flag so we don't run through the process again unecessarily; use `Object.defineProperty`
@@ -3921,14 +4002,17 @@ var Sentry = (function (exports) {
             this._backend = new backendClass(options);
             this._options = options;
             if (options.dsn) {
+                // 将传入的 dsn 字符串转化为一个 dsn 对象
                 this._dsn = makeDsn(options.dsn);
             }
         }
         /**
+         * 通过 baseClient 实例的 captureException api 上报异常
          * @inheritDoc
          */
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
         BaseClient.prototype.captureException = function (exception, hint, scope) {
+            
             var _this = this;
             // ensure we haven't captured this very object before
             if (checkOrSetAlreadyCaught(exception)) {
@@ -4144,6 +4228,7 @@ var Sentry = (function (exports) {
          * @returns A new event with more information.
          */
         BaseClient.prototype._prepareEvent = function (event, scope, hint) {
+            
             var _this = this;
             var _a = this.getOptions(), _b = _a.normalizeDepth, normalizeDepth = _b === void 0 ? 3 : _b, _c = _a.normalizeMaxBreadth, normalizeMaxBreadth = _c === void 0 ? 1000 : _c;
             var prepared = __assign(__assign({}, event), { event_id: event.event_id || (hint && hint.event_id ? hint.event_id : uuid4()), timestamp: event.timestamp || dateTimestampInSeconds() });
@@ -4263,6 +4348,7 @@ var Sentry = (function (exports) {
             this._getBackend().sendEvent(event);
         };
         /**
+         * 上报异常
          * Processes the event and logs an error in case of rejection
          * @param event
          * @param hint
@@ -4277,6 +4363,7 @@ var Sentry = (function (exports) {
             });
         };
         /**
+         * 上报异常的最后一步
          * Processes an event (either error or message) and sends it to Sentry.
          *
          * This also adds breadcrumbs and context information to the event. However,
@@ -4312,6 +4399,7 @@ var Sentry = (function (exports) {
             }
             return this._prepareEvent(event, scope, hint)
                 .then(function (prepared) {
+                // 
                 if (prepared === null) {
                     recordLostEvent('event_processor', event.type || 'event');
                     throw new SentryError('An event processor returned null, will not send event.');
@@ -4324,6 +4412,7 @@ var Sentry = (function (exports) {
                 return _ensureBeforeSendRv(beforeSendResult);
             })
                 .then(function (processedEvent) {
+                // 
                 if (processedEvent === null) {
                     recordLostEvent('before_send', event.type || 'event');
                     throw new SentryError('`beforeSend` returned `null`, will not send event.');
@@ -4336,6 +4425,7 @@ var Sentry = (function (exports) {
                 return processedEvent;
             })
                 .then(null, function (reason) {
+                // 
                 if (reason instanceof SentryError) {
                     throw reason;
                 }
@@ -4584,6 +4674,7 @@ var Sentry = (function (exports) {
 
     /**
      * This is the base implemention of a Backend.
+     * 构造函数，创建一个 Backend 实例对象
      * @hidden
      */
     var BaseBackend = /** @class */ (function () {
@@ -4593,6 +4684,7 @@ var Sentry = (function (exports) {
             if (!this._options.dsn) {
                 logger.warn('No DSN provided, backend will not do anything.');
             }
+            // 设置 transport
             this._transport = this._setupTransport();
         }
         /**
@@ -4672,7 +4764,8 @@ var Sentry = (function (exports) {
     /**
      * Internal function to create a new SDK client instance. The client is
      * installed and then bound to the current scope.
-     *
+     * 内部函数，用于创建一个 sdk 客户端实例。
+     * 这个客户端实例会绑定到当前的范围
      * @param clientClass The client class to instantiate.
      * @param options Options to pass to the client.
      */
@@ -4687,19 +4780,24 @@ var Sentry = (function (exports) {
                 console.warn('[Sentry] Cannot initialize SDK with `debug` option using a non-debug bundle.');
             }
         }
+        // 获取当前的 hub 实例
         var hub = getCurrentHub();
+        // 根据 hub 实例，获取当前的 scope
         var scope = hub.getScope();
         if (scope) {
+            // 如果 init 方法传入的配置项中提供了 initialScope, 那就需要更新 scope
             scope.update(options.initialScope);
         }
+        // 构建一个客户端实例
         var client = new clientClass(options);
+        // 将客户端实例和 hub 绑定起来
         hub.bindClient(client);
     }
 
     var DEFAULT_TRANSPORT_BUFFER_SIZE = 30;
     /**
      * Creates a `NewTransport`
-     *
+     * 
      * @param options
      * @param makeRequest
      */
@@ -4787,6 +4885,8 @@ var Sentry = (function (exports) {
     // "Script error." is hard coded into browsers for errors that it can't read.
     // this is the result of a script being pulled in from an external domain and CORS.
     var DEFAULT_IGNORE_ERRORS = [/^Script error\.?$/, /^Javascript error: Script error\.? on line 0$/];
+
+    // 内部过滤条件
     /** Inbound filters configurable by the user */
     var InboundFilters = /** @class */ (function () {
         function InboundFilters(_options) {
@@ -4801,6 +4901,7 @@ var Sentry = (function (exports) {
          * @inheritDoc
          */
         InboundFilters.prototype.setupOnce = function (addGlobalEventProcessor, getCurrentHub) {
+            // 将 callback 收集到 window.__SENTRY__.globalEventProcessors 中
             addGlobalEventProcessor(function (event) {
                 var hub = getCurrentHub();
                 if (hub) {
@@ -4821,7 +4922,9 @@ var Sentry = (function (exports) {
         InboundFilters.id = 'InboundFilters';
         return InboundFilters;
     }());
+
     /** JSDoc */
+    // 
     function _mergeOptions(internalOptions, clientOptions) {
         if (internalOptions === void 0) { internalOptions = {}; }
         if (clientOptions === void 0) { clientOptions = {}; }
@@ -4833,6 +4936,7 @@ var Sentry = (function (exports) {
         };
     }
     /** JSDoc */
+    //
     function _shouldDropEvent$1(event, options) {
         if (options.ignoreInternal && _isSentryError(event)) {
             IS_DEBUG_BUILD$1 &&
@@ -4856,6 +4960,8 @@ var Sentry = (function (exports) {
         }
         return false;
     }
+
+    // 
     function _isIgnoredError(event, ignoreErrors) {
         if (!ignoreErrors || !ignoreErrors.length) {
             return false;
@@ -4864,6 +4970,8 @@ var Sentry = (function (exports) {
             return ignoreErrors.some(function (pattern) { return isMatchingPattern(message, pattern); });
         });
     }
+
+    // 
     function _isDeniedUrl(event, denyUrls) {
         // TODO: Use Glob instead?
         if (!denyUrls || !denyUrls.length) {
@@ -4872,6 +4980,8 @@ var Sentry = (function (exports) {
         var url = _getEventFilterUrl(event);
         return !url ? false : denyUrls.some(function (pattern) { return isMatchingPattern(url, pattern); });
     }
+
+    // 
     function _isAllowedUrl(event, allowUrls) {
         // TODO: Use Glob instead?
         if (!allowUrls || !allowUrls.length) {
@@ -4880,6 +4990,8 @@ var Sentry = (function (exports) {
         var url = _getEventFilterUrl(event);
         return !url ? true : allowUrls.some(function (pattern) { return isMatchingPattern(url, pattern); });
     }
+
+    // 
     function _getPossibleEventMessages(event) {
         if (event.message) {
             return [event.message];
@@ -4896,6 +5008,7 @@ var Sentry = (function (exports) {
         }
         return [];
     }
+    //
     function _isSentryError(event) {
         try {
             // @ts-ignore can't be a sentry error if undefined
@@ -4907,6 +5020,8 @@ var Sentry = (function (exports) {
         }
         return false;
     }
+
+    //
     function _getLastValidUrl(frames) {
         if (frames === void 0) { frames = []; }
         for (var i = frames.length - 1; i >= 0; i--) {
@@ -4917,6 +5032,8 @@ var Sentry = (function (exports) {
         }
         return null;
     }
+
+    //
     function _getEventFilterUrl(event) {
         try {
             if (event.stacktrace) {
@@ -4938,6 +5055,7 @@ var Sentry = (function (exports) {
         }
     }
 
+    // 
     var CoreIntegrations = /*#__PURE__*/Object.freeze({
         __proto__: null,
         FunctionToString: FunctionToString,
@@ -4951,6 +5069,8 @@ var Sentry = (function (exports) {
     var CHROME_PRIORITY = 30;
     var WINJS_PRIORITY = 40;
     var GECKO_PRIORITY = 50;
+
+    // 创建 frame. frame 是啥 ？？
     function createFrame(filename, func, lineno, colno) {
         var frame = {
             filename: filename,
@@ -5070,6 +5190,7 @@ var Sentry = (function (exports) {
     };
 
     /**
+     * 根据 Error 创建一个 execption
      * This function creates an exception from an TraceKitStackTrace
      * @param stacktrace TraceKitStackTrace that will be converted to an exception
      * @hidden
@@ -5125,6 +5246,7 @@ var Sentry = (function (exports) {
         };
     }
     /** Parses stack frames from an error */
+    // 解析 error stack 信息
     function parseStackFrames(ex) {
         // Access and store the stacktrace property before doing ANYTHING
         // else to it because Opera is not very good at providing it
@@ -5168,11 +5290,13 @@ var Sentry = (function (exports) {
         return message;
     }
     /**
+     * 根据 Exception 创建一个 event
      * Creates an {@link Event} from all inputs to `captureException` and non-primitive inputs to `captureMessage`.
      * @hidden
      */
     function eventFromException(exception, hint, attachStacktrace) {
         var syntheticException = (hint && hint.syntheticException) || undefined;
+        // 根据未知的 exception
         var event = eventFromUnknownInput(exception, syntheticException, attachStacktrace);
         addExceptionMechanism(event); // defaults to { type: 'generic', handled: true }
         event.level = exports.Severity.Error;
@@ -5196,6 +5320,7 @@ var Sentry = (function (exports) {
         return resolvedSyncPromise(event);
     }
     /**
+     * 根据 execption 创建一个 event
      * @hidden
      */
     function eventFromUnknownInput(exception, syntheticException, attachStacktrace, isUnhandledRejection) {
@@ -5750,9 +5875,11 @@ var Sentry = (function (exports) {
             return eventFromMessage(message, level, hint, this._options.attachStacktrace);
         };
         /**
+         * 初始化 transport
          * @inheritDoc
          */
         BrowserBackend.prototype._setupTransport = function () {
+            
             if (!this._options.dsn) {
                 // We return the noop transport here in case there is no Dsn.
                 return _super.prototype._setupTransport.call(this);
@@ -5763,11 +5890,13 @@ var Sentry = (function (exports) {
             if (this._options.transport) {
                 return new this._options.transport(transportOptions);
             }
+            // 如果支持 fetch， 使用 fetch 发送异常
             if (supportsFetch()) {
                 var requestOptions = __assign({}, transportOptions.fetchParameters);
                 this._newTransport = makeNewFetchTransport({ requestOptions: requestOptions, url: url });
                 return new FetchTransport(transportOptions);
             }
+            // 不支持 fetch，则使用 XHRHttpRequest 发送异常
             this._newTransport = makeNewXHRTransport({
                 url: url,
                 headers: transportOptions.headers,
@@ -5835,6 +5964,7 @@ var Sentry = (function (exports) {
         /* eslint-disable prefer-rest-params */
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         var sentryWrapped = function () {
+            
             var args = Array.prototype.slice.call(arguments);
             try {
                 if (before && typeof before === 'function') {
@@ -5966,11 +6096,13 @@ var Sentry = (function (exports) {
         GlobalHandlers.id = 'GlobalHandlers';
         return GlobalHandlers;
     }());
+
     /** JSDoc */
     function _installGlobalOnErrorHandler() {
         addInstrumentationHandler('error', 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         function (data) {
+            
             var _a = __read(getHubAndAttachStacktrace(), 2), hub = _a[0], attachStacktrace = _a[1];
             if (!hub.getIntegration(GlobalHandlers)) {
                 return;
@@ -6099,9 +6231,11 @@ var Sentry = (function (exports) {
         }
         return event;
     }
+
     function globalHandlerLog(type) {
         IS_DEBUG_BUILD && logger.log("Global Handler attached: " + type);
     }
+
     function addMechanismAndCapture(hub, error, event, type) {
         addExceptionMechanism(event, {
             handled: false,
@@ -6111,6 +6245,7 @@ var Sentry = (function (exports) {
             originalException: error,
         });
     }
+
     function getHubAndAttachStacktrace() {
         var hub = getCurrentHub();
         var client = hub.getClient();
@@ -6149,6 +6284,7 @@ var Sentry = (function (exports) {
         'XMLHttpRequestEventTarget',
         'XMLHttpRequestUpload',
     ];
+
     /** Wrap timer functions and event targets to catch errors and provide better meta data */
     var TryCatch = /** @class */ (function () {
         /**
@@ -6191,6 +6327,7 @@ var Sentry = (function (exports) {
         TryCatch.id = 'TryCatch';
         return TryCatch;
     }());
+
     /** JSDoc */
     function _wrapTimeFunction(original) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -6210,6 +6347,7 @@ var Sentry = (function (exports) {
             return original.apply(this, args);
         };
     }
+
     /** JSDoc */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function _wrapRAF(original) {
@@ -6230,6 +6368,7 @@ var Sentry = (function (exports) {
             ]);
         };
     }
+
     /** JSDoc */
     function _wrapXHR(originalSend) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -6268,6 +6407,7 @@ var Sentry = (function (exports) {
             return originalSend.apply(this, args);
         };
     }
+
     /** JSDoc */
     function _wrapEventTarget(target) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -6279,7 +6419,9 @@ var Sentry = (function (exports) {
             return;
         }
         fill(proto, 'addEventListener', function (original) {
+            
             return function (eventName, fn, options) {
+                
                 try {
                     if (typeof fn.handleEvent === 'function') {
                         fn.handleEvent = wrap$1(fn.handleEvent.bind(fn), {
@@ -6394,6 +6536,7 @@ var Sentry = (function (exports) {
                 addInstrumentationHandler('console', _consoleBreadcrumb);
             }
             if (this._options.dom) {
+                // 
                 addInstrumentationHandler('dom', _domBreadcrumb(this._options.dom));
             }
             if (this._options.xhr) {
@@ -6826,6 +6969,7 @@ var Sentry = (function (exports) {
         return undefined;
     }
 
+    // 浏览器集成的对象
     var BrowserIntegrations = /*#__PURE__*/Object.freeze({
         __proto__: null,
         GlobalHandlers: GlobalHandlers,
@@ -6838,7 +6982,7 @@ var Sentry = (function (exports) {
 
     /**
      * The Sentry Browser SDK Client.
-     *
+     * 构造函数，创建一个浏览器端实例对象
      * @see BrowserOptions for documentation on configuration options.
      * @see SentryClient for usage documentation.
      */
@@ -6904,15 +7048,16 @@ var Sentry = (function (exports) {
         return BrowserClient;
     }(BaseClient));
 
+    // 默认要集成的功能
     var defaultIntegrations = [
-        new InboundFilters(),
-        new FunctionToString(),
-        new TryCatch(),
-        new Breadcrumbs(),
-        new GlobalHandlers(),
-        new LinkedErrors(),
-        new Dedupe(),
-        new UserAgent(),
+        new InboundFilters(),   // 过滤功能实例对象
+        new FunctionToString(), // ??
+        new TryCatch(),  // 异常捕获功能，集成时，会覆写原生的 setTimeout、console、requestAnimationFrame、XMLHttpRequst 实例方法 等；
+        new Breadcrumbs(), // 面包屑功能, 集成时，会覆写原生的 fetch、xmlhttpRequest 实例 open send 、history、console 等方法
+        new GlobalHandlers(), // 集成时，覆写原生的 onerror、unhandledrejection 方法
+        new LinkedErrors(), // ？？
+        new Dedupe(), // ？？
+        new UserAgent(), // 添加用户代理信息
     ];
     /**
      * The Sentry Browser SDK Client.
@@ -6972,7 +7117,9 @@ var Sentry = (function (exports) {
      * @see {@link BrowserOptions} for documentation on configuration options.
      */
     function init(options) {
+        
         if (options === void 0) { options = {}; }
+        // 初始化的时候，如果没有指定要集成的功能，Sentry 会自动添加要集成的功能
         if (options.defaultIntegrations === undefined) {
             options.defaultIntegrations = defaultIntegrations;
         }
@@ -6983,14 +7130,21 @@ var Sentry = (function (exports) {
                 options.release = window_1.SENTRY_RELEASE.id;
             }
         }
+        // 如果没有设置 autoSessionTracking 属性，默认为 true
         if (options.autoSessionTracking === undefined) {
             options.autoSessionTracking = true;
         }
+
+        // 如果没有设置 sendClientReports 属性，默认为 true
         if (options.sendClientReports === undefined) {
             options.sendClientReports = true;
         }
+        // 初始化 client 实例，并和 hub 做绑定
         initAndBind(BrowserClient, options);
+
+        // 开启 session tracking 会话追踪
         if (options.autoSessionTracking) {
+            // 开始会话追踪
             startSessionTracking();
         }
     }
@@ -7079,6 +7233,7 @@ var Sentry = (function (exports) {
     function wrap(fn) {
         return wrap$1(fn)();
     }
+
     function startSessionOnHub(hub) {
         hub.startSession({ ignoreDuration: true });
         hub.captureSession();
@@ -7131,6 +7286,7 @@ var Sentry = (function (exports) {
 
     exports.BrowserClient = BrowserClient;
     exports.Hub = Hub;
+    // 对外提供用户可自由选择的所有可集成的功能
     exports.Integrations = INTEGRATIONS;
     exports.SDK_NAME = SDK_NAME;
     exports.SDK_VERSION = SDK_VERSION;
@@ -7144,6 +7300,7 @@ var Sentry = (function (exports) {
     exports.captureMessage = captureMessage;
     exports.close = close;
     exports.configureScope = configureScope;
+    // 对外提供默认集成的功能
     exports.defaultIntegrations = defaultIntegrations;
     exports.eventFromException = eventFromException;
     exports.eventFromMessage = eventFromMessage;
