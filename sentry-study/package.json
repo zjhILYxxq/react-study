@@ -9,8 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@sentry/browser": "^7.11.1",
-    "@sentry/tracing": "^7.11.1",
+    "@sentry/browser": "^6.19.7",
+    "@sentry/tracing": "^6.19.7",
     "sentry": "^0.1.2"
   }
 }

@@ -1122,19 +1122,19 @@ var Sentry = (function (exports) {
                 instrumentDOM();
                 break;
             case 'xhr':
-                // 
+                // 收集
                 instrumentXHR();
                 break;
             case 'fetch':
-                // 
+                // 覆写原生的 fetch 风阀，用于收集调用 fetch 时的信息
                 instrumentFetch();
                 break;
             case 'history':
-                // 
+                // 覆写原生的 pushState、replaceState 、popstate 数据，用于收集路由跳转信息
                 instrumentHistory();
                 break;
             case 'error':
-                // 
+                // 覆写原生 onerror 方法
                 instrumentError();
                 break;
             case 'unhandledrejection':
@@ -1210,6 +1210,7 @@ var Sentry = (function (exports) {
         });
     }
     /** JSDoc */
+    // 覆写原生的 fetch 方法，收集 fetch 方法调用时传入的信息
     function instrumentFetch() {
         if (!supportsNativeFetch()) {
             return;
@@ -1352,6 +1353,7 @@ var Sentry = (function (exports) {
     var lastHref;
     /** JSDoc */
     // 覆写 history 的 onpopstate、pushState、replaceState 方法
+    // 收集路由跳转信息
     function instrumentHistory() {
         if (!supportsHistory()) {
             return;
@@ -4023,6 +4025,8 @@ var Sentry = (function (exports) {
             
             var _this = this;
             // ensure we haven't captured this very object before
+            // 检查异常是否已经被捕获
+            // 已经被捕获的异常，会添加一个自定义属性 __sentry_captured__， 为 ture
             if (checkOrSetAlreadyCaught(exception)) {
                 logger.log(ALREADY_SEEN_ERROR);
                 return;
@@ -5328,7 +5332,7 @@ var Sentry = (function (exports) {
         return resolvedSyncPromise(event);
     }
     /**
-     * 根据 execption 创建一个 event
+     * 根据不同的输入创建一个 event 对象
      * @hidden
      */
     function eventFromUnknownInput(exception, syntheticException, attachStacktrace, isUnhandledRejection) {
@@ -5393,6 +5397,7 @@ var Sentry = (function (exports) {
         return event;
     }
     /**
+     * 根据 message 构建一个 event 对象
      * @hidden
      */
     function eventFromString(input, syntheticException, attachStacktrace) {
@@ -6076,7 +6081,9 @@ var Sentry = (function (exports) {
              * after they have been run so that they are not used twice.
              */
             this._installFunc = {
+                // 覆写原生的 onerror
                 onerror: _installGlobalOnErrorHandler,
+                // 覆写原生的 onunhandledrejection
                 onunhandledrejection: _installGlobalOnUnhandledRejectionHandler,
             };
             this._options = __assign({ onerror: true, onunhandledrejection: true }, options);
@@ -6560,19 +6567,22 @@ var Sentry = (function (exports) {
          */
         Breadcrumbs.prototype.setupOnce = function () {
             if (this._options.console) {
-                // 
+                // 覆写原生的 console 对象的方法，收集要打印的信息
                 addInstrumentationHandler('console', _consoleBreadcrumb);
             }
             if (this._options.dom) {
-                // 
+                // 覆写原生的 addEventListener、removeEventListener 方法，收集 click、keypress 信息
                 addInstrumentationHandler('dom', _domBreadcrumb(this._options.dom));
             }
+            // 覆写原生的 xhr 的 open、send 实例方法
             if (this._options.xhr) {
                 addInstrumentationHandler('xhr', _xhrBreadcrumb);
             }
+            // 覆写原生的 fetch 方法，用于收集通过 fetch 发起的请求信息
             if (this._options.fetch) {
                 addInstrumentationHandler('fetch', _fetchBreadcrumb);
             }
+            // 覆写原生的 pushState、replaceState、onpopstate 方法，用于收集路由信息
             if (this._options.history) {
                 addInstrumentationHandler('history', _historyBreadcrumb);
             }
@@ -6869,10 +6879,14 @@ var Sentry = (function (exports) {
         return Dedupe;
     }());
     /** JSDoc */
+    // 判断异常是否要上报
+    // 这个时候要和上一个异常信息进行对比，判断是不是同一个异常
     function _shouldDropEvent(currentEvent, previousEvent) {
+        // 如果是第一个异常，要上报
         if (!previousEvent) {
             return false;
         }
+        // 
         if (_isSameMessageEvent(currentEvent, previousEvent)) {
             return true;
         }
@@ -6911,18 +6925,22 @@ var Sentry = (function (exports) {
         if (!previousException || !currentException) {
             return false;
         }
+        // 判断异常类型是否一样和异常的值是否一样
         if (previousException.type !== currentException.type || previousException.value !== currentException.value) {
             return false;
         }
+        // 对比指纹信息
         if (!_isSameFingerprint(currentEvent, previousEvent)) {
             return false;
         }
+        // 判断追踪栈是否相等
         if (!_isSameStacktrace(currentEvent, previousEvent)) {
             return false;
         }
         return true;
     }
     /** JSDoc */
+    // 对比追踪栈的信息
     function _isSameStacktrace(currentEvent, previousEvent) {
         var currentFrames = _getFramesFromEvent(currentEvent);
         var previousFrames = _getFramesFromEvent(previousEvent);
@@ -7082,7 +7100,7 @@ var Sentry = (function (exports) {
         new FunctionToString(), // ??
         new TryCatch(),  // 异常捕获功能，集成时，会覆写原生的 setTimeout、console、requestAnimationFrame、XMLHttpRequst 实例方法等，使用 try...catch 重新包裹 callback；
         new Breadcrumbs(), // 面包屑功能, 集成时，会覆写原生的 fetch、xmlhttpRequest 实例 open send 、history、console 等方法
-        new GlobalHandlers(), // 集成时，覆写原生的 onerror、unhandledrejection 方法
+        new GlobalHandlers(), // 集成时，覆写原生的 onerror、unhandledrejection 方法，自动将捕获的异常上报 sentry
         new LinkedErrors(), // ？？
         new Dedupe(), // ？？
         new UserAgent(), // 添加用户代理信息

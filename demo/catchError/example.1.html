@@ -5,14 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="../../react.development.18.stable.js"></script>
     <script src="../../react-dom.development.118.stable.js"></script>
-    <script src="../react-dom-server.browser.development.js"></script>
-    <script src="../../sentry.js"></script>
+    <script src="../../sentry-study/tracing.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
     <title>Document</title>
 </head>
 <body>
     <div id="app">
-        <button id="button"  >按钮</button>
+        <button id="button"  >按钮1</button>
+        <button id="button1"  >按钮2</button>
+        <button id="button2"  >按钮3</button>
     </div>
     <script>
 
@@ -24,14 +25,21 @@
             // enabled: bridge!.store!.global!.feConfig!.API_ENV === 'prod',
             enabled: true,
             release: 'by-aicc',
+            integrations: [new Sentry.BrowserTracing()],
             fetchImpl: (url, options) => {
                 debugger
                 console.log('自定义异常处理', url, JSON.parse(options.body));
                 window.fetch(url, options);
-            }
+            },
+            tracesSampleRate: 1.0,
         });
 
-        function clickHandle() {
+        function clickHandle(e) {
+            debugger
+            console.log(store.name);
+        }
+
+        function clickHandle1(e) {
             debugger
             console.log(store.name);
         }
@@ -43,32 +51,80 @@
         //     return false;
         // }
         document.getElementById('button').addEventListener('click', clickHandle);
+        document.getElementById('button1').addEventListener('click', clickHandle1);
+        document.getElementById('button2').addEventListener('click', () => console.log('button2'));
 
-        window.addEventListener('unhandledrejection', (error) => {
+        const originConsoleError = console.error;
+
+        // console.error = (error) => {
+        //     debugger
+        //     console.log(error)
+        // }
+
+
+
+        window.addEventListener('unhandledrejection', (e) => {
+            console.log(e);
             console.log('捕获到 promise 异常');
             return false;
         });
+
+        // Promise.reject(new Error('error' + Math.random()));
+
+        // window.addEventListener('error', errorEventHandle);
+
+        // window.addEventListener('error', function (event) {
+        //     debugger
+        //     try {
+        //         const target = event.target || event.srcElement;
+        //         console.log(event)
+        //         Sentry.captureException(event)
+        //     } catch (err) {
+        //     }
+        // }, true);
+
+        // function errorEventHandle(e) {
+        //     debugger
+        // }
+
+
 
         function reqListener () {
             console.log(this.responseText);
         }
         function transferFailed(evt) {
-            console.log(store.name);
+            console.log(evt)
+            // console.log(store.name);
         }
+        // try {
+            // var oReq = new XMLHttpRequest();
+            // oReq.addEventListener("load", reqListener);
+            // oReq.addEventListener("error", transferFailed  );
+            // oReq.open("GET", "http://");
+            // oReq.send();
+        // } catch (e) {
+        //     console.log('error', e);
+        // }
 
-        var oReq = new XMLHttpRequest();
-        oReq.addEventListener("load", reqListener);
-        oReq.addEventListener("error", transferFailed  );
-        oReq.open("GET", "http://example.com/movies.json");
-        oReq.send();
 
         // fetch('http://example.com/movies.json');
-        // debugger
-        // console.log(store.name);
-        setTimeout(() => {
-            debugger
+        // // debugger
+        // // console.log(store.name);
+        // setTimeout(() => {
+        //     func1();
+        // }, 2000);
+
+        function func1() {
+            func2();
+        }
+
+        function func2() {
+            func3();
+        }
+
+        function func3() {
             console.log(store.name);
-        }, 2000);
+        }
 
 
 
@@ -76,12 +132,11 @@
 
 
 
-        // Promise.reject(new Error('error' + Math.random()));
-
+      
         // class ErrorBoundary extends React.Component {
         //     componentDidCatch(error, info) {
         //         // debugger
-        //         console.log('捕获到异常', error);
+        //         // console.log('捕获到异常', error);
         //     }
         //     render() {
         //         return this.props.children;
@@ -92,8 +147,12 @@
 
         //     const handleError= () => {
         //         debugger
-        //         throw new Error('error' + Math.random());
-        //         // console.error('error' + Math.random());
+              
+        //         var node = document.getElementById('btn');
+        //         var refnode = node.nextSibling;
+        //         var newNode = document.createTextNode('123');
+        //         node.insertBefore(newNode, refnode);
+        //         // throw new Error('error' + Math.random());
                 
         //         // Sentry.captureException(new Error('error' + Math.random()));
         //         // console.error('异常信息');
@@ -101,7 +160,7 @@
     
 
         //     return <div>
-        //         <button onClick={handleError}>抛出异常</button>
+        //         <button onClick={handleError} id="btn">抛出异常</button>
         //     </div>
         // }
 
@@ -113,7 +172,19 @@
 
         // ReactDOM.createRoot(document.getElementById('app')).render(<ErrorBoundary><App/></ErrorBoundary>);
 
+        // try {
+        //     var node = document.getElementById('app');
+        //     var refnode = node.nextSibling;
+        //     var newNode = document.createTextNode('123');
+        //     node.insertBefore(newNode, refnode);
+        // } catch(e) {
+        //     debugger
+        //     console.log(e);
+        // }
+
+
 
     
     </script>
+    <!-- <script src="../react-dom-server.browser.development.js"></script> -->
 </body>
